@@ -20,7 +20,7 @@ from plugins import random_greeting
 from filters import *
 
 re_conditional = re.compile("if (?P<conditional>.*) (?P<cmd>(solve|say|input|loop_slots).*)")
-re_input = re.compile("input (?P<id>[^ ]*) *\| *(?P<filter>.*)")
+re_input = re.compile(r"input (?P<id>[^ ]+)(?: *\| *(?P<filter>.*))?")
 
 class Conversation:
     def __init__(self, filename, name="SYSTEM",verbose=False):
@@ -149,11 +149,12 @@ class Conversation:
         if m:
             print("USER: ",end='')
             result=input()
-            idd=m.group('idd')
-            if 'filter' in m:
-                filter
+            idd=m.group('id')
+            if m.group('filter'):
+                fil=m.group('filter')
+                result=eval('{}("{}")'.format(fil,result),globals(),self.slots)
 
-            self.slots[idd]=input()
+            self.slots[idd]=result
 
     def loop_slots_(self):
         """ Loop slots until fill """
