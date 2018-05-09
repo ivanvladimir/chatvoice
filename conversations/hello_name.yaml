@@ -1,5 +1,8 @@
 # Conversation example for simple hello and ask a name
 
+settings:
+    name: HAL
+
 conversations:
     - 'hello.yaml'
 

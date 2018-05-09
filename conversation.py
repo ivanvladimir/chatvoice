@@ -64,7 +64,14 @@ class Conversation:
     def _load_slots(self,slots):
         for slot in slots:
             self.slots[slot]=None
- 
+
+    def _load_settings(self,settings):
+        try:
+            self.name=settings['name']
+        except KeyError:
+            pass
+
+
     def load_conversation(self,definition):
         """ Loads a full conversation"""
         try:
@@ -85,6 +92,11 @@ class Conversation:
             self._load_strategies(definition['strategies'])
         except KeyError:
             pass
+        try:
+            self._load_settings(definition['settings'])
+        except KeyError:
+            pass
+      
         self.script=definition['script']
 
     def verbose(self,*args):
