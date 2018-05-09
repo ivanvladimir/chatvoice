@@ -14,10 +14,13 @@ from collections import OrderedDict
 from colors import bcolors
 
 # Import plugins
-# TODO make a better system for plugings
+# TODO make a better system for plugins
 from plugins import random_greeting
+# TODO make a better system for filters
+from filters import *
 
 re_conditional = re.compile("if (?P<conditional>.*) (?P<cmd>(solve|say|input|loop_slots).*)")
+re_input = re.compile("input (?P<id>[^ ]*) *\| *(?P<filter>.*)")
 
 class Conversation:
     def __init__(self, filename, name="SYSTEM",verbose=False):
@@ -140,12 +143,17 @@ class Conversation:
         print("{}:".format(self.name), result)
 
 
-    def input_(self,*args):
+    def input_(self,line):
         """ Input command """
-        if len(args)!=1:
-            raise ArgumentError('Expected an argument but given more or less')
-        print("USER: ",end='')
-        self.slots[args[0]]=input()
+        m=re_input.match(line)
+        if m:
+            print("USER: ",end='')
+            result=input()
+            idd=m.group('idd')
+            if 'filter' in m:
+                filter
+
+            self.slots[idd]=input()
 
     def loop_slots_(self):
         """ Loop slots until fill """
@@ -173,8 +181,7 @@ class Conversation:
             cmd,args=line.split(maxsplit=1)
             self.say_(args)
         elif line.startswith('input '):
-            cmd,args=line.split(maxsplit=1)
-            self.input_(*args.split())
+            self.input_(line)
         elif line.startswith('loop_slots'):
             self.loop_slots_()
         elif line.startswith('if '):
