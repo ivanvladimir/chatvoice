@@ -1,0 +1,17 @@
+# Conversation example for simple hello and ask a name
+
+conversations:
+    - 'hello.yaml'
+
+slots:
+    - name
+
+strategies:
+    name:
+        - say "What is your name?"
+        - input name
+script:
+    - solve hello
+    - loop_slots
+    - say "Nice to meet you"
+    - say "Good bye {}".format(name)    

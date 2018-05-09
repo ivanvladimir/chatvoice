@@ -15,9 +15,7 @@ import conversation
 if __name__ == '__main__':
     p = argparse.ArgumentParser("chatvoice")
     p.add_argument("CONV",
-            dest="conversation",
-            help="Verbose mode [Off]")
-
+            help="Conversation file")
     p.add_argument("-v", "--verbose",
             action="store_true", dest="verbose",
             help="Verbose mode [Off]")
@@ -25,3 +23,4 @@ if __name__ == '__main__':
     args = p.parse_args()
    
     conversation = conversation.Conversation(filename=args.CONV)
+    conversation.execute()

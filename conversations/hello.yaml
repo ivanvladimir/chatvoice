@@ -1,0 +1,7 @@
+# Conversation example for simple hello
+
+plugins:
+    - random_greeting
+
+script:
+    - random_greeting.execute()
