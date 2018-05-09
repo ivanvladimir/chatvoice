@@ -24,3 +24,7 @@ if __name__ == '__main__':
    
     conversation = conversation.Conversation(filename=args.CONV)
     conversation.execute()
+
+    print("Summary values:")
+    for val,k in conversation.slots.items():
+        print(val,k)

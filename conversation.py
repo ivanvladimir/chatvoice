@@ -7,6 +7,7 @@
 # imports
 import yaml
 import os.path
+import re
 from collections import OrderedDict
 
 #local imports
@@ -16,6 +17,7 @@ from colors import bcolors
 # TODO make a better system for plugings
 from plugins import random_greeting
 
+re_conditional = re.compile("if (?P<conditional>.*) (?P<cmd>(solve|say|input|loop_slots).*)")
 
 class Conversation:
     def __init__(self, filename, name="SYSTEM",verbose=False):
@@ -43,6 +45,7 @@ class Conversation:
 
     def update_(self,conversation):
         self.contexts[conversation.modulename]=conversation
+        self.strategies.update(conversation.strategies)
         self.verbose(bcolors.OKBLUE,"Setting strategy",conversation.modulename,bcolors.ENDC)
 
     def _load_conversations(self,conversations,path="./"):
@@ -120,9 +123,9 @@ class Conversation:
             elif args[0] in self.strategies:
                 self.execute_(self.strategies[args[0]])
             else:
-                raise KeyError('The solving strategy was not found')
+                raise KeyError('The solving strategy was not found', args[0])
         except KeyError:
-            raise KeyError('The solving strategy was not found')
+            raise KeyError('The solving strategy was not found',args[0])
 
 
     def eval_(self,cmd):
@@ -149,21 +152,33 @@ class Conversation:
         for slot in [name for name, val in self.slots.items() if not val]:
             self.execute_line_("solve {}".format(slot))
 
+    def conditional_(self,line):
+        """ conditional execution """
+        m=re_conditional.match(line)
+        if m:
+            conditional=m.group('conditional')
+            cmd=m.group('cmd')
+            result=eval(conditional,globals(),self.slots)
+            if result:
+                self.execute_line_(cmd)
+
 
     def execute_line_(self,line):
         line=line.strip()
         self.verbose(bcolors.WARNING,"Command",line,bcolors.ENDC)
-        if line.startswith('solve'):
+        if line.startswith('solve '):
             cmd,args=line.split(maxsplit=1)
             self.solve_(*args.split())
-        elif line.startswith('say'):
+        elif line.startswith('say '):
             cmd,args=line.split(maxsplit=1)
             self.say_(args)
-        elif line.startswith('input'):
+        elif line.startswith('input '):
             cmd,args=line.split(maxsplit=1)
             self.input_(*args.split())
         elif line.startswith('loop_slots'):
             self.loop_slots_()
+        elif line.startswith('if '):
+            self.conditional_(line)
         else:
             self.eval_(line)
 
