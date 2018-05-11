@@ -43,13 +43,13 @@ class Conversation:
                 definition=yaml.load(stream)
             except yaml.YAMLError as exc:
                 print(exc)
-        if definition:
-            self.load_conversation(definition)
+        self.load_conversation(definition)
+        print("-----",filename)
 
     def update_(self,conversation):
         self.contexts[conversation.modulename]=conversation
         self.strategies.update(conversation.strategies)
-        self.verbose(bcolors.OKBLUE,"Setting strategy",conversation.modulename,bcolors.ENDC)
+        self.verbose(bcolors.OKBLUE,"Setting conversation",conversation.modulename,bcolors.ENDC)
 
     def _load_conversations(self,conversations,path="./"):
         for conversation in conversations:
@@ -121,7 +121,12 @@ class Conversation:
         try:
             if args[0] in self.contexts:
                 self.current_context=self.contexts[args[0]]
+                slots_tmp=OrderedDict(self.current_context.slots)
+                slots_tmp_ = self.slots
+                self.slots=self.current_context.slots
+                self.slots.update(slots_tmp_)
                 self.execute_(self.current_context.script)
+                self.current_context.slots=slots_tmp
                 self.current_context=self
             elif args[0] in self.strategies:
                 self.execute_(self.strategies[args[0]])
@@ -158,7 +163,7 @@ class Conversation:
 
     def loop_slots_(self):
         """ Loop slots until fill """
-        for slot in [name for name, val in self.slots.items() if not val]:
+        for slot in [name for name, val in self.slots.items() if val is None]:
             self.execute_line_("solve {}".format(slot))
 
     def conditional_(self,line):
@@ -167,7 +172,11 @@ class Conversation:
         if m:
             conditional=m.group('conditional')
             cmd=m.group('cmd')
-            result=eval(conditional,globals(),self.slots)
+            try:
+                result=eval(conditional,globals(),self.slots)
+            except NameError:
+                print(bcolors.WARNING, "False because variable not defined",bcolors.ENDC)
+                result=True
             if result:
                 self.execute_line_(cmd)
 
@@ -175,6 +184,9 @@ class Conversation:
     def execute_line_(self,line):
         line=line.strip()
         self.verbose(bcolors.WARNING,"Command",line,bcolors.ENDC)
+        if self.slots:
+            self.verbose(bcolors.OKGREEN, "SLOTS:", ", ".join(["{}:{}".format(x,y)
+                                                                for x,y in self.slots.items()]), bcolors.ENDC)
         if line.startswith('solve '):
             cmd,args=line.split(maxsplit=1)
             self.solve_(*args.split())

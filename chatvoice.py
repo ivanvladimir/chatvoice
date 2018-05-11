@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     args = p.parse_args()
    
-    conversation = conversation.Conversation(filename=args.CONV)
+    conversation = conversation.Conversation(filename=args.CONV,verbose=args.verbose)
     conversation.execute()
 
     print("Summary values:")
