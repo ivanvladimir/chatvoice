@@ -12,6 +12,7 @@ from collections import OrderedDict
 
 #local imports
 from colors import bcolors
+from audio import tts_google, tts_local
 
 # Import plugins
 # TODO make a better system for plugins
@@ -23,7 +24,7 @@ re_conditional = re.compile("if (?P<conditional>.*) (?P<cmd>(solve|say|input|loo
 re_input = re.compile(r"input (?P<id>[^ ]+)(?: *\| *(?P<filter>.*))?")
 
 class Conversation:
-    def __init__(self, filename, name="SYSTEM",verbose=False):
+    def __init__(self, filename, name="SYSTEM",verbose=False, tts='google'):
         """ Creates a conversation from a file"""
         # Variables 
         self.verbose_=verbose
@@ -37,6 +38,7 @@ class Conversation:
         self.slots=OrderedDict()
         self.history=[]
         self.name=name
+        self.tts=tts
 
         with open(filename, 'r') as stream:
             try:
@@ -44,7 +46,6 @@ class Conversation:
             except yaml.YAMLError as exc:
                 print(exc)
         self.load_conversation(definition)
-        print("-----",filename)
 
     def update_(self,conversation):
         self.contexts[conversation.modulename]=conversation
@@ -76,7 +77,6 @@ class Conversation:
             self.name=settings['name']
         except KeyError:
             pass
-
 
     def load_conversation(self,definition):
         """ Loads a full conversation"""
@@ -145,6 +145,10 @@ class Conversation:
         """ Say command """
 
         result=eval(cmd,globals(),self.slots)
+        if self.tts=='google':
+            tts_google(result)
+        else:
+            tts_local(result)
         print("{}:".format(self.name), result)
 
 

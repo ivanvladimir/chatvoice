@@ -1,1 +1,16 @@
+beautifulsoup4==4.6.0
+bs4==0.0.1
+certifi==2018.4.16
+chardet==3.0.4
+click==6.7
+gTTS==2.0.0
+gTTS-token==1.1.1
+idna==2.6
+PyAudio==0.2.11
+pyttsx3==2.7
 PyYAML==3.12
+requests==2.18.4
+six==1.11.0
+tinydb==3.9.0
+urllib3==1.22
+webrtcvad==2.0.10
