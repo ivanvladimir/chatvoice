@@ -155,7 +155,6 @@ def pull_latest():
     now=datetime.now()
     while len(AUDIOS)==0 or AUDIOS[-1][0]<= now:
         time.sleep(0.5)
-        print("Nothing here")
     return AUDIOS[-1][1]
     
 
