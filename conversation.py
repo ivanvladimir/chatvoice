@@ -12,7 +12,7 @@ from collections import OrderedDict
 
 #local imports
 from colors import bcolors
-from audio import tts_google, tts_local
+from audio import tts_google, tts_local, pull_latest, sr_google
 
 # Import plugins
 # TODO make a better system for plugins
@@ -24,7 +24,7 @@ re_conditional = re.compile("if (?P<conditional>.*) (?P<cmd>(solve|say|input|loo
 re_input = re.compile(r"input (?P<id>[^ ]+)(?: *\| *(?P<filter>.*))?")
 
 class Conversation:
-    def __init__(self, filename, name="SYSTEM",verbose=False, tts='google'):
+    def __init__(self, filename, name="SYSTEM",verbose=False, tts='google', rec_voice=False):
         """ Creates a conversation from a file"""
         # Variables 
         self.verbose_=verbose
@@ -39,6 +39,7 @@ class Conversation:
         self.history=[]
         self.name=name
         self.tts=tts
+        self.rec_voice=rec_voice
 
         with open(filename, 'r') as stream:
             try:
@@ -155,9 +156,16 @@ class Conversation:
     def input_(self,line):
         """ Input command """
         m=re_input.match(line)
+            
         if m:
             print("USER: ",end='')
-            result=input()
+            if self.rec_voice:
+                filename=pull_latest()
+                result=sr_google(filename)
+                print(result)
+            else:
+                result=input()
+
             idd=m.group('id')
             if m.group('filter'):
                 fil=m.group('filter')

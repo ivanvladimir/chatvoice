@@ -7,11 +7,12 @@
 # imports
 import argparse
 import sys
+import os.path
 
 
 # local imports
 import conversation
-from audio import audio_connect, audio_close, audio_devices
+from audio import audio_connect, audio_close, audio_devices, set_audio_dirname
 
 
 if __name__ == '__main__':
@@ -21,6 +22,12 @@ if __name__ == '__main__':
     p.add_argument("--list_devices",
             action="store_true", dest="list_devices",
             help="List audio devices")
+    p.add_argument("--rec_voice",
+            action="store_true", dest="rec_voice",
+            help="Activate voice recognition")
+    p.add_argument("--audio_dir",default="rec_voice_audios",
+            action="store", dest="audio_dir",
+            help="Directory for audios for speech recognition")
     p.add_argument("--google_tts",
             action="store_true", dest="google_tts",
             help="Use google tts")
@@ -51,6 +58,12 @@ if __name__ == '__main__':
     else:
         tts="local"
 
+    # speech
+    if not os.path.exists(os.path.join(os.getcwd(), args.audio_dir)):
+        os.mkdir(os.path.join(os.getcwd(), args.audio_dir))
+    
+    set_audio_dirname(args.audio_dir)
+
     if args.aggressiveness:
         vad_aggressiveness(args.aggressiveness)
     audio_connect(samplerate=args.samplerate,device=args.device)
@@ -58,6 +71,7 @@ if __name__ == '__main__':
             filename=args.CONV,
             verbose=args.verbose,
             tts=tts,
+            rec_voice=args.rec_voice
             )
     conversation.execute()
 
