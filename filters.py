@@ -9,3 +9,6 @@ def yesno(msg):
         return True
     else:
         return False
+
+def number(msg):
+    return float(msg)

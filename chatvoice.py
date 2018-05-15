@@ -31,6 +31,9 @@ if __name__ == '__main__':
     p.add_argument("--google_tts",
             action="store_true", dest="google_tts",
             help="Use google tts")
+    p.add_argument("--local_tts",
+            action="store_true", dest="local_tts",
+            help="Use espeak local tts")
     p.add_argument("--samplerate",type=int,default=16000,
             action="store", dest="samplerate",
             help="Samplerate")
@@ -55,8 +58,10 @@ if __name__ == '__main__':
   
     if args.google_tts:
         tts="google"
-    else:
+    elif args.local_tts:
         tts="local"
+    else:
+        tts=None
 
     # speech
     if not os.path.exists(os.path.join(os.getcwd(), args.audio_dir)):

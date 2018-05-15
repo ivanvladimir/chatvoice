@@ -21,7 +21,9 @@ from plugins import random_greeting
 from filters import *
 
 re_conditional = re.compile("if (?P<conditional>.*) (?P<cmd>(solve|say|input|loop_slots).*)")
+re_while = re.compile("while (?P<conditional>.*) (?P<cmd>(solve|say|input|loop_slots).*)")
 re_input = re.compile(r"input (?P<id>[^ ]+)(?: *\| *(?P<filter>.*))?")
+re_set = re.compile(r"set_slot (?P<id>[^ ]+) +(?P<val>.*)$")
 
 class Conversation:
     def __init__(self, filename, name="SYSTEM",verbose=False, tts='google', rec_voice=False):
@@ -138,9 +140,15 @@ class Conversation:
 
 
     def eval_(self,cmd):
-        """ Execute python command"""
+        """ evaluate python expression"""
         result=eval(cmd)
         self.execute_line_(result)
+
+    def execute__(self,cmd):
+        """ execute python command"""
+        print("CMD",cmd)
+        exec(cmd)
+
 
     def say_(self,cmd):
         """ Say command """
@@ -148,8 +156,10 @@ class Conversation:
         result=eval(cmd,globals(),self.slots)
         if self.tts=='google':
             tts_google(result)
-        else:
+        elif self.tts=='local':
             tts_local(result)
+        else:
+            pass
         print("{}:".format(self.name), result)
 
 
@@ -192,6 +202,32 @@ class Conversation:
             if result:
                 self.execute_line_(cmd)
 
+    def while_(self,line):
+        """ while execution """
+        m=re_while.match(line)
+        if m:
+            conditional=m.group('conditional')
+            cmd=m.group('cmd')
+            try:
+                result=eval(conditional,globals(),self.slots)
+            except NameError:
+                print(bcolors.WARNING, "False because variable not defined",bcolors.ENDC)
+                result=True
+            if result:
+                self.execute_line_(cmd)
+                self.execute_line_(line)
+
+    def add_slot_(self,line):
+        self.slots[line]=None
+
+    def set_slot_(self,line):
+        m=re_set.match(line)
+        if m:
+            cmd="self.slots['{}']={}".format(m.group('id'),m.group('val'))
+            exec(cmd)
+
+    def empty_slot_(self,line):
+        self.slots[line]=None
 
     def execute_line_(self,line):
         line=line.strip()
@@ -202,6 +238,9 @@ class Conversation:
         if line.startswith('solve '):
             cmd,args=line.split(maxsplit=1)
             self.solve_(*args.split())
+        elif line.startswith('execute '):
+            cmd,args=line.split(maxsplit=1)
+            self.execute__(args)
         elif line.startswith('say '):
             cmd,args=line.split(maxsplit=1)
             self.say_(args)
@@ -211,6 +250,16 @@ class Conversation:
             self.loop_slots_()
         elif line.startswith('if '):
             self.conditional_(line)
+        elif line.startswith('while '):
+            self.while_(line)
+        elif line.startswith('add_slot'):
+            cmd,args=line.split(maxsplit=1)
+            self.add_slot_(args)
+        elif line.startswith('empty_slot '):
+            cmd,args=line.split(maxsplit=1)
+            self.empty_slot_(args)
+        elif line.startswith('set_slot '):
+            self.set_slot_(line)
         else:
             self.eval_(line)
 
