@@ -217,14 +217,18 @@ class Conversation:
                 self.execute_line_(cmd)
                 self.execute_line_(line)
 
-    def add_slot_(self,line):
-        self.slots[line]=None
+    def add_slot_(self,arg):
+        self.slots[arg]=None
 
     def set_slot_(self,line):
         m=re_set.match(line)
         if m:
             cmd="self.slots['{}']={}".format(m.group('id'),m.group('val'))
             exec(cmd)
+
+    def del_slot_(self,arg):
+        del self.slots[arg]
+
 
     def empty_slot_(self,line):
         self.slots[line]=None
@@ -260,6 +264,9 @@ class Conversation:
             self.empty_slot_(args)
         elif line.startswith('set_slot '):
             self.set_slot_(line)
+        elif line.startswith('del_slot '):
+            cmd,args=line.split(maxsplit=1)
+            self.del_slot_(args)
         else:
             self.eval_(line)
 

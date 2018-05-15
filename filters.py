@@ -12,3 +12,6 @@ def yesno(msg):
 
 def number(msg):
     return float(msg)
+
+def list(msg):
+    return msg.split()
