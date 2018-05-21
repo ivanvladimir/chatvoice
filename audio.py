@@ -7,7 +7,7 @@
 import os
 import hashlib
 import pyaudio
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 from tinydb import TinyDB, Query
 from gtts import gTTS
@@ -39,7 +39,7 @@ block_duration=10
 padding_duration=1000
 FRAMES_PER_BUFFER=samplerate*block_duration/1000
 NUM_PADDING_CHUNKS=int(padding_duration/block_duration)
-NUM_WINDOW_CHUNKS=int(250/block_duration)
+NUM_WINDOW_CHUNKS=int(400/block_duration)
 ring_buffer=deque(maxlen=NUM_PADDING_CHUNKS)
 ring_buffer_flags = [0] * NUM_WINDOW_CHUNKS
 ring_buffer_index=0
@@ -55,7 +55,7 @@ def clear_audios():
 if not os.path.exists(os.path.join(os.getcwd(), 'audios')):
     os.mkdir(os.path.join(os.getcwd(), 'audios'))
 
-        
+
 def tts_local(msg):
     engine_local.say(msg)
     engine_local.runAndWait() ;
@@ -141,7 +141,7 @@ def callback(in_data, frame_count, time_info, status):
     else:
         voiced_buffer=np.concatenate((voiced_buffer,in_data_))
         num_unvoiced = NUM_WINDOW_CHUNKS - sum(ring_buffer_flags)
-        if num_unvoiced > 0.90 * NUM_WINDOW_CHUNKS:
+        if len(voiced_buffer)>0 and num_unvoiced > 0.90 * NUM_WINDOW_CHUNKS:
             triggered=False
             in_data_ = np.int16(voiced_buffer*32767)
             wave_file.writeframes(in_data_.tostring())
@@ -153,10 +153,10 @@ def callback(in_data, frame_count, time_info, status):
 
 def pull_latest():
     now=datetime.now()
-    while len(AUDIOS)==0 or AUDIOS[-1][0]<= now:
+    while len(AUDIOS)==0 or AUDIOS[-1][0]+timedelta(milliseconds=400)<= now:
         time.sleep(0.5)
     return AUDIOS[-1][1]
-    
+
 
 def set_audio_dirname(dir):
     DIRAUDIOS=dir
