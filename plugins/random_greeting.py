@@ -7,6 +7,6 @@
 import random
 
 def execute(*args):
-    msg = random.choice(['Hola','Buen día','Chevere'])
+    msg = random.choice(['hola','buen día','chevere'])
     return 'say "{}"'.format(msg)
 

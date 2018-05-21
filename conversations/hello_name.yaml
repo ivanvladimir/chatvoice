@@ -11,10 +11,10 @@ slots:
 
 strategies:
     name:
-        - say "What is your name?"
+        - say "¿cúal es tu nombre?"
         - input name
 script:
     - solve hello
     - loop_slots
-    - say "Nice to meet you"
-    - say "Good bye {}".format(name)    
+    - say "mucho gusto en conocerte"
+    - say "adios {}".format(name)    
