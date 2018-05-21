@@ -1,0 +1,29 @@
+[[source]]
+verify_ssl = true
+url = "https://pypi.org/simple"
+name = "pypi"
+
+[requires]
+python_version = "3.5"
+
+[packages]
+"beautifulsoup4" = "==4.6.0"
+"bs4" = "==0.0.1"
+certifi = "==2018.4.16"
+chardet = "==3.0.4"
+click = "==6.7"
+idna = "==2.6"
+numpy = "==1.14.3"
+"pyttsx3" = "==2.7"
+requests = "==2.18.4"
+six = "==1.11.0"
+tinydb = "==3.9.0"
+"urllib3" = "==1.22"
+webrtcvad = "==2.0.10"
+gTTS = "==2.0.0"
+gTTS-token = "==1.1.1"
+PyAudio = "==0.2.11"
+PyYAML = "==3.12"
+SpeechRecognition = "==3.8.1"
+
+[dev-packages]
