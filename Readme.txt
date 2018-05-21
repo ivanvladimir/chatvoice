@@ -24,13 +24,25 @@ Activate the shell
 `pipenv shell`
 
 
-### Only therminal 
+### Only terminal 
 
 `python chatvoice.py conversations/hello_name.yaml`
 
 ### Using ASR and TTS
 
-``
+`python  chatvoice.py conversations/hello_name.yaml --rec_voice --google_tts`
+
+Resulting in this:
+
+```
+HAL: buen día
+HAL: ¿cúal es tu nombre?
+USER: Jesús
+HAL: mucho gusto en conocerte
+HAL: adios Jesús
+Summary values:
+name Jesús
+'''
 
 ### Obtaining help
 
