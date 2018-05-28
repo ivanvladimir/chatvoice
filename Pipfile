@@ -4,7 +4,7 @@ url = "https://pypi.org/simple"
 name = "pypi"
 
 [requires]
-python_version = "3.5"
+python_version = "3.6"
 
 [packages]
 "beautifulsoup4" = "==4.6.0"
@@ -25,5 +25,12 @@ gTTS-token = "==1.1.1"
 PyAudio = "==0.2.11"
 PyYAML = "==3.12"
 SpeechRecognition = "==3.8.1"
+python-socketio = "*"
+aiohttp = "*"
+yarl = "*"
+socketio-client = "*"
 
 [dev-packages]
+
+[pipenv]
+allow_prereleases = true

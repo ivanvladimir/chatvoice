@@ -8,11 +8,14 @@
 import yaml
 import os.path
 import re
+import time
 from collections import OrderedDict
+from socketIO_client import SocketIO, BaseNamespace
+
 
 #local imports
 from colors import bcolors
-from audio import tts_google, tts_local, pull_latest, sr_google
+from audio import tts_google, tts_local, pull_latest, sr_google, audio_state, start_listening, stop_listening, audio_connect
 
 # Import plugins
 # TODO make a better system for plugins
@@ -25,23 +28,31 @@ re_while = re.compile("while (?P<conditional>.*) (?P<cmd>(solve|say|input|loop_s
 re_input = re.compile(r"input (?P<id>[^ ]+)(?: *\| *(?P<filter>.*))?")
 re_set = re.compile(r"set_slot (?P<id>[^ ]+) +(?P<val>.*)$")
 
+
+class StateNamespace(BaseNamespace):
+    pass
+
 class Conversation:
-    def __init__(self, filename, name="SYSTEM",verbose=False, tts='google', rec_voice=False):
+    def __init__(self, filename, name="SYSTEM", verbose=False, tts='google', rec_voice=False, host=None, port=None, samplerate=16000, device=0):
         """ Creates a conversation from a file"""
-        # Variables 
-        self.verbose_=verbose
-        self.path=os.path.dirname(filename)
-        self.basename=os.path.basename(filename)
-        self.modulename=os.path.splitext(self.basename)[0]
-        self.strategies={}
-        self.contexts={}
+
+        #Variables
+        self.verbose_ = verbose
+        self.path = os.path.dirname(filename)
+        self.basename = os.path.basename(filename)
+        self.modulename = os.path.splitext(self.basename)[0]
+        self.strategies = {}
+        self.contexts = {}
         self.package = ".".join(['plugins'])
-        self.script=[]
-        self.slots=OrderedDict()
-        self.history=[]
-        self.name=name
-        self.tts=tts
-        self.rec_voice=rec_voice
+        self.script = []
+        self.slots = OrderedDict()
+        self.history = []
+        self.name = name
+        self.tts = tts
+        self.pause = False
+        self.host = host
+        self.port = port
+        self.rec_voice = rec_voice
 
         with open(filename, 'r') as stream:
             try:
@@ -49,6 +60,23 @@ class Conversation:
             except yaml.YAMLError as exc:
                 print(exc)
         self.load_conversation(definition)
+        self.thread = None
+        self.samplerate = samplerate
+        self.device = device
+
+    def set_thread(self,thread):
+        self.thread = thread
+
+    def set_sid(self,sid):
+        self.sid = sid
+
+    def start(self):
+        time.sleep(0.8)
+        if self.thread:
+            self.thread.start()
+
+    def pause(self):
+        self.pause=True
 
     def update_(self,conversation):
         self.contexts[conversation.modulename]=conversation
@@ -105,7 +133,7 @@ class Conversation:
             self._load_settings(definition['settings'])
         except KeyError:
             pass
-      
+
         self.script=definition['script']
 
     def verbose(self,*args):
@@ -155,32 +183,47 @@ class Conversation:
 
         result=eval(cmd,globals(),self.slots)
         if self.tts=='google':
+            stop_listening()
             tts_google(result)
+            start_listening()
         elif self.tts=='local':
+            stop_listening()
             tts_local(result)
+            start_listening()
         else:
             pass
-        print("{}:".format(self.name), result)
+        MSG="{}: {}".format(self.name, result)
+        if self.host:
+            self.socket_state.emit('say',{"msg":MSG})
+        else:
+            print(MSG)
 
 
     def input_(self,line):
         """ Input command """
         m=re_input.match(line)
-            
+
         if m:
             print("USER: ",end='')
             if self.rec_voice:
-                filename=pull_latest()
+                start_listening()
+                filename=None
+                while not filename:
+                    time.sleep(0.1)
+                    filename=pull_latest()
+
                 result=sr_google(filename)
                 print(result)
             else:
                 result=input()
 
             idd=m.group('id')
+            raw=result
             if m.group('filter'):
                 fil=m.group('filter')
                 result=eval('{}("{}")'.format(fil,result),globals(),self.slots)
 
+            self.socket_state.emit('input',{"msg":"USER: {}/{}".format(result,raw)})
             self.slots[idd]=result
 
     def loop_slots_(self):
@@ -270,11 +313,18 @@ class Conversation:
         else:
             self.eval_(line)
 
-
     def execute_(self,script):
         for line in script:
-            self.execute_line_(line)
-           
+            if not self.pause:
+                self.execute_line_(line)
+            else:
+                time.sleep(0.1)
+
     def execute(self):
+        if self.host:
+            self.socket = SocketIO(self.host,self.port)
+            self.socket_state = self.socket.define(StateNamespace, '/state')
+        audio_connect(samplerate=self.samplerate,device=self.device, host=self.host, port=self.port)
         self.current_context=self
         self.execute_(self.script)
+
