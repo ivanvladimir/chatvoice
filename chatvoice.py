@@ -49,13 +49,13 @@ if __name__ == '__main__':
 
     args = p.parse_args()
 
- 
+
     if args.list_devices:
         for info in audio_devices():
             print(info)
         sys.exit()
 
-  
+
     if args.google_tts:
         tts="google"
     elif args.local_tts:
@@ -66,12 +66,12 @@ if __name__ == '__main__':
     # speech
     if not os.path.exists(os.path.join(os.getcwd(), args.audio_dir)):
         os.mkdir(os.path.join(os.getcwd(), args.audio_dir))
-    
+
     set_audio_dirname(args.audio_dir)
 
     if args.aggressiveness:
         vad_aggressiveness(args.aggressiveness)
-    audio_connect(samplerate=args.samplerate,device=args.device)
+    audio_connect(samplerate=args.samplerate,device=args.device,activate=args.rec_voice)
     conversation = conversation.Conversation(
             filename=args.CONV,
             verbose=args.verbose,

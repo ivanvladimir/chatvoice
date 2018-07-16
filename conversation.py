@@ -222,8 +222,8 @@ class Conversation:
             if m.group('filter'):
                 fil=m.group('filter')
                 result=eval('{}("{}")'.format(fil,result),globals(),self.slots)
-
-            self.socket_state.emit('input',{"msg":"USER: {}/{}".format(result,raw)})
+            if self.host:
+                self.socket_state.emit('input',{"msg":"USER: {}/{}".format(result,raw)})
             self.slots[idd]=result
 
     def loop_slots_(self):
@@ -324,7 +324,7 @@ class Conversation:
         if self.host:
             self.socket = SocketIO(self.host,self.port)
             self.socket_state = self.socket.define(StateNamespace, '/state')
-        audio_connect(samplerate=self.samplerate,device=self.device, host=self.host, port=self.port)
+        audio_connect(samplerate=self.samplerate,device=self.device, host=self.host, port=self.port, activate = self.rec_voice)
         self.current_context=self
         self.execute_(self.script)
 
