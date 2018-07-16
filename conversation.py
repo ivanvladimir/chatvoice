@@ -33,7 +33,7 @@ class StateNamespace(BaseNamespace):
     pass
 
 class Conversation:
-    def __init__(self, filename, name="SYSTEM", verbose=False, tts='google', rec_voice=False, host=None, port=None, samplerate=16000, device=0):
+    def __init__(self, filename, name="SYSTEM", verbose=False, tts='google', rec_voice=False, host=None, port=None, samplerate=16000, device=0, channels=1):
         """ Creates a conversation from a file"""
 
         #Variables
@@ -48,6 +48,7 @@ class Conversation:
         self.slots = OrderedDict()
         self.history = []
         self.name = name
+        self.channels = channels
         self.tts = tts
         self.pause = False
         self.host = host
@@ -324,7 +325,7 @@ class Conversation:
         if self.host:
             self.socket = SocketIO(self.host,self.port)
             self.socket_state = self.socket.define(StateNamespace, '/state')
-        audio_connect(samplerate=self.samplerate,device=self.device, host=self.host, port=self.port, activate = self.rec_voice)
+        audio_connect(samplerate=self.samplerate,device=self.device, host=self.host, port=self.port, activate = self.rec_voice, channels = self.channels)
         self.current_context=self
         self.execute_(self.script)
 

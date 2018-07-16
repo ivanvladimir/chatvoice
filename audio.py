@@ -100,10 +100,11 @@ def audio_devices():
     devices=[]
     for i in range(audio.get_device_count()):
         info=audio.get_device_info_by_index(i)
-        devices.append('{0} - {1}'.format(i,info['name']))
+        devices.append('{0} -> {1}'.format(i,"\n".join(["   {0}:{1}".format(x, y) for x,y in info.items()])))
+
     return devices
 
-def audio_connect(device=None,samplerate=16000,block_duration=10,padding_duration=1000, host=None, port=None, activate=True):
+def audio_connect(device=None,samplerate=16000,block_duration=10,padding_duration=1000, host=None, port=None, channels=1, activate=True):
     if not activate:
         return
     global socket_state
@@ -120,9 +121,8 @@ def audio_connect(device=None,samplerate=16000,block_duration=10,padding_duratio
     ring_buffer_index=0
     stream = audio.open(
             format=pyaudio.paInt16,
-            channels=2,
+            channels=channels,
             rate=samplerate,
-            input_device_index=device,
             frames_per_buffer=FRAMES_PER_BUFFER,
             input=True,
             start=False,

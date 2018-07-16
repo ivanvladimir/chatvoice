@@ -37,6 +37,9 @@ if __name__ == '__main__':
     p.add_argument("--samplerate",type=int,default=16000,
             action="store", dest="samplerate",
             help="Samplerate")
+    p.add_argument("--channels",type=int,default=2,
+            action="store", dest="channels",
+            help="Number of channels microphone (1|2|...)")
     p.add_argument("--device",type=int,default=None,
             action="store", dest="device",
             help="Device number to connect audio")
@@ -71,12 +74,13 @@ if __name__ == '__main__':
 
     if args.aggressiveness:
         vad_aggressiveness(args.aggressiveness)
-    audio_connect(samplerate=args.samplerate,device=args.device,activate=args.rec_voice)
+    #audio_connect(samplerate=args.samplerate,device=args.device,activate=args.rec_voice, channels=args.channels)
     conversation = conversation.Conversation(
             filename=args.CONV,
             verbose=args.verbose,
             tts=tts,
-            rec_voice=args.rec_voice
+            rec_voice=args.rec_voice,
+            channels=args.channels
             )
     conversation.execute()
 

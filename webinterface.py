@@ -82,6 +82,9 @@ if __name__ == '__main__':
     p.add_argument("--samplerate",type=int,default=16000,
                     action="store", dest="samplerate",
                     help="Samplerate")
+    p.add_argument("--channels",type=int,default=1,
+            action="store", dest="channels",
+            help="Number of channels microphone (1|2|...)")
     p.add_argument("--device",type=int,default=None,
                     action="store", dest="device",
                     help="Device number to connect audio")
