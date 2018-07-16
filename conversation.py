@@ -214,7 +214,7 @@ class Conversation:
                     filename=pull_latest()
 
                 result=sr_google(filename)
-                print(result)
+                print("{} [{}]".format(result,filename))
             else:
                 result=input()
 

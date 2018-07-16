@@ -121,7 +121,7 @@ def audio_connect(device=None,samplerate=16000,block_duration=10,padding_duratio
     ring_buffer_index=0
     stream = audio.open(
             format=pyaudio.paInt16,
-            channels=channels,
+            channels=1,
             rate=samplerate,
             frames_per_buffer=FRAMES_PER_BUFFER,
             input=True,
