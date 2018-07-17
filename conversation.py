@@ -268,7 +268,7 @@ class Conversation:
         m=re_set.match(line)
         if m:
             cmd="self.slots['{}']={}".format(m.group('id'),m.group('val'))
-            exec(cmd)
+            exec(cmd,globals(),self.slots)
 
     def del_slot_(self,arg):
         del self.slots[arg]
