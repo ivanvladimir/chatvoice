@@ -15,6 +15,7 @@ strategies:
         - input name
 script:
     - solve hello
+    - say greeting
     - loop_slots
     - say "mucho gusto en conocerte"
     - say "adios {}".format(name)    

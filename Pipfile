@@ -29,6 +29,7 @@ python-socketio = "*"
 aiohttp = "*"
 yarl = "*"
 socketio-client = "*"
+duckduckpy = "*"
 
 [dev-packages]
 

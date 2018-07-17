@@ -122,10 +122,10 @@ class Conversation:
             pass
 
         # TODO: a better pluggin system
-        #try:
-        #    self._load_plugings(definition['plugins'])
-        #except KeyError:
-        #    pass
+        try:
+            self._load_plugings(definition['plugins'])
+        except KeyError:
+            pass
         try:
             self._load_strategies(definition['strategies'])
         except KeyError:
@@ -170,7 +170,7 @@ class Conversation:
 
     def eval_(self,cmd):
         """ evaluate python expression"""
-        result=eval(cmd)
+        result=eval(cmd,globals(),self.slots)
         self.execute_line_(result)
 
     def execute__(self,cmd):
