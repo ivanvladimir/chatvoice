@@ -171,7 +171,10 @@ class Conversation:
     def eval_(self,cmd):
         """ evaluate python expression"""
         result=eval(cmd,globals(),self.slots)
-        self.execute_line_(result)
+        if result:
+            self.execute_line_(result)
+        else:
+            pass
 
     def execute__(self,cmd):
         """ execute python command"""
