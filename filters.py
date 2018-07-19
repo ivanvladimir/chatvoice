@@ -4,14 +4,22 @@
 # Ivan Vladimir Meza Ruiz 2018
 # GPL 3.0
 
-def yesno(msg):
+def yesno(msg,*args):
     if msg in ['si','sí']:
         return True
     else:
         return False
 
-def number(msg):
+def number(msg,*args):
     return float(msg)
 
-def list(msg):
+def list(msg,*args):
     return msg.split()
+
+def asign(msg,*args):
+    print(*args)
+    for k_a in  args:
+        k,a = k_a.split(':',1)
+        if msg.find(k):
+            return a
+    return 'None'

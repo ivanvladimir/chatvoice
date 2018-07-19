@@ -25,7 +25,7 @@ from filters import *
 
 re_conditional = re.compile("if (?P<conditional>.*) (?P<cmd>(solve|say|input|loop_slots).*)")
 re_while = re.compile("while (?P<conditional>.*) (?P<cmd>(solve|say|input|loop_slots).*)")
-re_input = re.compile(r"input (?P<id>[^ ]+)(?: *\| *(?P<filter>.*))?")
+re_input = re.compile(r"input (?P<id>[^ ]+)(?: *\| *(?P<filter>\w+)(?P<args>.*)?$)?")
 re_set = re.compile(r"set_slot (?P<id>[^ ]+) +(?P<val>.*)$")
 
 
@@ -225,7 +225,10 @@ class Conversation:
             raw=result
             if m.group('filter'):
                 fil=m.group('filter')
-                result=eval('{}("{}")'.format(fil,result),globals(),self.slots)
+                args=m.group('args').split()
+                slots_ = dict(self.slots)
+                slots_['args']=args
+                result=eval('{}("{}",*args)'.format(fil,result),globals(),slots_)
             if self.host:
                 self.socket_state.emit('input',{"msg":"USER: {}/{}".format(result,raw)})
             self.slots[idd]=result
