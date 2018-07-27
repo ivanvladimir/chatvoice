@@ -1,0 +1,25 @@
+# Conversational bot for simple search
+# Eduardo Contreras Chavez
+# Verano de investigacion AMC 2018 
+# UNAM Dr. Ivan Vladimir Meza Ruiz
+
+settings:
+    name: Buscobot
+
+conversations:
+    - 'hello.yaml'
+
+slots:
+    - usuario
+
+plugins:
+    - ahorrindb
+
+strategies:
+    usuario: 
+        - say "Que deseas buscar?"
+
+   
+script:
+    - solve hello
+
