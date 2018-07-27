@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="Chatbot pyAIML" content="Test">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.1/css/bulma.min.css">
+	<script defer src="https://use.fontawesome.com/releases/v5.0.7/js/all.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.slim.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.slim.js"></script>
+	<script type="text/javascript" charset="utf-8">
+        $(document).ready(function(){
+            namespace = '/state';
+            var msgCount = 1;
+            var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
+            socket.on('turn log', function(data) {
+                $('#log').append('<br>' + $('<div/>').text(msgCount + ': ' + data.msg).html());
+                msgCount += 1;
+            });
+ 			socket.on('audio log', function(data) {
+				if(data.main == 2){
+                	$('#audio').text("Esperando que hables");
+				}
+				if(data.main == 3){
+                	$('#audio').text("Escuchandote");
+				}if(data.main == 4){
+                	$('#audio').text("Hablando");
+				}
+
+            });
+
+        });
+    </script>
+
+
+  </head>
+  <body>
+	<section class="section">
+    <div class="container">
+
+	<h1  class="title">This is happening with chatvoice<h1>
+ 
+	<section class="section">
+    <div class="container">
+
+	<article class="message is-primary">
+	<div class="message-header">
+    	<p>Audio status</p>
+	</div>
+
+	<div class="svg">
+
+
+  	Status: <div class="message-body" id='audio'/>
+	</article>
+
+
+
+
+	<article class="message is-primary">
+	<div class="message-header">
+    	<p>Messages received</p>
+	</div>
+  	<div class="message-body" id='log'/>
+	</article>
+
+	</div>
+	</section>
+
+			</div>
+		</div>
+	</div>
+</section>
+
+
+</body>
+</html>
+
+
+
+<footer class="footer">
+  <div class="container">
+    <div class="content has-text-right">
+      <p>
+			<p>Copyright Ivan Meza, 2018</p>
+      </p>
+    </div>
+  </div>
+</footer>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  </body>
+</html>
+
