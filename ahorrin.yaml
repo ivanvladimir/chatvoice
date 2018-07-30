@@ -1,0 +1,28 @@
+# User module for ahorrin chatbot
+# Eduardo Contreras Chavez - Francisco Ruben Frias Valderrama
+# Verano de investigacion AMC 2018 - Delfin 2018 
+# IIMAS-UNAM Dr. Ivan Vladimir Meza Ruiz
+
+settings:
+    name: Buscobot
+
+conversations:
+    - 'hello.yaml'
+    - 'ahorrinUser.yaml'
+
+slots:
+    - usuario
+
+plugins:
+    - ahorrindb
+
+strategies:
+    x: 
+        - say "Hola, buen dia!"
+
+
+   
+script:
+    - solve hello
+    - solve ahorrinUser
+
