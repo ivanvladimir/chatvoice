@@ -12,11 +12,10 @@ def checkUser(user):
  
     # Select data from table using SQL query.
     cur.execute("SELECT nombre FROM usuario")
- 
+    existe = False;
     # print the first and second columns      
     for row in cur.fetchall() :
         if(row[0].lower()==user.lower()):
-            return 'say "Bienvenido"',str(row[0]),''
-        else:
-            return 'say "Nuevo usuario"' 
-
+            return 'say "Bienvenido"',str(row[0]),'' 
+    
+    return 'set slot usuario nulo'
