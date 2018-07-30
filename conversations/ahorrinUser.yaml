@@ -14,8 +14,10 @@ plugins:
     - ahorrin
 
 strategies:
-    x: 
-        - say "x"
+    setUser: 
+        - say "Detecto que es la primera vez que hablamos, me puedes decir tu nombre?"
+        - input usuario
+        - ahorrindb.addUser(usuario)
         
 
 
@@ -24,5 +26,4 @@ script:
     - say "Como te llamas?"
     - input usuario
     - ahorrindb.checkUser(usuario)
-    
-
+    - if usuario == "nulo" solve setUser
