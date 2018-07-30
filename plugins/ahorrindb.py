@@ -1,21 +1,22 @@
-import _mysql
+#!/usr/bin/python
+import MySQLdb
 
-db=_mysql.connect(host="localhost",user="usuario",
-                  passwd="root",db="ahorrindb")
-
-db.query("""SELECT nombre,contrasena,ingreso_mensual FROM usuario""")
-
-r=db.store_result()
-
-print(r.fetch_row(maxrows=0))
-
-"""
-
-from sqlalchemy import create_engine
-
-engine = create_engine('mysql://root:root@localhost')
-
-"""
-
-
+def checkUser(user):
+    db = MySQLdb.connect(host="localhost",  # your host 
+                     user="root",       # username
+                     passwd="root",     # password
+                     db="ahorrindb")   # name of the database
+ 
+    # Create a Cursor object to execute queries.
+    cur = db.cursor()
+ 
+    # Select data from table using SQL query.
+    cur.execute("SELECT nombre FROM usuario")
+ 
+    # print the first and second columns      
+    for row in cur.fetchall() :
+        if(row[0].lower()==user.lower()):
+            return 'say "Bienvenido"',str(row[0]),''
+        else:
+            return 'say "Nuevo usuario"' 
 
