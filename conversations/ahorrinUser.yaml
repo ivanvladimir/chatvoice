@@ -8,6 +8,8 @@ settings:
 
 slots:
     - usuario
+    - ingresosM
+    - gastosM
 
 plugins:
     - ahorrindb
@@ -18,8 +20,13 @@ strategies:
         - say "Detecto que es la primera vez que hablamos, me puedes decir tu nombre?"
         - input usuario
         - ahorrindb.addUser(usuario)
+        - say "Y cuanto ganas al mes?"
+        - input ingresosM
+        - ahorrindb.setIngresos(ingresosM,usuario)
+        - say "Y cuanto gastas al mes?"
+        - input gastosM
+        - ahorrindb.setGastos(gastosM,usuario)
         
-
 
    
 script:
