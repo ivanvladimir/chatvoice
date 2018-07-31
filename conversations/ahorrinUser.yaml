@@ -30,7 +30,7 @@ strategies:
 
    
 script:
-    - say "Como te llamas?"
+    - say "Cómo te llamas?"
     - input usuario
     - ahorrindb.checkUser(usuario)
     - if usuario == "nulo" solve setUser

@@ -2,10 +2,13 @@
 import MySQLdb
 import re
 
+usuario="root"
+contrasena="root"
+
 def checkUser(user):
     db = MySQLdb.connect(host="localhost",  # your host 
-                     user="root",       # username
-                     passwd="root",     # password
+                     user=usuario,       # username
+                     passwd=contrasena,     # password
                      db="ahorrindb")   # name of the database
  
     # Create a Cursor object to execute queries.
@@ -24,8 +27,8 @@ def checkUser(user):
 
 def addUser(user):
     db = MySQLdb.connect(host="localhost",  # your host 
-                     user="root",       # username
-                     passwd="root",     # password
+                     user=usuario,       # username
+                     passwd=contrasena,     # password
                      db="ahorrindb")   # name of the database
     cur = db.cursor()
     cur.execute("""INSERT INTO usuario (nombre,contrasena,ingreso_mensual,gasto_mensual) VALUES(%s,"nula",0,0)""", [user])
@@ -35,8 +38,8 @@ def setGastos(gasto,user):
     gasto=re.sub("[^0-9]", "",gasto)
 
     db = MySQLdb.connect(host="localhost",  # your host 
-                     user="root",       # username
-                     passwd="root",     # password
+                     user=usuario,       # username
+                     passwd=contrasena,     # password
                      db="ahorrindb")   # name of the database
     cur = db.cursor()
     cur.execute("""UPDATE usuario SET gasto_mensual=%s WHERE nombre=%s""", [gasto,user])
@@ -46,8 +49,8 @@ def setGastos(gasto,user):
 def setIngresos(ingreso,user):
     ingreso=re.sub("[^0-9]", "",ingreso)
     db = MySQLdb.connect(host="localhost",  # your host 
-                     user="root",       # username
-                     passwd="root",     # password
+                     user=usuario,       # username
+                     passwd=contrasena,     # password
                      db="ahorrindb")   # name of the database
     cur = db.cursor()
     cur.execute("""UPDATE usuario SET ingreso_mensual=%s WHERE nombre=%s""", [ingreso,user])
