@@ -1,16 +1,75 @@
 #!/usr/bin/python
 import MySQLdb
 import re
+from datetime import date
+import datetime
 
-usuario="root"
-contrasena="root"
 
-def checkUser(user):
-    db = MySQLdb.connect(host="localhost",  # your host 
-                     user=usuario,       # username
-                     passwd=contrasena,     # password
+
+
+def conectiondb():
+   db = MySQLdb.connect(host="localhost",  # your host 
+                     user="root",       # username
+                     passwd="root",     # password
                      db="ahorrindb")   # name of the database
+   return db
+
+
+
+
+###########################################OBJETIVO-GOAL
+def checkGoal(user):
+    # Create a Cursor object to execute queries.
+    db = conectiondb()
+    cur = db.cursor()
  
+    # Select data from table using SQL query.
+    cur.execute("""SELECT id_usuario FROM usuario WHERE nombre=%s""",[user])
+    for us in cur.fetchall():
+        ide = us[0];
+
+    cur.execute("""SELECT * FROM metas WHERE id_usuario=%s""",[ide])
+    result=cur.fetchall()
+    if len(result)==0:
+        return 'set_slot objetivo "primero"'
+    else:
+        for us in result:
+             inicio = us[2]
+             fin = us[3]
+             if(inicio<date.today() and fin>date.today()):
+                 return 'set_slot objetivo "'+str(us[6])+'"'
+
+        return 'set_slot objetivo "ninguno"'
+
+
+def addGoal(goal,user,dia,mes,año,monto,ahorro):
+    db = conectiondb()
+    cur = db.cursor()
+    cur.execute("""SELECT id_usuario FROM usuario WHERE nombre=%s""",[user])
+    for us in cur.fetchall():
+        ide = us[0];
+    dia=re.sub("[^0-9]", "",dia)
+    año=re.sub("[^0-9]", "",año)
+    s=datetime.date(int(año),int(mes),int(dia))
+
+    cur.execute("""INSERT INTO metas (id_usuario,inicio,terminacion,monto_meta,monto_ahorrado,nombre) VALUES(%s,%s,%s,%s,%s,%s)""", [ide,date.today(),s,monto,ahorro,goal])
+    db.commit(); 
+
+def setTerminacion(dia,mes,año,goal):
+    dia=re.sub("[^0-9]", "",dia)
+    año=re.sub("[^0-9]", "",año)
+    s=datetime.date(int(año),int(mes),int(dia))
+    db = conectiondb()
+    cur = db.cursor()
+    cur.execute("""UPDATE metas SET terminacion=%s WHERE nombre=%s""", [s,goal])
+    db.commit()
+    
+    
+
+
+###########################################USUARIO-USER
+def checkUser(user):
+    db = conectiondb()
     # Create a Cursor object to execute queries.
     cur = db.cursor()
  
@@ -26,10 +85,7 @@ def checkUser(user):
 
 
 def addUser(user):
-    db = MySQLdb.connect(host="localhost",  # your host 
-                     user=usuario,       # username
-                     passwd=contrasena,     # password
-                     db="ahorrindb")   # name of the database
+    db = conectiondb()
     cur = db.cursor()
     cur.execute("""INSERT INTO usuario (nombre,contrasena,ingreso_mensual,gasto_mensual) VALUES(%s,"nula",0,0)""", [user])
     db.commit();
@@ -37,10 +93,7 @@ def addUser(user):
 def setGastos(gasto,user):
     gasto=re.sub("[^0-9]", "",gasto)
 
-    db = MySQLdb.connect(host="localhost",  # your host 
-                     user=usuario,       # username
-                     passwd=contrasena,     # password
-                     db="ahorrindb")   # name of the database
+    db = conectiondb()
     cur = db.cursor()
     cur.execute("""UPDATE usuario SET gasto_mensual=%s WHERE nombre=%s""", [gasto,user])
     db.commit()
@@ -48,10 +101,7 @@ def setGastos(gasto,user):
 
 def setIngresos(ingreso,user):
     ingreso=re.sub("[^0-9]", "",ingreso)
-    db = MySQLdb.connect(host="localhost",  # your host 
-                     user=usuario,       # username
-                     passwd=contrasena,     # password
-                     db="ahorrindb")   # name of the database
+    db = conectiondb()
     cur = db.cursor()
     cur.execute("""UPDATE usuario SET ingreso_mensual=%s WHERE nombre=%s""", [ingreso,user])
     db.commit()

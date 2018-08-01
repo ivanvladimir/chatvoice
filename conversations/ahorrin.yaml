@@ -9,9 +9,11 @@ settings:
 conversations:
     - 'hello.yaml'
     - 'ahorrinUser.yaml'
+    - 'ahorrinGoal.yaml'
 
 slots:
     - usuario
+    - objetivo
 
 plugins:
     - ahorrindb
@@ -20,9 +22,9 @@ strategies:
     x: 
         - say "Hola, buen dia!"
 
-
    
 script:
     - solve hello
+    - say "Hola"
     - solve ahorrinUser
-
+    - solve ahorrinGoal

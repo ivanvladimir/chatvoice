@@ -1,0 +1,59 @@
+# User module for ahorrin chatbot
+# Eduardo Contreras Chavez - Francisco Ruben Frias Valderrama
+# Verano de investigacion AMC 2018 - Delfin 2018 
+# IIMAS-UNAM Dr. Ivan Vladimir Meza Ruiz
+
+settings:
+    name: Ahorrin
+
+slots:
+    - usuario
+    - objetivo
+    - ingresosM
+    - gastosM
+    - diaT
+    - mesT
+    - añoT
+    - monto
+    - ahorro
+
+plugins:
+    - ahorrindb
+    - ahorrin
+
+strategies:
+    setGoal: 
+        - say "Cual es tu nuevo objetivo de ahorro?"
+        - input objetivo
+        - say "Tu objetivo va a comenzar hoy"
+        - say "En que mes quieres terminarlo?"
+        - input mesT | asign Enero:1 Febrero:2 Marzo:3 Abril:4 Mayo:5 Junio:6 Julio:7 Agosto:8 Septiembre:9 Octubre:10 Noviembre:11 Diciembre:12 enero:1 febrero:2 marzo:3 abril:4 mayo:5 junio:6 julio:7 agosto:8 septiembre:9 octubre:10 noviembre:11 diciembre:12
+        - say "Que dia del mes quieres terminarlo?"
+        - input diaT
+        - say "En que año quieres terminarlo?"
+        - input añoT
+        - say "Cuanto quieres ahorrar para"
+        - say objetivo
+        - input monto
+        - say "Perfecto, y cuanto llevas ahorrado para esta meta?"
+        - input ahorro
+        - ahorrindb.addGoal(objetivo,usuario,diaT,mesT,añoT,monto,ahorro)
+
+    firstGoal:
+        - say "Ahora vamos a establecer tu primer objetivo!"
+        - solve setGoal
+   
+    newGoal:
+        - say "Ya que termino tu ultimo objetivo vamos a establecer uno nuevo"
+        - solve setGoal
+
+   
+script:
+    - ahorrindb.checkGoal(usuario)
+    - if objetivo == "primero" solve firstGoal
+    - if objetivo == "ninguno" solve newGoal
+    - if objetivo != "primero" and objetivo!="ninguno" say "Tu objetivo es"
+    - if objetivo != "primero" and objetivo!="ninguno" say objetivo
+#    - input usuario
+#    - ahorrindb.checkUser(usuario)
+ #   - if usuario == "nulo" solve setUser
