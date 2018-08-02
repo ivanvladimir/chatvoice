@@ -14,17 +14,21 @@ conversations:
 slots:
     - usuario
     - objetivo
+    - monto
+    - ahorro
+    - esNuevoObjetivo
 
 plugins:
     - ahorrindb
 
 strategies:
-    x: 
-        - say "Hola, buen dia!"
-
+    estadoObjetivo: 
+        - ahorrin.say("Veamos como va tu objetivo de",objetivo)
+        - ahorrin.say("Has ahorrado",ahorro,"y buscas ahorrar",monto)
    
 script:
     - solve hello
     - say "Hola"
     - solve ahorrinUser
     - solve ahorrinGoal
+    - if esNuevoObjetivo == "no" solve estadoObjetivo

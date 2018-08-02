@@ -16,6 +16,7 @@ slots:
     - añoT
     - monto
     - ahorro
+    - esNuevoObjetivo
 
 plugins:
     - ahorrindb
@@ -35,8 +36,10 @@ strategies:
         - say "Cuanto quieres ahorrar para"
         - say objetivo
         - input monto
+        - ahorrin.leftNumber(monto,"monto")
         - say "Perfecto, y cuanto llevas ahorrado para esta meta?"
         - input ahorro
+        - ahorrin.leftNumber(ahorro,"ahorro")
         - ahorrindb.addGoal(objetivo,usuario,diaT,mesT,añoT,monto,ahorro)
 
     firstGoal:
@@ -47,13 +50,16 @@ strategies:
         - say "Ya que termino tu ultimo objetivo vamos a establecer uno nuevo"
         - solve setGoal
 
+    loadGoal:
+        - set_slot esNuevoObjetivo "no"
+        - ahorrindb.setMonto(usuario,objetivo)
+        - ahorrindb.setAhorro(usuario,objetivo)
    
 script:
     - ahorrindb.checkGoal(usuario)
     - if objetivo == "primero" solve firstGoal
     - if objetivo == "ninguno" solve newGoal
-    - if objetivo != "primero" and objetivo!="ninguno" say "Tu objetivo es"
-    - if objetivo != "primero" and objetivo!="ninguno" say objetivo
+    - if objetivo != "primero" and objetivo != "ninguno" solve loadGoal
 #    - input usuario
 #    - ahorrindb.checkUser(usuario)
  #   - if usuario == "nulo" solve setUser

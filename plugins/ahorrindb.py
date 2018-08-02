@@ -36,7 +36,7 @@ def checkGoal(user):
         for us in result:
              inicio = us[2]
              fin = us[3]
-             if(inicio<date.today() and fin>date.today()):
+             if(inicio<=date.today() and fin>=date.today()):
                  return 'set_slot objetivo "'+str(us[6])+'"'
 
         return 'set_slot objetivo "ninguno"'
@@ -65,9 +65,32 @@ def setTerminacion(dia,mes,año,goal):
     cur = db.cursor()
     cur.execute("""UPDATE metas SET terminacion=%s WHERE nombre=%s""", [s,goal])
     db.commit()
-    
-    
 
+def setMonto(user,objetivo):
+    # Create a Cursor object to execute queries.
+    db = conectiondb()
+    cur = db.cursor()
+    # Select data from table using SQL query.
+    cur.execute("""SELECT id_usuario FROM usuario WHERE nombre=%s""",[user])
+    for us in cur.fetchall():
+        ide = us[0];
+    cur.execute("""SELECT monto_meta FROM metas WHERE id_usuario=%s AND nombre=%s""",[ide,objetivo])
+    for us in cur.fetchall():
+        monto = us[0];
+    return 'set_slot monto "'+str(monto)+'"'
+
+def setAhorro(user,objetivo):
+    # Create a Cursor object to execute queries.
+    db = conectiondb()
+    cur = db.cursor()
+    # Select data from table using SQL query.
+    cur.execute("""SELECT id_usuario FROM usuario WHERE nombre=%s""",[user])
+    for us in cur.fetchall():
+        ide = us[0];
+    cur.execute("""SELECT monto_ahorrado FROM metas WHERE id_usuario=%s AND nombre=%s""",[ide,objetivo])
+    for us in cur.fetchall():
+        ahorro = us[0];
+    return 'set_slot ahorro "'+str(ahorro)+'"'
 
 ###########################################USUARIO-USER
 def checkUser(user):
