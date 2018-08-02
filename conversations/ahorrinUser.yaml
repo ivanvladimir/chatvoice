@@ -17,7 +17,7 @@ plugins:
 
 strategies:
     setUser: 
-        - say "Detecto que es la primera vez que hablamos, me puedes decir tu nombre?"
+        - say "Detecto que es la primera vez que hablamos, me puedes repetir tu nombre?"
         - input usuario
         - ahorrindb.addUser(usuario)
         - say "Y cuanto ganas al mes?"

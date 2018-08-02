@@ -50,8 +50,10 @@ def addGoal(goal,user,dia,mes,año,monto,ahorro):
         ide = us[0];
     dia=re.sub("[^0-9]", "",dia)
     año=re.sub("[^0-9]", "",año)
+    monto=re.sub("[^0-9]", "",monto)
+    ahorro=re.sub("[^0-9]", "",ahorro)
     s=datetime.date(int(año),int(mes),int(dia))
-
+    
     cur.execute("""INSERT INTO metas (id_usuario,inicio,terminacion,monto_meta,monto_ahorrado,nombre) VALUES(%s,%s,%s,%s,%s,%s)""", [ide,date.today(),s,monto,ahorro,goal])
     db.commit(); 
 
