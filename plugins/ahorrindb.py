@@ -31,7 +31,7 @@ def checkGoal(user):
     cur.execute("""SELECT * FROM metas WHERE id_usuario=%s""",[ide])
     result=cur.fetchall()
     if len(result)==0:
-        return 'set_slot objetivo "primero"'
+        return 'set_slot objetivo "primero"' 
     else:
         for us in result:
              inicio = us[2]
