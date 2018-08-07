@@ -1,4 +1,4 @@
-# User module for ahorrin chatbot
+# Main module for ahorrin chatbot
 # Eduardo Contreras Chavez - Francisco Ruben Frias Valderrama
 # Verano de investigacion AMC 2018 - Delfin 2018 
 # IIMAS-UNAM Dr. Ivan Vladimir Meza Ruiz
@@ -17,18 +17,82 @@ slots:
     - monto
     - ahorro
     - esNuevoObjetivo
+    - diasObjetivo
+    - eslot
+    - montoDiario
+    - nuevoDia
+    - cumplioAhorro
+    - siono
+    - concepto
+    - costo
 
 plugins:
     - ahorrindb
+    - ahorrin
 
 strategies:
-    estadoObjetivo: 
+
+    comoVamos: 
         - ahorrin.say("Veamos como va tu objetivo de",objetivo)
-        - ahorrin.say("Has ahorrado",ahorro,"y buscas ahorrar",monto)
+        - ahorrindb.compareDate(usuario,objetivo)
+        - if nuevoDia == "si" solve ajustarMontoDiario
+        - ahorrin.say("Has ahorrado",ahorro,"pesos y buscas ahorrar",monto,"pesos y el dia de hoy ocupas ahorrar",montoDiario)
+
+    ajustarMontoDiario:
+        - ahorrindb.balanceDeAyer(usuario,objetivo)
+        - if cumplioAhorro == "si" say "Felicidades, ayer cumpliste tu objetivo de ahorro y ahora tu ahorro diario sera un poco menor"
+        - if cumplioAhorro == "no" say "Ayer no cumpliste tu objetivo de ahorro, ahora tendremos que ahorrar mas dinero cada dia"
+        - ahorrindb.setMonto(usuario,objetivo)
+        - ahorrindb.setAhorro(usuario,objetivo)
+        - ahorrindb.setDiario(usuario,objetivo)
+
+    Rsiono:
+        - say "Lo siento, no te entendi muy bien, me puedes repetir?"
+        - input siono | asign sí:si no:no
+
+    agregarGasto:
+        - say "En que gastaste"
+        - solve validateRead
+        - ahorrin.setSlot("concepto",eslot)
+        - say "Cuanto gastaste"
+        - solve validateRead
+        - ahorrin.setSlot("costo",eslot)  
+        - ahorrindb.addGasto(usuario,objetivo,concepto,costo)
+        - say "Has gastado en algo mas hoy?"
+        - input siono | asign sí:si no:no
+        - while siono == "None" solve Rsiono
+     
+    agregarIngreso:
+        - say "En que ganaste dinero"
+        - solve validateRead
+        - ahorrin.setSlot("concepto",eslot)
+        - say "Cuanto fue?"
+        - solve validateRead
+        - ahorrin.setSlot("costo",eslot)        
+        - ahorrindb.addIngreso(usuario,objetivo,concepto,costo)
+        - say "Ganaste dinero en algo mas hoy?"
+        - input siono | asign sí:si no:no
+        - while siono == "None" solve Rsiono
+    
+    validateRead:
+        - input eslot
+        - if eslot == "UNK" say "No entendí lo último que me dijiste, podrias repetírmelo?"
+        - if eslot == "UNK" solve validateRead
    
 script:
     - solve hello
     - say "Hola"
     - solve ahorrinUser
     - solve ahorrinGoal
-    - if esNuevoObjetivo == "no" solve estadoObjetivo
+    - if esNuevoObjetivo == "no" solve comoVamos
+    - say "Has gastado en algo hoy?"
+    - input siono | asign sí:si no:no
+    - while siono == "None" solve Rsiono
+    - while siono == "si" solve agregarGasto
+    - say "Has ganado dinero hoy?"
+    - input siono | asign sí:si no:no
+    - while siono == "None" solve Rsiono
+    - while siono == "si" solve agregarIngreso
+
+    
+    

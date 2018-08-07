@@ -11,4 +11,12 @@ def say(*args):
 
     return 'say "'+str(cadena)+'"'
 
+def setSlot(slot1,slot2):
+    return 'set_slot '+str(slot1)+' "'+str(slot2)+'"'
+
+
+
+
+
+
 

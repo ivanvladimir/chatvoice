@@ -9,7 +9,8 @@ settings:
 slots:
     - usuario
     - ingresosM
-    - gastosM
+    - gastosM 
+    - eslot
 
 plugins:
     - ahorrindb
@@ -18,19 +19,27 @@ plugins:
 strategies:
     setUser: 
         - say "Detecto que es la primera vez que hablamos, me puedes repetir tu nombre?"
-        - input usuario
+        - solve validateRead
+        - ahorrin.setSlot("usuario",eslot)
         - ahorrindb.addUser(usuario)
         - say "Y cuanto ganas al mes?"
-        - input ingresosM
+        - solve validateRead
+        - ahorrin.setSlot("ingresosM",eslot)
         - ahorrindb.setIngresos(ingresosM,usuario)
         - say "Y cuanto gastas al mes?"
-        - input gastosM
+        - solve validateRead
+        - ahorrin.setSlot("gastosM",eslot)
         - ahorrindb.setGastos(gastosM,usuario)
         
-
+    
+    validateRead:
+        - input eslot
+        - if eslot == "UNK" say "Lo siento, no entendí lo último que me dijiste, puedes repetírmelo?"
+        - if eslot == "UNK" solve validateRead
    
 script:
     - say "Cómo te llamas?"
-    - input usuario
+    - solve validateRead
+    - ahorrin.setSlot("usuario",eslot)
     - ahorrindb.checkUser(usuario)
     - if usuario == "nulo" solve setUser
