@@ -15,6 +15,7 @@ slots:
 plugins:
     - ahorrindb
     - ahorrin
+    - voiceRecognition
 
 strategies:
     setUser: 
@@ -42,4 +43,5 @@ script:
     - solve validateRead
     - ahorrin.setSlot("usuario",eslot)
     - ahorrindb.checkUser(usuario)
+    - voiceRecognition.recognition()
     - if usuario == "nulo" solve setUser

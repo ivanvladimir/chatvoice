@@ -93,6 +93,7 @@ script:
     - input siono | asign sí:si no:no
     - while siono == "None" solve Rsiono
     - while siono == "si" solve agregarIngreso
+    - say "Muy bien, hasta luego!"
 
     
     
