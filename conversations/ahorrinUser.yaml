@@ -11,6 +11,7 @@ slots:
     - ingresosM
     - gastosM 
     - eslot
+    - sexo
 
 plugins:
     - ahorrindb
@@ -42,6 +43,6 @@ script:
     - say "Cómo te llamas?"
     - solve validateRead
     - ahorrin.setSlot("usuario",eslot)
-    - ahorrindb.checkUser(usuario)
     - voiceRecognition.recognition()
+    - ahorrindb.checkUser(usuario,sexo)
     - if usuario == "nulo" solve setUser

@@ -15,6 +15,8 @@ def recognition():
     hora = now[11:19].replace(":","")
     hora = int(hora)
     archivo_voz = []
+
+
     for i in range(1000):
         filename = fecha + "_" + str(hora) + ".wav"
         try: 
@@ -52,6 +54,10 @@ def recognition():
         mujeres=[x for x in prediccion if x == 0]
         print("Porcentaje hombre: ",(len(hombres)/len(prediccion))*100,"Porcentaje mujer: ",(len(mujeres)/len(prediccion))*100)
         print()
+        if (len(hombres)/len(prediccion))>(len(mujeres)/len(prediccion)):
+            return 'set_slot sexo "hombre"'
+        else:
+            return 'set_slot sexo "mujer"'
     #ENDFOR
 
 

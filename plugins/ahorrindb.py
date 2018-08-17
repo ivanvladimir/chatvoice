@@ -203,7 +203,7 @@ def setDiario(user,objetivo):
 
 
 ###########################################USUARIO-USER
-def checkUser(user):
+def checkUser(user,sexo):
     db = conectiondb()
     # Create a Cursor object to execute queries.
     cur = db.cursor()
@@ -214,8 +214,11 @@ def checkUser(user):
     # print the first and second columns      
     for row in cur.fetchall() :
         if(row[0].lower()==user.lower()):
-            return 'say "Bienvenido '+str(row[0])+'"'
-    
+            if sexo!="hombre":
+                return 'say "Bienvenido '+str(row[0])+'"'
+            else:
+                return 'say "Bienvenida '+str(row[0])+'"'
+ 
     return 'set_slot usuario "nulo"'
 
 

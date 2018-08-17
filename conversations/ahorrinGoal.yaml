@@ -79,4 +79,4 @@ script:
     - if objetivo != "primero" and objetivo != "ninguno" solve loadGoal
 #    - input usuario
 #    - ahorrindb.checkUser(usuario)
- #   - if usuario == "nulo" solve setUser
+#    - if usuario == "nulo" solve setUser

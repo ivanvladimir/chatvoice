@@ -25,6 +25,7 @@ slots:
     - siono
     - concepto
     - costo
+    - sexo
 
 plugins:
     - ahorrindb
@@ -36,7 +37,7 @@ strategies:
         - ahorrin.say("Veamos como va tu objetivo de",objetivo)
         - ahorrindb.compareDate(usuario,objetivo)
         - if nuevoDia == "si" solve ajustarMontoDiario
-        - ahorrin.say("Has ahorrado",ahorro,"pesos y buscas ahorrar",monto,"pesos y el dia de hoy ocupas ahorrar",montoDiario)
+        - ahorrin.say("Has ahorrado",ahorro,"pesos y buscas ahorrar",monto,"pesos y el dia de hoy ocupas ahorrar",montoDiario,"pesos")
 
     ajustarMontoDiario:
         - ahorrindb.balanceDeAyer(usuario,objetivo)
