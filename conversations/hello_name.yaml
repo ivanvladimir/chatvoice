@@ -1,26 +1,87 @@
 # Conversation example for simple hello and ask a name
 
 settings:
-    name: HAL
+    name: BELLA
 
 conversations:
     - 'hello.yaml'
+    - 'motivation.yaml'
 
 slots:
     - name
+    - weight_goal
+    - weight_ini
+    - height
+    - preference_spicy
+    - preference_salty
+    - preference_sweet
+    - preference_seafood
+    - preference_coffe
+    - preference_tea
+    - preference_soup
+    - preference_purchase
+    - talk_time
+    - day_time
+    - reminder
+
+
+#   - weight_actual
+#   - weight_new
+
 
 strategies:
     name:
-        - say "¿cúal es tu nombre?"
+        - say "¿Cúal es tu nombre?"
         - input name
-    excelent:
-        - say "me da mucho gusto que estés bien"
-    sorry:
-        - say "siento que no te encuentre bien"
+    weight_goal:
+        - say "¿Cúal es el peso que deseas alcanzar?"
+        - input weight_goal
+    weight_ini:
+        - say "¿y cuanto es lo que pesas hoy?"
+        - input weight_ini
+    height:
+        - say "¿cúal es tu estatura?"
+        - input height
+    preference_spicy:
+        - say "Picosa"
+        - input preference_spicy
+    preference_salty:
+        - say "Salada"
+        - input preference_salty
+    preference_sweet:
+        - say "Dulce"
+        - input preference_sweet
+    preference_seafood:
+        - say "Mariscos"
+        - input preference_seafood
+    preference_coffe:
+        - say "Cafe"
+        - input preference_coffe
+    preference_tea:
+        - say "Te"
+        - input preference_tea
+    preference_soup:
+        - say "Caldo"
+        - input preference_soup
+    preference_purchase:
+        - say "Usualmente,¿tu comida la preparas o la compras?"
+        - input preference_purchase
+    talk_time:
+        - say "¿En que hora del dia te gustaria que platiquemos?"
+        - input talk_time
+    day_time:
+        - say "¿De la noche?"
+        - input day_time
+    reminder:
+        - say "¿Quieres que te programe un recordatorio?"
+        - input reminder
+
+
 
 script:
     - solve hello
     - say greeting
+    - say "Mi nombre es Bella y voy a ayudarte a alcanzar tu peso ideal."
     - loop_slots
     - say "mucho gusto en conocerte {}".format(name)
     - say "¿como estás hoy?"

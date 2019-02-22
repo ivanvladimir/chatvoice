@@ -1,0 +1,8 @@
+# Conversation example for simple hello
+
+plugins:
+    - random_motivation
+
+script:
+    - set_slot options ["Yo se que pondras mucho esfuerzo para cumplir tu meta"]
+    - random_motivation.execute('motivation',options)

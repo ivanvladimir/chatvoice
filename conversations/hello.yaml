@@ -4,5 +4,5 @@ plugins:
     - random_greeting
 
 script:
-    - set_slot options ["whatsup"]
+    - set_slot options ["Que tal?"]
     - random_greeting.execute('greeting',options)
