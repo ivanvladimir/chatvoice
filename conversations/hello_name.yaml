@@ -82,7 +82,7 @@ script:
     - solve hello
     - say greeting
     - say "Mi nombre es Bella y voy a ayudarte a alcanzar tu peso ideal."
-    - loop_slots
+    - solve name
     - say "mucho gusto en conocerte {}".format(name)
     - say "¿como estás hoy?"
     - input status | asign "bien:good mal:bad"
