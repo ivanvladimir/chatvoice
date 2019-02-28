@@ -29,11 +29,6 @@ slots:
 #   - weight_new
 
 
-dbs:
-    main: import_csv data.csv
-
-kb: kb.db
-
 strategies:
     name:
         - say "¿Cúal es tu nombre?"
@@ -81,15 +76,16 @@ strategies:
         - say "¿Quieres que te programe un recordatorio?"
         - input reminder
 
+
+
 script:
     - solve hello
     - say greeting
     - say "Mi nombre es Bella y voy a ayudarte a alcanzar tu peso ideal."
-    - loop_slots
-    - say "¿como estás hoy {}?".format(name)
-    - input status | asign bien:good mal:bad
+    - solve name
+    - say "mucho gusto en conocerte {}".format(name)
+    - say "¿como estás hoy?"
+    - input status | asign "bien:good mal:bad"
     - if status == "good" solve excelent
     - if status == "bad" solve sorry
-    - say "Hay algunas cosas que se"
-    - say "hecho {} {}".format(*db['main'][0])
-    - say "adios {}".format(name)
+    - say "adios {}".format(name)    
