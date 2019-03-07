@@ -31,4 +31,3 @@ def execute(*args):
     #descubrir como pedir la hora del sistema para definir de que lista tomara el saludo
     #descubierto!
     return 'set_slot {0} "{1}"'.format(var,msg)
-

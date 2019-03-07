@@ -9,6 +9,7 @@ conversations:
 
 slots:
     - name
+    - goal_motivation
     - weight_goal
     - weight_ini
     - height
@@ -28,19 +29,25 @@ slots:
 #   - weight_actual
 #   - weight_new
 
+plugins:
+    - random_motivation
+    - random_greeting
 
 strategies:
     name:
         - say "¿Cúal es tu nombre?"
         - input name
+    goal_motivation:
+        - say "Yo sé que pondrás mucho esfuerzo para cumplir tu meta."
+        - say "Necesito que platiquemos un poco de ella para que esté más enterada y te pueda apoyar aún mejor"
     weight_goal:
-        - say "¿Cúal es el peso que deseas alcanzar?"
+        - say "¿Me puedes decir cuál es el peso que deseas alcanzar?"
         - input weight_goal
     weight_ini:
         - say "¿y cuanto es lo que pesas hoy?"
         - input weight_ini
     height:
-        - say "¿cúal es tu estatura?"
+        - say "Antes que nada ¿cuál es tu estatura?"
         - input height
     preference_spicy:
         - say "Picosa"
@@ -84,8 +91,9 @@ script:
     - say "Mi nombre es Bella y voy a ayudarte a alcanzar tu peso ideal."
     - solve name
     - say "mucho gusto en conocerte {}".format(name)
-    - say "¿como estás hoy?"
-    - input status | asign "bien:good mal:bad"
-    - if status == "good" solve excelent
-    - if status == "bad" solve sorry
-    - say "adios {}".format(name)    
+    - solve  goal_motivation
+    - solve height
+    - solve weight_goal
+    - solve weight_ini
+    - say "Para cuando terminemos ni los recordarás. No te preocupes."
+    - say "adios {}".format(name)     
