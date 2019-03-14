@@ -86,6 +86,8 @@ strategies:
 
 
 script:
+    - solve motivation
+    - say motivation
     - solve hello
     - say greeting
     - say "Mi nombre es Bella y voy a ayudarte a alcanzar tu peso ideal."
@@ -105,14 +107,14 @@ script:
     - solve preference_soup
     - solve preference_tea
     - solve preference_coffee
-#    - if float(preference_spicy) <3 say "Veo que no te gusta tanto lo picoso"
-#    - if not float(preference_spicy) <3 say "Veo que sí te gusta lo picoso"
-#    - if float(preference_salty) < float(preference_sweet) say "y que prefieres lo dulce a lo salado."
-#    - if not float(preference_salty) < float(preference_sweet) say "y que prefieres lo salado a lo dulce."
-#    - if float(preference_seafood) < 3 say "Noto que no eres gran fan de la comida del mar "
-#    - if not float(preference_seafood) < 3 say "Noto que sí te agrada la comida del mar "
-#    - if float(preference_soup) < 3 say "aunque, no mucho los caldos"
-#    - if not float(preference_soup) < 3 say "aunque, sí los caldos"
+    - if float(preference_spicy) <3 say "Veo que no te gusta tanto lo picoso"
+    - if not float(preference_spicy) <3 say "Veo que sí te gusta lo picoso"
+    - if float(preference_salty) < float(preference_sweet) say "y que prefieres lo dulce a lo salado."
+    - if not float(preference_salty) < float(preference_sweet) say "y que prefieres lo salado a lo dulce."
+    - if float(preference_seafood) < 3 say "Noto que no eres gran fan de la comida del mar "
+    - if not float(preference_seafood) < 3 say "Noto que sí te agrada la comida del mar "
+    - if float(preference_soup) < 3 say "aunque, no mucho los caldos"
+    - if not float(preference_soup) < 3 say "aunque, sí los caldos"
     - say "Esto me sirve para saber que tipo de comida es más de tu agrado."
     - solve preference_purchase
     - if not preference_purchase =='preparada' say "Ojalá pronto pueda recomendarte lugares en donde comer y seguir al pie de la letra tu dieta, mientras te sugeriré los platillos que tal vez puedas ordenar a donde vayas para que ni así falles."

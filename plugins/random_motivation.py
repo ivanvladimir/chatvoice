@@ -6,7 +6,7 @@
 
 import random
 
-def execute(*args):
+def implementar(*args):
     var=args[0]
     opts=args[1]
     msg = random.choice(['Animo!','Siempre animado, nunca inanimado','Vas a lograrlo, no va a ser facil pero lo conseguiras']+opts)

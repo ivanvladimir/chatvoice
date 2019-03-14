@@ -20,6 +20,8 @@ from audio import tts_google, tts_local, pull_latest, sr_google, audio_state, st
 # Import plugins
 # TODO make a better system for plugins
 from plugins import random_greeting
+from plugins import random_motivation
+
 # TODO make a better system for filters
 from filters import *
 
