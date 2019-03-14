@@ -1,4 +1,4 @@
-# Conversation example for simple hello and ask a name
+# Conversation example for interview (hello, ask a name,goals,prefrences)
 
 settings:
     name: BELLA
@@ -47,7 +47,7 @@ strategies:
         - say "¿y cuanto es lo que pesas hoy?"
         - input weight_ini
     height:
-        - say "Antes que nada ¿cuál es tu estatura?"
+        - say "Antes que nada ¿cuál es tu estatura en centímetros?"
         - input height
     preference_spicy:
         - say "Picosa"
@@ -61,17 +61,17 @@ strategies:
     preference_seafood:
         - say "Mariscos"
         - input preference_seafood
-    preference_coffe:
+    preference_coffee:
         - say "Cafe"
-        - input preference_coffe
+        - input preference_coffee
     preference_tea:
         - say "Te"
         - input preference_tea
     preference_soup:
-        - say "Caldo"
+        - say "Caldos"
         - input preference_soup
     preference_purchase:
-        - say "Usualmente,¿tu comida la preparas o la compras?"
+        - say "Usualmente,¿tu comida es preparada o comprada?"
         - input preference_purchase
     talk_time:
         - say "¿En que hora del dia te gustaria que platiquemos?"
@@ -86,6 +86,8 @@ strategies:
 
 
 script:
+    - solve motivation
+    - say motivation
     - solve hello
     - say greeting
     - say "Mi nombre es Bella y voy a ayudarte a alcanzar tu peso ideal."
@@ -94,15 +96,26 @@ script:
     - solve  goal_motivation
     - solve height
     - solve weight_goal
-#    Adecuar tabla de pesos que establescan una relacion SANA de lo que mide y lo que quiere pesar
-#    Para que, en caso de que quiera pesar mucho menos de lo que debería, marcarle/decirle una advertencia
-#    Ej." Hay veces que nos sentimos presionados para ser algo que no somos, tal vez no sea necesario tanto. ¿Que te parece si lo establecemos en <PESO_ADECUADO_SUGERIDO_SEGUN_SU_ESTATURA> (por esta vez) (que es la maxima meta alcanzable)? (Ya despues veremos cómo vamos)"
-#    _talvez_preguntar_por_una_afirmacion_
-#    Ej." Solo recordandote que en este periodo de 6 semanas, nuestra meta máxima son 12/8 (escoger segun hombre/mujer)"
-#    - if float(preference_spicy) <3 say "Veo que no te gusta tanto lo picoso"
     - solve weight_ini
-#     
-#     Ej.""
-
     - say "Para cuando terminemos ni los recordarás. No te preocupes."
+    - say "Ahora, continuemos con tus gustos."
+    - say "Dime del 1 al 5 que tanto te gusta la comida…"
+    - solve preference_spicy
+    - solve preference_salty
+    - solve preference_sweet
+    - solve preference_seafood
+    - solve preference_soup
+    - solve preference_tea
+    - solve preference_coffee
+    - if float(preference_spicy) <3 say "Veo que no te gusta tanto lo picoso"
+    - if not float(preference_spicy) <3 say "Veo que sí te gusta lo picoso"
+    - if float(preference_salty) < float(preference_sweet) say "y que prefieres lo dulce a lo salado."
+    - if not float(preference_salty) < float(preference_sweet) say "y que prefieres lo salado a lo dulce."
+    - if float(preference_seafood) < 3 say "Noto que no eres gran fan de la comida del mar "
+    - if not float(preference_seafood) < 3 say "Noto que sí te agrada la comida del mar "
+    - if float(preference_soup) < 3 say "aunque, no mucho los caldos"
+    - if not float(preference_soup) < 3 say "aunque, sí los caldos"
+    - say "Esto me sirve para saber que tipo de comida es más de tu agrado."
+    - solve preference_purchase
+    - if not preference_purchase =='preparada' say "Ojalá pronto pueda recomendarte lugares en donde comer y seguir al pie de la letra tu dieta, mientras te sugeriré los platillos que tal vez puedas ordenar a donde vayas para que ni así falles."
     - say "adios {}".format(name)     
