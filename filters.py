@@ -17,8 +17,7 @@ def list(msg,*args):
     return msg.split()
 
 def asign(msg,*args):
-    print(*args)
-    for k_a in  args:
+    for k_a in args:
         k,a = k_a.split(':',1)
         if msg.find(k)>=0:
             return a

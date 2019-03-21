@@ -9,10 +9,17 @@ conversations:
 slots:
     - name
 
+dbs:
+    main: import_csv data.csv
+
+kb: kb.db
+
 strategies:
     name:
         - say "¿cúal es tu nombre?"
         - input name
+        - remember name
+        - say "mucho gusto en conocerte"
     excelent:
         - say "me da mucho gusto que estés bien"
     sorry:
@@ -22,9 +29,8 @@ script:
     - solve hello
     - say greeting
     - loop_slots
-    - say "mucho gusto en conocerte {}".format(name)
-    - say "¿como estás hoy?"
-    - input status | asign "bien:good mal:bad"
+    - say "¿como estás hoy {}?".format(name)
+    - input status | asign bien:good mal:bad
     - if status == "good" solve excelent
     - if status == "bad" solve sorry
     - say "adios {}".format(name)    

@@ -11,6 +11,7 @@ import re
 import time
 from collections import OrderedDict
 from socketIO_client import SocketIO, BaseNamespace
+import json
 
 
 #local imports
@@ -53,6 +54,9 @@ class Conversation:
         self.pause = False
         self.host = host
         self.port = port
+        self.kbfilename = None
+        self.dbs = {}
+        self.kb={}
         self.rec_voice = rec_voice
 
         with open(filename, 'r') as stream:
@@ -100,6 +104,42 @@ class Conversation:
             self.verbose(bcolors.OKBLUE,"Setting strategy",strategy,bcolors.ENDC)
             self.strategies[strategy]=script
 
+    def _load_dbs(self,dbs,path="."):
+        for dbname,loading_script in dbs.items():
+            loading_script=loading_script.strip()
+            self.verbose(bcolors.OKBLUE,"Creating db",dbname,bcolors.ENDC)
+            if loading_script.startswith("import"):
+                bits=loading_script.split()
+                db=[]
+                if bits[0] == 'import_csv':
+                    import csv
+                    dbfile=os.path.join(path,bits[1])
+                    self.verbose(bcolors.OKBLUE,"Loading csv",dbfile,bcolors.ENDC)
+                    with open(dbfile) as csv_file:
+                        csv_reader = csv.reader(csv_file, delimiter=',')
+                        line_count = 0
+                        for row in csv_reader:
+                            if line_count == 0:
+                                self.verbose(bcolors.OKBLUE,"Column names are "," ".join(row),dbname,bcolors.ENDC)
+                                line_count += 1
+                            else:
+                                line_count += 1
+                                db.append(row)
+            self.dbs[dbname]=db
+
+    def _load_kb(self,kbname,path="."):
+        jsonfile=os.path.join(path,kbname)
+        self.verbose(bcolors.OKBLUE,"Loading kb",bcolors.ENDC)
+        self.verbose(bcolors.OKBLUE,"Loading json",jsonfile,bcolors.ENDC)
+        try:
+            with open(jsonfile) as json_file:
+                kb = json.load(json_file)
+        except FileNotFoundError:
+            kb={}
+        for slotname,slotvalue in kb.items():
+            self.slots[slotname]=slotvalue
+        self.kbfilename=jsonfile
+
     def _load_slots(self,slots):
         for slot in slots:
             self.slots[slot]=None
@@ -128,6 +168,14 @@ class Conversation:
             pass
         try:
             self._load_strategies(definition['strategies'])
+        except KeyError:
+            pass
+        try:
+            self._load_dbs(definition['dbs'],path=self.path)
+        except KeyError:
+            pass
+        try:
+            self._load_kb(definition['kb'],path=self.path)
         except KeyError:
             pass
         try:
@@ -279,6 +327,10 @@ class Conversation:
     def del_slot_(self,arg):
         del self.slots[arg]
 
+    def remember_(self,arg):
+        self.kb[arg]=self.slots[arg]
+        with open(self.kbfilename,"w") as json_file:
+            json.dump(self.kb,json_file)
 
     def empty_slot_(self,line):
         self.slots[line]=None
@@ -317,6 +369,9 @@ class Conversation:
         elif line.startswith('del_slot '):
             cmd,args=line.split(maxsplit=1)
             self.del_slot_(args)
+        elif line.startswith('remember '):
+            cmd,args=line.split(maxsplit=1)
+            self.remember_(args)
         else:
             self.eval_(line)
 
