@@ -28,6 +28,7 @@ slots:
 #   - weight_actual
 #   - weight_new
 
+    - eslot
 
 plugins:
     - random_motivation
@@ -35,11 +36,16 @@ plugins:
 strategies:
     name:
         - say "¿Cúal es tu nombre?"
+        - solve validateRead
+#       - ahorrin.setSlot("usuario",eslot)
         - input name
+        - remember name
     IMC:
         - say "Antes que nada ¿cuál es tu estatura en centímetros?"
-        - input height
+        - solve validateRead
+        - input height = eslot
         - remember height
+        - say "adios {}".format(eslot)
         - say "¿Me puedes decir cuál es el peso que deseas alcanzar?"
         - input weight_goal
         - remember weight_goal
@@ -57,14 +63,19 @@ strategies:
         - remember preference_salty
         - say "Dulce"
         - input preference_sweet
+        - remember preference_sweet
         - say "Mariscos"
         - input preference_seafood
+        - remember preference_seafood
         - say "Café"
         - input preference_coffee
+        - remember preference_coffee
         - say "Te"
         - input preference_tea
+        - remember preference_tea
         - say "Caldos"
         - input preference_soup
+        - remember preference_soup
 
     preference_purchase:
         - say "Usualmente,¿tu comida es preparada o comprada?"
@@ -87,13 +98,23 @@ strategies:
     talk_time:
         - say "¿En que hora del dia te gustaria que platiquemos?"
         - input talk_time
+        - remember talk_time
     day_time:
         - say "¿De la noche?"
         - input day_time
+        - remember day_time
     reminder:
         - say "¿Quieres que te programe un recordatorio?"
         - input reminder
+        - remember reminder
+#https://github.com/ivanvladimir/chatvoice/blob/raspberry/conversations/ahorrinUser.yaml
+#alli está la validacion de UNK 
 
+
+    validateRead:
+#        - input eslot
+        - if eslot == "UNK" say "Lo siento, no entendí lo último que me dijiste, puedes repetírmelo?"
+        - if eslot == "UNK" solve validateRead
 
 
 script:
@@ -101,10 +122,10 @@ script:
     - say "Mi nombre es Bella y voy a ayudarte a alcanzar tu peso ideal."
     - solve name
     - say "mucho gusto en conocerte {}".format(name)
+    - say "adios {}".format(eslot) 
     - say "Yo sé que pondrás mucho esfuerzo para cumplir tu meta."
     - say "Necesito que platiquemos un poco de ella para que esté más enterada y te pueda apoyar aún mejor"
-    - loop_slots
-#    - if not height solve  IMC
+    - solve  IMC
 #    Adecuar tabla de pesos que establescan una relacion SANA de lo que mide y lo que quiere pesar
 #    Para que, en caso de que quiera pesar mucho menos de lo que debería, marcarle/decirle una advertencia
 #    Ej." Hay veces que nos sentimos presionados para ser algo que no somos, tal vez no sea necesario tanto. 
