@@ -39,12 +39,12 @@ strategies:
     IMC:
         - say "Yo sé que pondrás mucho esfuerzo para cumplir tu meta."
         - say "Necesito que platiquemos un poco de ella para que esté más enterada y te pueda apoyar aún mejor"
+        - say "Antes que nada ¿cuál es tu estatura en centímetros?"
+        - input height
         - say "¿Me puedes decir cuál es el peso que deseas alcanzar?"
         - input weight_goal
         - say "¿y cuanto es lo que pesas hoy?"
         - input weight_ini
-        - say "Antes que nada ¿cuál es tu estatura en centímetros?"
-        - input height
         - say "Para cuando terminemos ni los recordarás. No te preocupes."
 
     preference:
