@@ -80,7 +80,7 @@ def tts_google(msg,lang='es-us'):
     if len(res)>0:
         p = Popen(['mpg321',os.path.join(os.getcwd(),'audios',res[0]['mp3'])], stdout=DEVNULL, stderr=STDOUT)
         p.communicate()
-        assert p.returncode == 0
+        #assert p.returncode == 0
         return None
     mp3_filename=os.path.join(os.getcwd(), 'audios', '{}_{}.mp3'.format(hashing,'google'))
     tts = gTTS(msg, 'es-us')
