@@ -55,7 +55,6 @@ class Conversation:
         self.host = host
         self.port = port
         self.kbfilename = None
-        self.dbs = {}
         self.kb={}
         self.rec_voice = rec_voice
 
@@ -125,7 +124,12 @@ class Conversation:
                             else:
                                 line_count += 1
                                 db.append(row)
-            self.dbs[dbname]=db
+            try:
+                self.slots['db'][dbname]=db
+            except KeyError:
+                self.slots['db']={}
+                self.slots['db'][dbname]=db
+
 
     def _load_kb(self,kbname,path="."):
         jsonfile=os.path.join(path,kbname)

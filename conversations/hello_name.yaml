@@ -33,4 +33,6 @@ script:
     - input status | asign bien:good mal:bad
     - if status == "good" solve excelent
     - if status == "bad" solve sorry
-    - say "adios {}".format(name)    
+    - say "Hay algunas cosas que se"
+    - say "hecho {} {}".format(*db['main'][0])
+    - say "adios {}".format(name)
