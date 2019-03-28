@@ -12,13 +12,15 @@ kb: kb.db
 
 plugins:
     - random_greeting
-
+    - prueba2
 
 script:
 
+    - solve prueba2
     - solve hello
     - say greeting    
     - solve interview
 #Si pongo la motivación en el archivo de interview me marca error
     - solve motivation
     - say motivation
+
