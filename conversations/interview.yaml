@@ -122,10 +122,10 @@ script:
     - say "Mi nombre es Bella y voy a ayudarte a alcanzar tu peso ideal."
     - solve name
     - say "mucho gusto en conocerte {}".format(name)
-    - say "adios {}".format(eslot) 
     - say "Yo sé que pondrás mucho esfuerzo para cumplir tu meta."
     - say "Necesito que platiquemos un poco de ella para que esté más enterada y te pueda apoyar aún mejor"
     - solve  IMC
+#    - say "adios {}".format(eslot) 
 #    Adecuar tabla de pesos que establescan una relacion SANA de lo que mide y lo que quiere pesar
 #    Para que, en caso de que quiera pesar mucho menos de lo que debería, marcarle/decirle una advertencia
 #    Ej." Hay veces que nos sentimos presionados para ser algo que no somos, tal vez no sea necesario tanto. 
@@ -133,8 +133,8 @@ script:
 #    la maxima meta alcanzable)? (Ya despues veremos cómo vamos)"
 #    _talvez_preguntar_por_una_afirmacion_
 #    Ej." Solo recordandote que en este periodo de 6 semanas, nuestra meta máxima son 12/8 (escoger segun hombre/mujer)"
-#    - solve resolve_preference
-#    - solve preference_purchase
+    - solve resolve_preference
+    - solve preference_purchase
     - if not preference_purchase =='preparada' say "Ojalá pronto pueda recomendarte lugares en donde comer y seguir al pie de la letra tu dieta, mientras te sugeriré los platillos que tal vez puedas ordenar a donde vayas para que ni así falles."
     - say "adios {}".format(name) 
 

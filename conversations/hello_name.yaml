@@ -16,13 +16,13 @@ plugins:
 
 script:
 
-    - say "di algo "
-    - input algo
-    - prueba2.procesa_watson(algo)
-    - say watson
-    - input algo
-    - prueba2.procesa_watson(algo)
-    - say watson
+#    - say "di algo "
+#    - input algo
+#    - prueba2.procesa_watson(algo)
+#    - say watson
+#    - input algo
+#    - prueba2.procesa_watson(algo)
+#    - say watson
     - solve hello
     - say greeting    
     - solve interview
