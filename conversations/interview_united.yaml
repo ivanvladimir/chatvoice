@@ -50,13 +50,16 @@ script:
     #Se pregunta acerca de estatura, peso deseado y el peso actual
     - say "Antes que nada ¿cuál es tu estatura en centímetros?"
     - input height
+    - prueba2.procesa_watson(height)
     - remember height
     #- say "¿Me puedes decir cuál es el peso que deseas alcanzar?"
     - say "y dime ¿cuál es el peso que deseas alcanzar?"
     - input weight_goal
+    - prueba2.procesa_watson(weight_goal)
     - remember weight_goal
     - say "¿y cuánto es lo que pesas hoy?"
     - input weight_ini
+    - prueba2.procesa_watson(weight_ini)
     - remember weight_ini
     #- say "Bueno, pues ahora puedes preguntarme acerca de lo que te gustaría saber respecto dieta y despues podemos continuar la plática con tus gustos respecto a la comida"
     #- say "Pregúntame que es lo que quisieras saber de la dieta "
@@ -75,24 +78,31 @@ script:
     - say "Dime del 1 al 5 que tanto te gusta la comida…"
     - say "Picante"
     - input preference_spicy
+    - prueba2.procesa_watson(preference_spicy)
     - remember preference_spicy
     - say "Dulce"
     - input preference_sweet
+    - prueba2.procesa_watson(preference_sweet)
     - remember preference_sweet
     - say "Salada"
     - input preference_salty
+    - prueba2.procesa_watson(preference_salty)
     - remember preference_salty
     - say "Mariscos"
     - input preference_seafood
+    - prueba2.procesa_watson(preference_seafood)
     - remember preference_seafood
     - say "Caldos"
     - input preference_soup
+    - prueba2.procesa_watson(preference_soup)
     - remember preference_soup
     - say "Café"
     - input preference_coffee
+    - prueba2.procesa_watson(preference_coffee)
     - remember preference_coffee
     - say "Té"
     - input preference_tea
+    - prueba2.procesa_watson(preference_tea)
     - remember preference_tea
     
     #Se menciona a modo de comparacion las preferencias previamente especificadas por el usuario
@@ -114,6 +124,7 @@ script:
     #Se pregunta la preferencia de comprar o preparar
     - say "Usualmente,¿tu comida es preparada o comprada?"
     - input preference_purchase
+    - prueba2.procesa_watson(preference_purchase)
 
     - if not preference_purchase =='preparada' say "Ojalá pronto pueda recomendarte lugares en donde comer y seguir al pie de la letra tu dieta, mientras te sugeriré los platillos que tal vez puedas ordenar a donde vayas para que ni así falles."
     
