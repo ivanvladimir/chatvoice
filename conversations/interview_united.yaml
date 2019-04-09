@@ -1,0 +1,123 @@
+# Interview module for Bella chatbot
+# Leslie Janine González Blancas  
+# María del Carmen olivares Bautista
+# IIMAS-UNAM Dr. Ivan Vladimir Meza Ruiz
+
+settings:
+    name: BELLA
+ 
+conversations:
+    - 'motivation.yaml'
+
+slots:
+    - name
+    - weight_goal
+    - weight_ini
+    - height
+    - preference_spicy
+    - preference_salty
+    - preference_sweet
+    - preference_seafood
+    - preference_soup
+    - preference_coffe
+    - preference_tea
+    - preference_purchase
+
+#   - weight_actual
+#   - weight_new
+
+
+plugins:
+    - random_motivation
+    - prueba2
+
+
+script:
+
+    #Se saluda por primera vez al usuario
+    - say "Mi nombre es Bella y voy a ayudarte a alcanzar tu peso ideal."
+
+    #Se pregunta por el nombre de la persona con quien está interactuando 
+    - say "¿Cúal es tu nombre?"
+    - input name
+    - prueba2.procesa_watson(name)
+    - remember name
+
+    - say "mucho gusto en conocerte {}".format(name)
+    - say "Yo sé que pondrás mucho esfuerzo para cumplir tu meta."
+    - say "Así que necesito que platiquemos un poco de ella para que yo esté más enterada y te pueda apoyar aún mejor"
+
+    #Se pregunta acerca de estatura, peso deseado y el peso actual
+    - say "Antes que nada ¿cuál es tu estatura en centímetros?"
+    - input height
+    - remember height
+    #- say "¿Me puedes decir cuál es el peso que deseas alcanzar?"
+    - say "y dime ¿cuál es el peso que deseas alcanzar?"
+    - input weight_goal
+    - remember weight_goal
+    - say "¿y cuánto es lo que pesas hoy?"
+    - input weight_ini
+    - remember weight_ini
+    #- say "Bueno, pues ahora puedes preguntarme acerca de lo que te gustaría saber respecto dieta y despues podemos continuar la plática con tus gustos respecto a la comida"
+    #- say "Pregúntame que es lo que quisieras saber de la dieta "
+
+
+#    Adecuar tabla de pesos que establescan una relacion SANA de lo que mide y lo que quiere pesar
+#    Para que, en caso de que quiera pesar mucho menos de lo que debería, marcarle/decirle una advertencia
+#    Ej." Hay veces que nos sentimos presionados para ser algo que no somos, tal vez no sea necesario tanto. 
+#    ¿Que te parece si lo establecemos en <PESO_ADECUADO_SUGERIDO_SEGUN_SU_ESTATURA> (por esta vez) (que es 
+#    la maxima meta alcanzable)? (Ya despues veremos cómo vamos)"
+#    _talvez_preguntar_por_una_afirmacion_
+#    Ej." Solo recordandote que en este periodo de 6 semanas, nuestra meta máxima son 12/8 (escoger segun hombre/mujer)"
+
+    #Se preguntan las preferencias de consumo
+    - say "Ahora, continuemos con tus gustos."
+    - say "Dime del 1 al 5 que tanto te gusta la comida…"
+    - say "Picante"
+    - input preference_spicy
+    - remember preference_spicy
+    - say "Dulce"
+    - input preference_sweet
+    - remember preference_sweet
+    - say "Salada"
+    - input preference_salty
+    - remember preference_salty
+    - say "Mariscos"
+    - input preference_seafood
+    - remember preference_seafood
+    - say "Caldos"
+    - input preference_soup
+    - remember preference_soup
+    - say "Café"
+    - input preference_coffee
+    - remember preference_coffee
+    - say "Té"
+    - input preference_tea
+    - remember preference_tea
+    
+    #Se menciona a modo de comparacion las preferencias previamente especificadas por el usuario
+    # :( "YAML is a data serialisation language, so it's not meant 
+    #     to contain if/else style executable statements: 
+    #     that's the responsibility of the programming language you're using."
+    # :''''c
+    - say "Esto me sirve para saber que tipo de comida es más de tu agrado." 
+    - if float(preference_spicy) <3 say "Veo que no te gusta tanto la comida picante"
+    - if not float(preference_spicy) <3 say "Veo que sí te gusta la comida picante"
+    - if float(preference_salty) < float(preference_sweet) say "y que prefieres lo dulce a lo salado."
+    - if not float(preference_salty) < float(preference_sweet) say "y que prefieres lo salado a lo dulce."
+    - if float(preference_seafood) < 3 say "Noto que no eres gran fan de la comida del mar "
+    - if not float(preference_seafood) < 3 say "Noto que sí te agrada la comida del mar "
+    - if float(preference_soup) < 3 say "aunque, no mucho los caldos"
+    - if not float(preference_soup) < 3 say "aunque, sí los caldos"
+
+
+    #Se pregunta la preferencia de comprar o preparar
+    - say "Usualmente,¿tu comida es preparada o comprada?"
+    - input preference_purchase
+
+    - if not preference_purchase =='preparada' say "Ojalá pronto pueda recomendarte lugares en donde comer y seguir al pie de la letra tu dieta, mientras te sugeriré los platillos que tal vez puedas ordenar a donde vayas para que ni así falles."
+    
+
+    #Se despide
+    - say "adios {}".format(name) 
+
