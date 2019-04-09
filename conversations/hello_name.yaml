@@ -5,7 +5,8 @@ settings:
 
 conversations:
     - 'hello.yaml'
-    - 'interview.yaml'
+#    - 'interview.yaml'
+    - 'interview_united.yaml'
     - 'motivation.yaml'
 
 kb: kb.db
@@ -20,12 +21,13 @@ script:
 #    - input algo
 #    - prueba2.procesa_watson(algo)
 #    - say watson
-#    - input algo
-#    - prueba2.procesa_watson(algo)
+    - input algo
+    - prueba2.procesa_watson(algo)
 #    - say watson
     - solve hello
     - say greeting    
-    - solve interview
+#    - solve interview
+    - solve interview_united
 #Si pongo la motivación en el archivo de interview me marca error
     - solve motivation
     - say motivation
