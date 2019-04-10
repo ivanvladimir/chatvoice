@@ -1,4 +1,4 @@
-# Interview module for Bella chatbot
+   # Interview module for Bella chatbot
 # Leslie Janine González Blancas  
 # María del Carmen olivares Bautista
 # IIMAS-UNAM Dr. Ivan Vladimir Meza Ruiz
@@ -129,6 +129,7 @@ script:
     - if not preference_purchase =='preparada' say "Ojalá pronto pueda recomendarte lugares en donde comer y seguir al pie de la letra tu dieta, mientras te sugeriré los platillos que tal vez puedas ordenar a donde vayas para que ni así falles."
     
 
-    #Se despide
-    - say "adios {}".format(name) 
+#    #Se despide
+#    - say "adios {}".format(name) 
 
+    - say "Bueno, pues ahora puedes preguntarme acerca de lo que te gustaría saber respecto a tu dieta o puedes pedirme una recomendacion de platillo para comer"
