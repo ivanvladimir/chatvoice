@@ -1,4 +1,4 @@
-   # Interview module for Bella chatbot
+# Interview module for Bella chatbot
 # Leslie Janine González Blancas  
 # María del Carmen olivares Bautista
 # IIMAS-UNAM Dr. Ivan Vladimir Meza Ruiz
@@ -35,7 +35,7 @@ plugins:
 script:
 
     #Se saluda por primera vez al usuario
-    - say "Mi nombre es Bella y voy a ayudarte a alcanzar tu peso ideal."
+    - say "Mi nombre es Bella y voy a ayudarte a alcanzar tu peso ideal recomendandote platillos adecuados a una dieta para bajar de peso"
 
     #Se pregunta por el nombre de la persona con quien está interactuando 
     - say "¿Cúal es tu nombre?"
@@ -122,14 +122,21 @@ script:
 
 
     #Se pregunta la preferencia de comprar o preparar
-    - say "Usualmente,¿tu comida es preparada o comprada?"
-    - input preference_purchase
-    - prueba2.procesa_watson(preference_purchase)
+#    - say "Usualmente,¿tu comida es preparada o comprada?"
+#    - input preference_purchase
+#    - prueba2.procesa_watson(preference_purchase)
 
-    - if not preference_purchase =='preparada' say "Ojalá pronto pueda recomendarte lugares en donde comer y seguir al pie de la letra tu dieta, mientras te sugeriré los platillos que tal vez puedas ordenar a donde vayas para que ni así falles."
+#    - if not preference_purchase =='preparada' say "Ojalá pronto pueda recomendarte lugares en donde comer y seguir al pie de la letra tu dieta, mientras te sugeriré los platillos que tal vez puedas ordenar a donde vayas para que ni así falles."
     
 
 #    #Se despide
 #    - say "adios {}".format(name) 
 
-    - say "Bueno, pues ahora puedes preguntarme acerca de lo que te gustaría saber respecto a tu dieta o puedes pedirme una recomendacion de platillo para comer"
+
+    #Explicacion de que la entrevista será una sola vez
+    - say "Esta pequeña entrevista fue para conocerte un poco mejor y sólo será necesaria para esta vez."
+
+    #Introducción a las platicas diarias
+    - say "De ahora en adelante te acompañaré por 6 semanas con un monitoreo semanal de tu nuevo peso para darle seguimiento a tu objetivo."
+    - say "Y bueno, pues ahora puedes preguntarme de lo que te gustaria saber acerca de tu dieta, acerca de tu monitoreo de peso semanal, acerca de que más puedo platicarte o si lo prefieres, puedo darte una recomendación de platillo para lo que puedes comer hoy..."
+#    - say "Y bueno, pues ahora si gustas puedes pedirme una recomendación "
