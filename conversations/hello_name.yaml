@@ -8,27 +8,24 @@ conversations:
 #    - 'interview.yaml'
     - 'interview_united.yaml'
     - 'motivation.yaml'
+    - 'hello2.yaml'
 
 kb: kb.db
 
 plugins:
     - random_greeting
     - prueba2
+    - random_greeting_with_name
 
 script:
 
-#    - say "di algo "
-#    - input algo
-#    - prueba2.procesa_watson(algo)
-#    - say watson
-#    - input algo
-#    - prueba2.procesa_watson(algo)
-#    - say watson
+#Primera interacción, resolucion de entrevista
     - solve hello
-    - say greeting    
-#    - solve interview
+    - say greeting
     - solve interview_united
-#Si pongo la motivación en el archivo de interview me marca error
-    - solve motivation
-    - say motivation
+
+#Saludo de entrada
+    - solve hello2
+    - say greeting_name
+
 

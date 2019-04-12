@@ -138,5 +138,5 @@ script:
 
     #Introducción a las platicas diarias
     - say "De ahora en adelante te acompañaré por 6 semanas con un monitoreo semanal de tu nuevo peso para darle seguimiento a tu objetivo."
-    - say "Y bueno, pues ahora puedes preguntarme de lo que te gustaria saber acerca de tu dieta, acerca de tu monitoreo de peso semanal, acerca de que más puedo platicarte o si lo prefieres, puedo darte una recomendación de platillo para lo que puedes comer hoy..."
+    - say "Y bueno, si gustas puedes preguntarme en que consiste tu dieta, o tu monitoreo de peso semanal, acerca de que más puedo platicarte o si lo prefieres, puedo darte una recomendación de platillo para lo que puedes comer hoy..."
 #    - say "Y bueno, pues ahora si gustas puedes pedirme una recomendación "
