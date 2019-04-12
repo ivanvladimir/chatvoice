@@ -1,0 +1,8 @@
+# Conversation example for simple hello
+
+plugins:
+    - random_greeting_with_name
+
+script:
+    - set_slot options ["Que tal?"]
+    - random_greeting_with_name.execute('greeting_name',options)
