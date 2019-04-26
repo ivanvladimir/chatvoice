@@ -1,0 +1,8 @@
+# Validación del peso
+
+plugins:
+    - p1
+
+script:
+    - set_slot options ["ok"]
+    - p1.val('evaluacion',options)

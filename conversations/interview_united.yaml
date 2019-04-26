@@ -30,6 +30,7 @@ slots:
 plugins:
     - random_motivation
     - prueba2
+    - p1
 
 
 script:

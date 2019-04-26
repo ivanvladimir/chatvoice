@@ -9,6 +9,8 @@ conversations:
     - 'interview_united.yaml'
     - 'motivation.yaml'
     - 'hello2.yaml'
+    - 'imc.yaml'
+
 
 kb: kb.db
 
@@ -16,6 +18,9 @@ plugins:
     - random_greeting
     - prueba2
     - random_greeting_with_name
+    - p1
+
+
 
 script:
 
@@ -23,9 +28,12 @@ script:
     - solve hello
     - say greeting
     - solve interview_united
+    - solve imc
+    - say evaluacion
 
 #Saludo de entrada
     - solve hello2
     - say greeting_name
+
 
 
