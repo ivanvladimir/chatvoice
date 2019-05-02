@@ -61,46 +61,61 @@ else:
 
 var = ''
 
-def conversacion_diaria(var):
+def conversacion_diaria(intencion):
+    import sqlite3
+    connection_platillos = sqlite3.connect("/home/ljanine/repo/chatvoice/conversations/platillos.db")
+    cursor_platillo = connection_platillos.cursor()
+    var = intencion
+    #print(var)
+    #print(type(var))
+    #print(str(len(var)))
 
     #dar recomendacion de comida
-    if var == "pedir_comida":
+    if var == "set_slot watson \"pedir_comida\"":
         horario = 'comida'
-        consulta = cursor_platillo.execute('SELECT * FROM platillos WHERE horario=? and picante=? and caldo=? and mar=? ', (horario, picante, caldo, mar))
-        msg = "Que te parecería comer " + str(cursor_platillo.fetchone())
-        print(str(msg))
+        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=?', (horario, picante, caldo, mar))
+        m = cursor_platillo.fetchone()
+        ms = m[0]
+        msg = "Que te parecería comer " + ms
+        print(msg)
     #dar recomendacion de desayuno
-    elif var == "pedir_desayuno":
+    elif var == "set_slot watson \"pedir_desayuno\"":
         horario = 'desayuno'
-        consulta = cursor_platillo.execute('SELECT * FROM platillos WHERE horario=? and picante=? and caldo=? and mar=? ', (horario, picante, caldo, mar))
-        msg = "Que te parecería comer " + cursor_platillo.fetchone()
+        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ', (horario, picante, caldo, mar))
+        msg = cursor_platillo.fetchone()
+        msg = msg[0]
+        msg = "Que te parecería comer " + msg
         print( str(msg))
     #dar recomendacion de cena
-    elif var == "pedir_cena":
+    elif var == "set_slot watson \"pedir_cena\"":
         horario = 'cena'
-        consulta = cursor_platillo.execute('SELECT * FROM platillos WHERE horario=? and picante=? and caldo=? and mar=? ', (horario, picante, caldo, mar))
-        msg = "Que te parecería comer " + cursor_platillo.fetchone()
+        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ', (horario, picante, caldo, mar))
+        msg = cursor_platillo.fetchone()
+        msg = msg[0]
+        msg = "Que te parecería comer " + msg
         print(str(msg))
     #dar recomendacion de colacion
-    elif var == "peticion_colacion":
+    elif var == "set_slot watson \"peticion_colacion\"":
         horario = 'colacion'
-        consulta = cursor_platillo.execute('SELECT * FROM platillos WHERE horario=? and picante=? and caldo=? and mar=? ', (horario, picante, caldo, mar))
-        msg = "Que te parecería comer " + cursor_platillo.fetchone()
+        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ', (horario, picante, caldo, mar))
+        msg = cursor_platillo.fetchone()
+        msg = msg[0]
+        msg = "Que te parecería comer " + msg
         print(str(msg))
     #dar respuesas acerca del peso
-    elif var == "chequeo_peso":
+    elif var == "set_slot watson \"chequeo_peso\"":
         msg = "Disculpa. Sigo trabajando en el chequeo de peso"
         print(str(msg))
     #dar respuesas acerca del monitoreo del progreso
-    elif var == "monitoreo":
+    elif var == "set_slot watson \"monitoreo\"":
         msg = "Disculpa. Sigo trabajando en el monitoreo de peso"
         print(str(msg))
     #dar respuesas acerca de Bella
-    elif var == "dudas_de_bella":
+    elif var == "set_slot watson \"dudas_de_bella\"":
         msg = "Disculpa. Sigo trabajando en poder solucionar tus dudas"
         print(str(msg))
     #dar respuesas acerca de la dieta
-    elif var == "dudas_de_dieta":
+    elif var == "set_slot watson \"dudas_de_dieta\"":
         msg = "Disculpa. Sigo trabajando en poder solucionar tus dudas"
         print(str(msg))
     #Intentar pedir que diga algo de lo que podemos responder
@@ -108,7 +123,10 @@ def conversacion_diaria(var):
         msg = "Disculpa, no te entendí."
         print(str(msg))
 
-    return 'set_slot {0} "{1}"'.format("var",str(msg))
+    
+    
+
+    return 'set_slot {0} "{1}"'.format("respuesta",str(msg))
 
 f.close()
 
