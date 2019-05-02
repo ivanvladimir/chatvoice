@@ -10,6 +10,7 @@ conversations:
     - 'motivation.yaml'
     - 'hello2.yaml'
     - 'imc.yaml'
+    - 'daily_chat.yaml'
 
 
 kb: kb.db
@@ -19,7 +20,7 @@ plugins:
     - prueba2
     - random_greeting_with_name
     - p1
-
+    - consultas
 
 
 script:
@@ -34,6 +35,7 @@ script:
 #Saludo de entrada
     - solve hello2
     - say greeting_name
+    - solve daily_chat
 
 
 

@@ -68,36 +68,45 @@ def conversacion_diaria(var):
         horario = 'comida'
         consulta = cursor_platillo.execute('SELECT * FROM platillos WHERE horario=? and picante=? and caldo=? and mar=? ', (horario, picante, caldo, mar))
         msg = "Que te parecería comer " + str(cursor_platillo.fetchone())
+        print(str(msg))
     #dar recomendacion de desayuno
     elif var == "pedir_desayuno":
         horario = 'desayuno'
         consulta = cursor_platillo.execute('SELECT * FROM platillos WHERE horario=? and picante=? and caldo=? and mar=? ', (horario, picante, caldo, mar))
         msg = "Que te parecería comer " + cursor_platillo.fetchone()
+        print( str(msg))
     #dar recomendacion de cena
     elif var == "pedir_cena":
         horario = 'cena'
         consulta = cursor_platillo.execute('SELECT * FROM platillos WHERE horario=? and picante=? and caldo=? and mar=? ', (horario, picante, caldo, mar))
         msg = "Que te parecería comer " + cursor_platillo.fetchone()
+        print(str(msg))
     #dar recomendacion de colacion
     elif var == "peticion_colacion":
         horario = 'colacion'
         consulta = cursor_platillo.execute('SELECT * FROM platillos WHERE horario=? and picante=? and caldo=? and mar=? ', (horario, picante, caldo, mar))
         msg = "Que te parecería comer " + cursor_platillo.fetchone()
+        print(str(msg))
     #dar respuesas acerca del peso
     elif var == "chequeo_peso":
         msg = "Disculpa. Sigo trabajando en el chequeo de peso"
+        print(str(msg))
     #dar respuesas acerca del monitoreo del progreso
     elif var == "monitoreo":
         msg = "Disculpa. Sigo trabajando en el monitoreo de peso"
+        print(str(msg))
     #dar respuesas acerca de Bella
-    elif var == "#dudas_de_bella":
+    elif var == "dudas_de_bella":
         msg = "Disculpa. Sigo trabajando en poder solucionar tus dudas"
+        print(str(msg))
     #dar respuesas acerca de la dieta
-    elif var == "#dudas_de_dieta":
+    elif var == "dudas_de_dieta":
         msg = "Disculpa. Sigo trabajando en poder solucionar tus dudas"
+        print(str(msg))
     #Intentar pedir que diga algo de lo que podemos responder
     else:
         msg = "Disculpa, no te entendí."
+        print(str(msg))
 
     return 'set_slot {0} "{1}"'.format("var",str(msg))
 

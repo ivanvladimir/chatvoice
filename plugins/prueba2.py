@@ -36,7 +36,7 @@ def procesa_watson(user_input):
     # If an intent was detected, print it to the console.
     if response['output']['intents']:
         res = response['output']['intents'][0]['intent']
-        print('Intent detectada: #' + res)
+        print(str(res))
 
 
     # Print the output from dialog, if any. Assumes a single text response.
