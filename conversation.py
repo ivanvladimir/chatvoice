@@ -25,6 +25,7 @@ from plugins import random_greeting_with_name
 from plugins import random_motivation
 from plugins import prueba2
 from plugins import p1
+from plugins import consultas
 
 # TODO make a better system for filters
 from filters import *
