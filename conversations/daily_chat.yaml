@@ -1,0 +1,36 @@
+# Interview module for Bella chatbot
+# Leslie Janine González Blancas
+# María del Carmen olivares Bautista
+# IIMAS-UNAM Dr. Ivan Vladimir Meza Ruiz
+#
+
+settings:
+    name: BELLA
+
+#conversations:
+
+slots:
+    - peticion
+    #- intencion
+
+
+plugins:
+    - prueba2
+    - consultas
+
+
+script:
+
+    #Esperamos que nos diga algo el usuario
+    - input peticion
+    #- prueba2.procesa_watson(peticion)
+    - consultas.conversacion_diaria( prueba2.procesa_watson(peticion)) 
+    - input peticion
+    - consultas.conversacion_diaria( prueba2.procesa_watson(peticion))
+    - input peticion
+    - consultas.conversacion_diaria( prueba2.procesa_watson(peticion))
+
+    - say "Adios"
+
+
+    
