@@ -2,7 +2,7 @@ import json
 from genderize import Genderize
 
 
-with open('/home/krmn/Documentos/IIMAS/chatvoice/conversations/kb.db','r') as f:
+with open('/home/ljanine/repo/chatvoice/conversations/kb.db','r') as f:
     data =f.readlines()
 
 for x in data:
@@ -10,10 +10,10 @@ for x in data:
 y = json.loads(x)
 
 
-def val(*args):  
-    var=args[0]    
-    
-    
+def val(*args):
+    var=args[0]
+
+
     #CALCULA CATEGORIA SEGÚN IMC
 
 
@@ -37,7 +37,7 @@ def val(*args):
             obesityIII="Obesidad III"
             classification=obesityIII
         return classification
-    
+
 
     #DEFINE EL GÉNERO
 
@@ -61,7 +61,7 @@ def val(*args):
 
     #VALIDACIÓN DEL PESO OBJETIVO PARA MUJERES
 
-    if (gender == 'female'): 
+    if (gender == 'female'):
         if (weight_ini>weight_goal):
             if ((weight_ini-weight_goal)<=9):
                 if (IMC(IMC_goal)=="Peso bajo"):
@@ -81,8 +81,8 @@ def val(*args):
                     if(IMC(IMC_goal)==IMC(IMC_ini)):
                         msg = 'No se trata de dónde estés, sino a dónde quieres llegar. Por algo se empieza'
                     if(IMC(IMC_goal)!=IMC(IMC_ini)):
-                        msg = 'Vale, vale. Si podemos cumplir el objetivo'                 
-                 
+                        msg = 'Vale, vale. Si podemos cumplir el objetivo'
+
 
             else:
                 print("Ingrese nuevamente")
@@ -91,7 +91,7 @@ def val(*args):
 
     #VALIDACIÓN DEL PESO OBJETIVO PARA HOMBRES
 
-    if (gender == 'male'): 
+    if (gender == 'male'):
         if (weight_ini>weight_goal):
             if ((weight_ini-weight_goal)<=12):
                 if (IMC(IMC_goal)=="Peso bajo"):
@@ -111,18 +111,18 @@ def val(*args):
                     if(IMC(IMC_goal)==IMC(IMC_ini)):
                         msg = 'No se trata de dónde estés, sino a dónde quieres llegar. Por algo se empieza'
                     if(IMC(IMC_goal)!=IMC(IMC_ini)):
-                        msg = 'Vale, vale. Si podemos cumplir el objetivo'                 
-               
+                        msg = 'Vale, vale. Si podemos cumplir el objetivo'
+
             else:
                 print("Ingrese nuevamente")
-                
+
 
     return 'set_slot {0} "{1}"'.format(var,msg)
 
 f.close()
 
 
-    
+
 
 
 #Validar el peso objetivo con el peso actual, si no es sano el objetivo... persuadir al usuario                                                 ¡LISTO!
