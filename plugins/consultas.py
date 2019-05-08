@@ -73,7 +73,7 @@ def conversacion_diaria(intencion):
     #dar recomendacion de comida
     if var == "set_slot watson \"pedir_comida\"":
         horario = 'comida'
-        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=?', (horario, picante, caldo, mar))
+        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ORDER BY random() LIMIT 1;', (horario, picante, caldo, mar))
         m = cursor_platillo.fetchone()
         ms = m[0]
         msg = "Que te parecería comer " + ms
