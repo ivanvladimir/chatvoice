@@ -118,6 +118,18 @@ def conversacion_diaria(intencion):
     elif var == "set_slot watson \"dudas_de_dieta\"":
         msg = "Disculpa. Sigo trabajando en poder solucionar tus dudas"
         print(str(msg))
+    #dar diferente recomendacion de comida
+    elif var == "set_slot watson \"pedir_sugerencia_diferente\"":
+        horario = 'comida'
+        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ORDER BY random() LIMIT 1;', (horario, picante, caldo, mar))
+        m = cursor_platillo.fetchone()
+        ms = m[0]
+        msg = "Está bien. Entonces, que te parece " + ms
+        print(msg)
+    #dar mesnaje de despedida
+    elif var == "set_slot watson \"despedida\"":
+        msg = "Adiós"
+        print(str(msg))
     #Intentar pedir que diga algo de lo que podemos responder
     else:
         msg = "Disculpa, no te entendí."
