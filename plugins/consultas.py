@@ -61,11 +61,16 @@ else:
 
 var = ''
 
-def conversacion_diaria(intencion):
+
+def conversacion_diaria(*intencion):
+    respuesta_bella=intencion[0]
+    var = intencion[1]
+    #print( var)
+    #print(respuesta_bella)
     import sqlite3
     connection_platillos = sqlite3.connect("/home/ljanine/repo/chatvoice/conversations/platillos.db")
     cursor_platillo = connection_platillos.cursor()
-    var = intencion
+    #var = intencion
     #print(var)
     #print(type(var))
     #print(str(len(var)))
@@ -77,47 +82,48 @@ def conversacion_diaria(intencion):
         m = cursor_platillo.fetchone()
         ms = m[0]
         msg = "Que te parecería comer " + ms
-        print(msg)
+        #return 'set_slot {0} "{1}" '.format("respuesta".msg)
+        #print(msg)
     #dar recomendacion de desayuno
     elif var == "set_slot watson \"pedir_desayuno\"":
         horario = 'desayuno'
         consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ORDER BY random() LIMIT 1;', (horario, picante, caldo, mar))
-        msg = cursor_platillo.fetchone()
-        msg = msg[0]
-        msg = "Que te parecería comer " + msg
-        print( str(msg))
+        m = cursor_platillo.fetchone()
+        ms = m[0]
+        msg = "Que te parecería comer " + ms
+        #print( str(msg))
     #dar recomendacion de cena
     elif var == "set_slot watson \"pedir_cena\"":
         horario = 'cena'
         consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ORDER BY random() LIMIT 1;', (horario, picante, caldo, mar))
-        msg = cursor_platillo.fetchone()
-        msg = msg[0]
-        msg = "Que te parecería comer " + msg
-        print(str(msg))
+        m = cursor_platillo.fetchone()
+        ms = m[0]
+        msg = "Que te parecería comer " + ms
+        #print(str(msg))
     #dar recomendacion de colacion
     elif var == "set_slot watson \"peticion_colacion\"":
         horario = 'colacion'
         consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ORDER BY random() LIMIT 1;', (horario, picante, caldo, mar))
-        msg = cursor_platillo.fetchone()
-        msg = msg[0]
-        msg = "Que te parecería comer " + msg
-        print(str(msg))
+        m = cursor_platillo.fetchone()
+        ms = m[0]
+        msg = "Que te parecería comer " + ms
+        #print(str(msg))
     #dar respuesas acerca del peso
     elif var == "set_slot watson \"chequeo_peso\"":
         msg = "Disculpa. Sigo trabajando en el chequeo de peso"
-        print(str(msg))
+        #print(str(msg))
     #dar respuesas acerca del monitoreo del progreso
     elif var == "set_slot watson \"monitoreo\"":
         msg = "Disculpa. Sigo trabajando en el monitoreo de peso"
-        print(str(msg))
+        #print(str(msg))
     #dar respuesas acerca de Bella
     elif var == "set_slot watson \"dudas_de_bella\"":
         msg = "Disculpa. Sigo trabajando en poder solucionar tus dudas"
-        print(str(msg))
+        #print(str(msg))
     #dar respuesas acerca de la dieta
     elif var == "set_slot watson \"dudas_de_dieta\"":
         msg = "Disculpa. Sigo trabajando en poder solucionar tus dudas"
-        print(str(msg))
+        #print(str(msg))
     #dar diferente recomendacion de comida
     elif var == "set_slot watson \"pedir_sugerencia_diferente\"":
         horario = 'comida'
@@ -125,20 +131,19 @@ def conversacion_diaria(intencion):
         m = cursor_platillo.fetchone()
         ms = m[0]
         msg = "Está bien. Entonces, que te parece " + ms
-        print(msg)
+        #print(msg)
     #dar mesnaje de despedida
     elif var == "set_slot watson \"despedida\"":
         msg = "Adiós"
-        print(str(msg))
+        #print(str(msg))
     #Intentar pedir que diga algo de lo que podemos responder
     else:
         msg = "Disculpa, no te entendí."
         print(str(msg))
 
-    
-    
 
-    return 'set_slot {0} "{1}"'.format("respuesta",str(msg))
+    return 'set_slot {0} "{1}"'.format(respuesta_bella,str(msg))
+    #return ''.format("respuesta",str(msg))
 
 f.close()
 

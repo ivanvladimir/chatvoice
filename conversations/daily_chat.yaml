@@ -25,6 +25,7 @@ script:
     - input peticion
     #- prueba2.procesa_watson(peticion)
     - consultas.conversacion_diaria( prueba2.procesa_watson(peticion)) 
+    - say respuesta_bella
     - input peticion
     - consultas.conversacion_diaria( prueba2.procesa_watson(peticion))
     - input peticion
