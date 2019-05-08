@@ -1,8 +1,14 @@
 settings:
     name: BELLA
 
+plugins:
+    - consultas
+    - prueba2 
+
 script:
     #Introducción a las platicas diarias
     - say "De ahora en adelante te acompañaré por 6 semanas con un monitoreo semanal de tu nuevo peso para darle seguimiento a tu objetivo."
-    - say "Y bueno, si gustas puedes preguntar acerca de mí o si prefieres puedo darte una recomendación de platillo para lo que puedes comer hoy..."
-    - 
+    - say "Y bueno, si gustas puedes preguntar acerca de mí o si prefieres, puedo darte una recomendación de platillo para lo que puedes comer hoy..."
+    - input peticion
+    - consultas.conversacion_diaria('sugerencia', prueba2.procesa_watson(peticion))
+    - say sugerencia 

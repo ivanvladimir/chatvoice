@@ -10,6 +10,7 @@ conversations:
     - 'motivation.yaml'
     - 'hello2.yaml'
     - 'imc.yaml'
+    - 'transition_to_daily_talk.yaml'
     - 'daily_chat.yaml'
 
 
@@ -30,8 +31,9 @@ script:
     - say greeting
     - solve interview_united
     - solve imc
-    - say evaluacion
-
+    #- say evaluacion
+#Transicion a la conversacion diaria
+    - solve transition_to_daily_talk
 #Saludo de entrada
     - solve hello2
     - say greeting_name

@@ -136,8 +136,3 @@ script:
 
     #Explicacion de que la entrevista será una sola vez
     - say "Esta pequeña entrevista fue para conocerte un poco mejor y sólo será necesaria para esta vez."
-
-    #Introducción a las platicas diarias
-    - say "De ahora en adelante te acompañaré por 6 semanas con un monitoreo semanal de tu nuevo peso para darle seguimiento a tu objetivo."
-    - say "Y bueno, si gustas puedes preguntarme en que consiste tu dieta, o tu monitoreo de peso semanal, acerca de que más puedo platicarte o si lo prefieres, puedo darte una recomendación de platillo para lo que puedes comer hoy..."
-#    - say "Y bueno, pues ahora si gustas puedes pedirme una recomendación "
