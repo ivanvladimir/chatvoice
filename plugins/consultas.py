@@ -81,7 +81,7 @@ def conversacion_diaria(intencion):
     #dar recomendacion de desayuno
     elif var == "set_slot watson \"pedir_desayuno\"":
         horario = 'desayuno'
-        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ', (horario, picante, caldo, mar))
+        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ORDER BY random() LIMIT 1;', (horario, picante, caldo, mar))
         msg = cursor_platillo.fetchone()
         msg = msg[0]
         msg = "Que te parecería comer " + msg
@@ -89,7 +89,7 @@ def conversacion_diaria(intencion):
     #dar recomendacion de cena
     elif var == "set_slot watson \"pedir_cena\"":
         horario = 'cena'
-        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ', (horario, picante, caldo, mar))
+        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ORDER BY random() LIMIT 1;', (horario, picante, caldo, mar))
         msg = cursor_platillo.fetchone()
         msg = msg[0]
         msg = "Que te parecería comer " + msg
@@ -97,7 +97,7 @@ def conversacion_diaria(intencion):
     #dar recomendacion de colacion
     elif var == "set_slot watson \"peticion_colacion\"":
         horario = 'colacion'
-        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ', (horario, picante, caldo, mar))
+        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ORDER BY random() LIMIT 1;', (horario, picante, caldo, mar))
         msg = cursor_platillo.fetchone()
         msg = msg[0]
         msg = "Que te parecería comer " + msg
