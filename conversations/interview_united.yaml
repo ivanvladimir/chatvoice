@@ -36,8 +36,10 @@ plugins:
 
 script:
     #Trael el nombre del usuario de la kb.db para recordarlo
-    - remember_user_name.remember_name('nombre_usuario')
-    - say nombre_usuario 
+    - say name
+    - remember name
+#    - remember_user_name.remember_name('name')
+#    - say name 
 #    - set_slot name nombre_usuario
 #    - say name
     #Se saluda por primera vez al usuario

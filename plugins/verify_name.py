@@ -24,7 +24,7 @@ def verify(*nombre):
 
 
     #comparar que SÍ existe en la base de datos
-    if name_user == 'janine':
+    if name_user == y["name"]:
         msg=1
 
     #comprobado que NO existe

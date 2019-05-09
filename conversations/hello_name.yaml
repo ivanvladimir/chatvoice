@@ -41,7 +41,7 @@ script:
     - verify_name.verify('usuario_existente', name)
 #    - say usuario_existente
     - if float(usuario_existente) == 0 remember name
-#    - say name
+    - say name 
     - if float(usuario_existente) == 0 solve interview_united
     - if float(usuario_existente) == 0 solve imc
     #- say evaluacion
