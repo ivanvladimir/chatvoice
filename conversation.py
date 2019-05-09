@@ -342,6 +342,11 @@ class Conversation:
         self.kb[arg]=self.slots[arg]
         with open(self.kbfilename,"w") as json_file:
             json.dump(self.kb,json_file)
+    
+    def remember_name_(self,arg):
+        self.nb[arg]=self.slots[arg]
+        with open(self.nbfilename,"w") as json_file:
+            json.dump(self.nb,json_file)
 
     def empty_slot_(self,line):
         self.slots[line]=None
