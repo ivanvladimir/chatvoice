@@ -10,7 +10,6 @@ conversations:
     - 'motivation.yaml'
 
 slots:
-    - name
     - weight_goal
     - weight_ini
     - height
@@ -39,10 +38,10 @@ script:
     - say "Mi nombre es Bella y voy a ayudarte a alcanzar tu peso ideal recomendandote platillos adecuados a una dieta para bajar de peso"
 
     #Se pregunta por el nombre de la persona con quien está interactuando 
-    - say "¿Cúal es tu nombre?"
-    - input name
+#    - say "¿Cúal es tu nombre?"
+#    - input name
     #- prueba2.procesa_watson(name)
-    - remember name
+#    - remember name
 
     - say "mucho gusto en conocerte {}".format(name)
     - say "Yo sé que pondrás mucho esfuerzo para cumplir tu meta."

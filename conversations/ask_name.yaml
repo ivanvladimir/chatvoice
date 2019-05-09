@@ -1,0 +1,22 @@
+# Interview module for Bella chatbot
+# Leslie Janine González Blancas  
+# María del Carmen olivares Bautista
+# IIMAS-UNAM Dr. Ivan Vladimir Meza Ruiz
+
+settings:
+    name: BELLA
+
+slots:
+    - name
+
+nb: nb.db
+
+plugins:
+    - verify_name
+
+script:
+    - say "¿Cúal es tu nombre?"
+    - input name
+    - remember name
+    - solve verify_name('usuario_existente',name)
+    - say usuario_existente

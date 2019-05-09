@@ -12,9 +12,15 @@ conversations:
     - 'imc.yaml'
     - 'transition_to_daily_talk.yaml'
     - 'daily_chat.yaml'
+    - 'ask_name.yaml'
+
+slots:
+#    - name
+    - ya_pasamos_por_aqui
 
 
 kb: kb.db
+
 
 plugins:
     - random_greeting
@@ -22,6 +28,7 @@ plugins:
     - random_greeting_with_name
     - p1
     - consultas
+    - verify_name
 
 
 script:
@@ -29,15 +36,23 @@ script:
 #Primera interacción, resolucion de entrevista
     - solve hello
     - say greeting
-    - solve interview_united
-    - solve imc
+#    - say "¿Cúal es tu nombre?"
+#    - input name
+#    - remember name
+#    - solve verify_name('usuario_existente', name)
+    - solve ask_name
+    - if usuario_existente < 1 solve interview_united
+    - if usuario_existente < 0 solve imc
     #- say evaluacion
 #Transicion a la conversacion diaria
-    - solve transition_to_daily_talk
-#Saludo de entrada
-    - solve hello2
-    - say greeting_name
-    - solve daily_chat
+    - if usuario_existente == 0 solve transition_to_daily_talk
+    - if usuario_existente == 0 set_slot ya_pasamos_por_aqui 1
+
+#Saludo a la conversacion diaria
+    - if not usuario_existente == 0 solve hello2
+    - if not usuario_existente == 0 say greeting_name
+#Conversacion diaria
+    - if not usuario_existente == 0 solve daily_chat
 
 
 

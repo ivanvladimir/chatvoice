@@ -23,13 +23,14 @@ script:
 
     #Esperamos que nos diga algo el usuario
     - input peticion
-    #- prueba2.procesa_watson(peticion)
-    - consultas.conversacion_diaria( prueba2.procesa_watson(peticion)) 
+    - consultas.conversacion_diaria('respuesta_bella', prueba2.procesa_watson(peticion))
     - say respuesta_bella
     - input peticion
-    - consultas.conversacion_diaria( prueba2.procesa_watson(peticion))
+    - consultas.conversacion_diaria('respuesta_bella', prueba2.procesa_watson(peticion))
+    - say respuesta_bella
     - input peticion
-    - consultas.conversacion_diaria( prueba2.procesa_watson(peticion))
+    - consultas.conversacion_diaria('respuesta_bella', prueba2.procesa_watson(peticion))
+    - say respuesta_bella
 
     - say "Adios"
 
