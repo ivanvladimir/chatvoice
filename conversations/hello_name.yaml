@@ -12,7 +12,6 @@ conversations:
     - 'imc.yaml'
     - 'transition_to_daily_talk.yaml'
     - 'daily_chat.yaml'
-    - 'ask_name.yaml'
 
 slots:
     - name
@@ -36,15 +35,14 @@ script:
 #Primera interacción, resolucion de entrevista
     - solve hello
     - say greeting
-#    - say "¿Cúal es tu nombre?"
-#    - input name
+    - say "¿Cúal es tu nombre?"
+    - input name
 #    - remember name
-#    - solve verify_name('usuario_existente', name)
-    - solve ask_name
-    - say usuario_existe
-    - if float(usuario_existente) < 1 remember name
-    - if float(usuario_existente) < 1 solve interview_united
-    - if float(usuario_existente) < 1 solve imc
+    - verify_name.verify('usuario_existente', name)
+#    - say usuario_existente
+    - if float(usuario_existente) == 0 remember name
+    - if float(usuario_existente) == 0 solve interview_united
+    - if float(usuario_existente) == 0 solve imc
     #- say evaluacion
 #Transicion a la conversacion diaria
     - if float(usuario_existente) == 0 solve transition_to_daily_talk

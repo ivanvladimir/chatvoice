@@ -143,7 +143,7 @@ def conversacion_diaria(*intencion):
 
 
     return 'set_slot {0} "{1}"'.format(respuesta_bella,str(msg))
-    #return ''.format("respuesta",str(msg))
+
 
 f.close()
 

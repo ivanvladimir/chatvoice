@@ -15,23 +15,16 @@ for x in data:
     json.dumps(x)
 y = json.loads(x)
 
+name_user=input("dame tu nombre")
+#comparar que SÍ existe en la base de datos
+if name_user == 'janine':
+   msg=1
+   print(msg)
+#comprobado que NO existe
+else :
+    msg=0
+    print(msg)
 
-#print(y['name'])
-
-def verify(*nombre):
-    var=nombre[0]
-    name_user=nombre[1]
-
-
-    #comparar que SÍ existe en la base de datos
-    if name_user == 'janine':
-        msg=1
-
-    #comprobado que NO existe
-    else :
-        msg=0
-
-
-    return 'set_slot {0} "{1}"'.format(var,str(msg))
 
 f.close()
+

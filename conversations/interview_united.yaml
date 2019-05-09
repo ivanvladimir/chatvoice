@@ -43,7 +43,7 @@ script:
     #- prueba2.procesa_watson(name)
 #    - remember name
 
-    - say "mucho gusto en conocerte {}".format(name)
+#    - say "mucho gusto en conocerte {}".format(name)
     - say "Yo sé que pondrás mucho esfuerzo para cumplir tu meta."
     - say "Así que necesito que platiquemos un poco de ella para que yo esté más enterada y te pueda apoyar aún mejor"
 
