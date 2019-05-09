@@ -8,7 +8,7 @@
 import json
 
 
-with open('/home/ljanine/repo/chatvoice/conversations/name.db','r') as f:
+with open('/home/ljanine/repo/chatvoice/conversations/nb.db','r') as f:
     data = f.readlines()
 
 for x in data:
@@ -24,10 +24,10 @@ def verify_name(*arg):
     if y['name'] == name_user:
         msg=1
     #comprobado que NO existe
-    elif :
+    else :
         msg=0
 
 
-return 'set_slot {0} "{1}"'.format(var,str(msg))
+    return 'set_slot {0} "{1}"'.format(var,str(msg))
 
 f.close()

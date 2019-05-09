@@ -26,6 +26,7 @@ from plugins import random_motivation
 from plugins import prueba2
 from plugins import p1
 from plugins import consultas
+from plugins import verify_name
 
 # TODO make a better system for filters
 from filters import *

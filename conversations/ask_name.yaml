@@ -9,7 +9,7 @@ settings:
 slots:
     - name
 
-nb: nb.db
+kb: kb.db
 
 plugins:
     - verify_name
@@ -17,6 +17,6 @@ plugins:
 script:
     - say "¿Cúal es tu nombre?"
     - input name
-    - remember name
+#    - remember name
     - solve verify_name('usuario_existente',name)
     - say usuario_existente
