@@ -32,7 +32,4 @@ script:
     - consultas.conversacion_diaria('respuesta_bella', prueba2.procesa_watson(peticion))
     - say respuesta_bella
 
-    - say "Adios"
-
-
     

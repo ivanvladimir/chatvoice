@@ -118,11 +118,11 @@ def conversacion_diaria(*intencion):
         #print(str(msg))
     #dar respuesas acerca de Bella
     elif var == "set_slot watson \"dudas_de_bella\"":
-        msg = "Disculpa. Sigo trabajando en poder solucionar tus dudas"
+        msg = "Mi nombre es Bella y mi objetivo es apoyarte dandote recomendaciones de platillos todas las veces por las que preguntes por algo de desayunar, comer o cenar, o incluso con alguna colación. Así te daré ideas de lo que puedes comer para que no te aburras con esta dieta de cero azucares y cero harinas  y logres alcanzar la meta de tu peso ideal"
         #print(str(msg))
     #dar respuesas acerca de la dieta
     elif var == "set_slot watson \"dudas_de_dieta\"":
-        msg = "Disculpa. Sigo trabajando en poder solucionar tus dudas"
+        msg = "La dieta consta de evitar lo más posible los alimentos que tengan harinas o azucares para poder bajar de peso. Con esto tú podrías disminuir de talla lo de 9 kilos si eres mujer o incluso, lo de 12 kilos en el caso de que seas hombre. Esta dieta dura 6 semanas y consta de 3 etapas. Así que aunque, yo solo sea la encargada de la primer etapa, TÚ podrás pedirme las recomendaciones de platillos para el desayuno, comida, cena o entre comidas, las veces que quieras por dos semanas."
         #print(str(msg))
     #dar diferente recomendacion de comida
     elif var == "set_slot watson \"pedir_sugerencia_diferente\"":

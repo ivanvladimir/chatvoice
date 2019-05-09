@@ -10,6 +10,7 @@ conversations:
     - 'motivation.yaml'
 
 slots:
+    - name
     - weight_goal
     - weight_ini
     - height
@@ -30,12 +31,17 @@ plugins:
     - random_motivation
     - prueba2
     - p1
+    - remember_user_name
 
 
 script:
-
+    #Trael el nombre del usuario de la kb.db para recordarlo
+    - remember_user_name.remember_name('nombre_usuario')
+    - say nombre_usuario 
+#    - set_slot name nombre_usuario
+#    - say name
     #Se saluda por primera vez al usuario
-    - say "Mi nombre es Bella y voy a ayudarte a alcanzar tu peso ideal recomendandote platillos adecuados a una dieta para bajar de peso"
+    - say "¡Hola! mucho gusto de conocerte. Mi nombre es Bella y voy a ayudarte a alcanzar tu peso ideal recomendandote platillos adecuados a una dieta para bajar de peso"
 
     #Se pregunta por el nombre de la persona con quien está interactuando 
 #    - say "¿Cúal es tu nombre?"

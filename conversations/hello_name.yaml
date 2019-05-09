@@ -41,6 +41,7 @@ script:
     - verify_name.verify('usuario_existente', name)
 #    - say usuario_existente
     - if float(usuario_existente) == 0 remember name
+#    - say name
     - if float(usuario_existente) == 0 solve interview_united
     - if float(usuario_existente) == 0 solve imc
     #- say evaluacion
@@ -49,10 +50,11 @@ script:
     - if float(usuario_existente) == 0 set_slot ya_pasamos_por_aqui 1
 
 #Saludo a la conversacion diaria
-    - if not float(usuario_existente) == 0 solve hello2
-    - if not float(usuario_existente) == 0 say greeting_name
+    - if float(usuario_existente) == 1 solve hello2
+    - if float(usuario_existente) == 1 say greeting_name
 #Conversacion diaria
-    - if not float(usuario_existente) == 0 solve daily_chat
-
+    - solve daily_chat
+#Despedida
+    - say "Adios, nos vemos luego!"
 
 
