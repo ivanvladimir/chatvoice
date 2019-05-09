@@ -132,6 +132,9 @@ def conversacion_diaria(*intencion):
         ms = m[0]
         msg = "Está bien. Entonces, que te parece " + ms
         #print(msg)
+    #decirle al usuario qué puede preguntar
+    elif var == "set_slot watson \"dudas_de_que_hacer\"":
+        msg = "Pregúntame qué puedo sugirte para comer hoy"
     #dar mesnaje de despedida
     elif var == "set_slot watson \"despedida\"":
         msg = "Adiós"
