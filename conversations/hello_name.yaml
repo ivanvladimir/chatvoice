@@ -16,7 +16,7 @@ conversations:
 slots:
     - name
     - ya_pasamos_por_aqui
-    - peticion
+    - intencion_de_peticion
 
 
 kb: kb.db
@@ -33,7 +33,7 @@ plugins:
 
 script:
 
-#Primera interacción, resolucion de entrevista
+#Primera interaccion, resolucion de entrevista
     - solve hello
     - say greeting
     - say "Cual es tu nombre?"
@@ -54,8 +54,11 @@ script:
     - if float(usuario_existente) == 1 solve hello2
     - if float(usuario_existente) == 1 say greeting_name
 #Conversacion diaria
-    - set_slot peticion "hola" 
-    - while peticion!="set_slot watson \"despedida\"" solve daily_chat
+    - set_slot intencion_de_peticion "hola" 
+#    - say prueba2.procesa_watson(intencion_de_peticion)
+#    - if prueba2.procesa_watson(intencion_de_peticion) != "set_slot watson \"despedida\"" solve daily_chat
+    - while prueba2.procesa_watson(intencion_de_peticion) != "set_slot watson \"despedida\"" solve daily_chat
+
 #Despedida
     - say "Adios, nos vemos luego!"
 

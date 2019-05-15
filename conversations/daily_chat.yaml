@@ -11,7 +11,7 @@ settings:
 
 slots:
     - peticion
-    #- intencion
+    - intencion_de_peticion
 
 
 plugins:
@@ -22,8 +22,10 @@ plugins:
 script:
 
     #Esperamos que nos diga algo el usuario
+    
     - input peticion
-    - consultas.conversacion_diaria('respuesta_bella', prueba2.procesa_watson(peticion))
     - say prueba2.procesa_watson(peticion)
+#    - set_slot intencion_de_peticion prueba2.procesa_watson(peticion)
+    - consultas.conversacion_diaria('respuesta_bella', prueba2.procesa_watson(peticion))
     - say respuesta_bella
   
