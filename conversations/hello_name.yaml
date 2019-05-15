@@ -42,7 +42,7 @@ script:
     - verify_name.verify('usuario_existente', name)
 #    - say usuario_existente
     - if float(usuario_existente) == 0 remember name
-    - say name 
+#    - say name 
     - if float(usuario_existente) == 0 solve interview_united
     - if float(usuario_existente) == 0 solve imc
     #- say evaluacion
@@ -54,10 +54,10 @@ script:
     - if float(usuario_existente) == 1 solve hello2
     - if float(usuario_existente) == 1 say greeting_name
 #Conversacion diaria
-    - set_slot intencion_de_peticion "hola" 
+    - set_slot peticion "hola" 
 #    - say prueba2.procesa_watson(intencion_de_peticion)
 #    - if prueba2.procesa_watson(intencion_de_peticion) != "set_slot watson \"despedida\"" solve daily_chat
-    - while prueba2.procesa_watson(intencion_de_peticion) != "set_slot watson \"despedida\"" solve daily_chat
+    - while prueba2.procesa_watson(peticion) != "set_slot watson \"despedida\"" solve daily_chat
 
 #Despedida
     - say "Adios, nos vemos luego!"

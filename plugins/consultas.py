@@ -106,7 +106,7 @@ def conversacion_diaria(*intencion):
         consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ORDER BY random() LIMIT 1;', (horario, picante, caldo, mar))
         m = cursor_platillo.fetchone()
         ms = m[0]
-        msg = "Que te parecería comer " + ms
+        msg = "Que te pareceria comer " + ms
         #print(str(msg))
     #dar respuesas acerca del peso
     elif var == "set_slot watson \"chequeo_peso\"":
@@ -122,7 +122,7 @@ def conversacion_diaria(*intencion):
         #print(str(msg))
     #dar respuesas acerca de la dieta
     elif var == "set_slot watson \"dudas_de_dieta\"":
-        msg = "La dieta consta de evitar lo más posible los alimentos que tengan harinas o azucares para poder bajar de peso. Con esto tú podrías disminuir de talla lo de 9 kilos si eres mujer o incluso, lo de 12 kilos en el caso de que seas hombre. Esta dieta dura 6 semanas y consta de 3 etapas. Así que aunque, yo solo sea la encargada de la primer etapa, TÚ podrás pedirme las recomendaciones de platillos para el desayuno, comida, cena o entre comidas, las veces que quieras por dos semanas."
+        msg = "La dieta consta de evitar lo mas posible los alimentos que tengan harinas o azucares para poder bajar de peso. Con esto tú podrías disminuir de talla lo de 9 kilos si eres mujer o incluso, lo de 12 kilos en el caso de que seas hombre. Esta dieta dura 6 semanas y consta de 3 etapas. Así que aunque, yo solo sea la encargada de la primer etapa, TÚ podrás pedirme las recomendaciones de platillos para el desayuno, comida, cena o entre comidas, las veces que quieras por dos semanas."
         #print(str(msg))
     #dar diferente recomendacion de comida
     elif var == "set_slot watson \"pedir_sugerencia_diferente\"":
@@ -130,23 +130,23 @@ def conversacion_diaria(*intencion):
         consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ORDER BY random() LIMIT 1;', (horario, picante, caldo, mar))
         m = cursor_platillo.fetchone()
         ms = m[0]
-        msg = "Está bien. Entonces, que te parece " + ms
+        msg = "Esta bien. Entonces, que te parece " + ms
         #print(msg)
     #decirle al usuario qué puede preguntar
     elif var == "set_slot watson \"dudas_de_que_hacer\"":
         msg = "Pregúntame qué puedo sugirte para comer hoy"
     #dar mensaje de despedida
     elif var == "set_slot watson \"despedida\"":
-        msg = "Hasta luego"
+        msg = ""
         #print(str(msg))
     #dar mensaje de adios
     elif var == "set_slot watson \"no_quiere_algo_mas\"":
-        msg = "De acuerdo, nos vemos luego. Adiós"
+        msg = "De acuer."
     #Intentar pedir que diga algo de lo que podemos responder
     elif var == "set_slot watson \"dar_las_gracias_si_le_gusto\"":
-        msg = "¿Qué más puedo hacer por tí?"
+        msg = "Que mas puedo hacer por ti? "
     else:
-        msg = "Disculpa, no te entendí ¿a qué te refieres?"
+        msg = "Disculpa, no te entendi. A que te refieres?"
         print(str(msg))
 
 
