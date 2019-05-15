@@ -60,6 +60,6 @@ script:
     - while prueba2.procesa_watson(peticion) != "set_slot watson \"despedida\"" solve daily_chat
 
 #Despedida
-    - say "Adios, nos vemos luego!"
+    - say "Nos vemos luego!"
 
 
