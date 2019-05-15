@@ -24,12 +24,6 @@ script:
     #Esperamos que nos diga algo el usuario
     - input peticion
     - consultas.conversacion_diaria('respuesta_bella', prueba2.procesa_watson(peticion))
+    - say prueba2.procesa_watson(peticion)
     - say respuesta_bella
-    - input peticion
-    - consultas.conversacion_diaria('respuesta_bella', prueba2.procesa_watson(peticion))
-    - say respuesta_bella
-    - input peticion
-    - consultas.conversacion_diaria('respuesta_bella', prueba2.procesa_watson(peticion))
-    - say respuesta_bella
-
-    
+  
