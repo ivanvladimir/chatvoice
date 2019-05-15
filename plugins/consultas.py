@@ -147,7 +147,12 @@ def conversacion_diaria(*intencion):
         msg = "Que mas puedo hacer por ti? "
     #dar recomendacion de comida picosa
     elif var == "set_slot watson \"pedir_algo_picante\"":
-        picante = 1
+        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE caldo=1 ORDER BY random() LIMIT 1;')
+        m = cursor_platillo.fetchone()
+        ms = m[0]
+        msg = "Que te pareceria comer " + ms
+    #dar recomendacion de comida caldosa
+    elif var == "set_slot watson \"pedir_algo_caldoso\"":
         consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE picante=1 ORDER BY random() LIMIT 1;')
         m = cursor_platillo.fetchone()
         ms = m[0]
