@@ -68,7 +68,7 @@ def conversacion_diaria(*intencion):
     #print( var)
     #print(respuesta_bella)
     import sqlite3
-    connection_platillos = sqlite3.connect("/home/ljanine/repo/chatvoice/conversations/platillos.db")
+    connection_platillos = sqlite3.connect("/home/pi/chatvoice/conversations/platillos.db")
     cursor_platillo = connection_platillos.cursor()
     #var = intencion
     #print(var)

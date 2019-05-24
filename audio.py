@@ -81,12 +81,9 @@ def tts_google(msg,lang='es-us'):
         p =  Popen(['mpg321','-w',os.path.join(os.getcwd(),'audios',res[0]['mp3'].replace('.mp3','.wav')), os.path.join(os.getcwd(),'audios',res[0]['mp3'])])
         p.communicate()
         assert p.returncode == 0
-<<<<<<< HEAD
-        p = Popen(['aplay',os.path.join(os.getcwd(),'audios',res[0]['mp3'].replace('.mp3','.wav')),"-D",'default:CARD=Headset'])
+        p = Popen(['sudo','aplay',os.path.join(os.getcwd(),'audios',res[0]['mp3'].replace('.mp3','.wav')),"-D",'default:CARD=Headset'])
         p.communicate()
         assert p.returncode == 0
-=======
->>>>>>> f5de51ebe2df74f0bf4d91920cd722dc07cbcd86
         return None
     mp3_filename=os.path.join(os.getcwd(), 'audios', '{}_{}.mp3'.format(hashing,'google'))
     tts = gTTS(msg, 'es-us')
