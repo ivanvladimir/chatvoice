@@ -2,7 +2,7 @@ import json
 from genderize import Genderize
 
 
-with open('/home/ljanine/repo/chatvoice/conversations/kb.db','r') as f:
+with open('/home/pi/Documents/cb_nutricion/chatvoice/conversations/kb.db','r') as f:
     data =f.readlines()
 
 for x in data:

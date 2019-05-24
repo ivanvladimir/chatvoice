@@ -4,11 +4,11 @@ import numpy as np
 
 #conexion con la base de datos de platillos de desayuno, comida, cena y colacion
 import sqlite3
-connection_platillos = sqlite3.connect("/home/ljanine/repo/chatvoice/conversations/platillos.db")
+connection_platillos = sqlite3.connect("conversations/kb.db")
 cursor_platillo = connection_platillos.cursor()
 
 #conexion con la base de datos del usuario
-with open('/home/ljanine/repo/chatvoice/conversations/kb.db','r') as f:
+with open('conversations/kb.db','r') as f:
     data =f.readlines()
 
 for x in data:

@@ -1,6 +1,6 @@
 import numpy as np
 import sqlite3
-connection_platillos = sqlite3.connect("/home/ljanine/repo/chatvoice/conversations/platillos.db")
+connection_platillos = sqlite3.connect("/home/pi/Documents/cb_nutricion/chatvoice/conversations/kb.db")
 cursor_platillo = connection_platillos.cursor()
 
 horario = 'comida'

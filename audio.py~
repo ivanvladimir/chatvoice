@@ -78,20 +78,14 @@ def tts_google(msg,lang='es-us'):
     hashing = hashlib.md5(msg.encode('utf-8')).hexdigest()
     res = db.search((Audio.hash == hashing) & (Audio.type=='google'))
     if len(res)>0:
-        p =  Popen(['mpg321','-w',os.path.join(os.getcwd(),'audios',res[0]['mp3'].replace('.mp3','.wav')), os.path.join(os.getcwd(),'audios',res[0]['mp3'])])
+        p = Popen(['mpg321',os.path.join(os.getcwd(),'audios',res[0]['mp3'])], stdout=DEVNULL, stderr=STDOUT)
         p.communicate()
-        assert p.returncode == 0
-        p = Popen(['aplay',os.path.join(os.getcwd(),'audios',res[0]['mp3'].replace('.mp3','.wav')),"-D",'default:CARD=Headset'])
-        p.communicate()
-        assert p.returncode == 0
+        #assert p.returncode == 0
         return None
     mp3_filename=os.path.join(os.getcwd(), 'audios', '{}_{}.mp3'.format(hashing,'google'))
     tts = gTTS(msg, 'es-us')
     tts.save(mp3_filename)
-    p = Popen(['mpg321','-w',mp3_filename.replace('.mp3','.wav'), mp3_filename], stdout=DEVNULL, stderr=STDOUT)
-    p.communicate()
-    assert p.returncode == 0
-    p = Popen(['sudo','aplay',mp3_filename.replace(".mp3",".wav"),"-D",'default:CARD=Headset'])
+    p = Popen(['mpg321',mp3_filename], stdout=DEVNULL, stderr=STDOUT)
     p.communicate()
     assert p.returncode == 0
     db.insert({'hash':hashing,'type':'google','mp3':'{}_{}.mp3'.format(hashing,'google')})
