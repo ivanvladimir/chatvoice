@@ -31,34 +31,41 @@ plugins:
     - random_motivation
     - prueba2
     - p1
+    - remember_user_name
 
 
 script:
-
+    #Trael el nombre del usuario de la kb.db para recordarlo
+    - say name
+    - remember name
+#    - remember_user_name.remember_name('name')
+#    - say name 
+#    - set_slot name nombre_usuario
+#    - say name
     #Se saluda por primera vez al usuario
-    - say "Mi nombre es Bella y voy a ayudarte a alcanzar tu peso ideal recomendandote platillos adecuados a una dieta para bajar de peso"
+    - say "Hola! mucho gusto de conocerte. Mi nombre es Bella y voy a ayudarte a alcanzar tu peso ideal recomendandote platillos adecuados a una dieta para bajar de peso"
 
     #Se pregunta por el nombre de la persona con quien está interactuando 
-    - say "¿Cúal es tu nombre?"
-    - input name
+#    - say "¿Cúal es tu nombre?"
+#    - input name
     #- prueba2.procesa_watson(name)
-    - remember name
+#    - remember name
 
-    - say "mucho gusto en conocerte {}".format(name)
-    - say "Yo sé que pondrás mucho esfuerzo para cumplir tu meta."
-    - say "Así que necesito que platiquemos un poco de ella para que yo esté más enterada y te pueda apoyar aún mejor"
+#    - say "mucho gusto en conocerte {}".format(name)
+    - say "Yo se que pondras mucho esfuerzo para cumplir tu meta."
+    - say "Asi que necesito que platiquemos un poco de ella para que yo esta mas enterada y te pueda apoyar aun mejor"
 
     #Se pregunta acerca de estatura, peso deseado y el peso actual
-    - say "Antes que nada ¿cuál es tu estatura en centímetros?"
+    - say "Antes que nada cual es tu estatura en centietros?"
     - input height
     #- prueba2.procesa_watson(height)
     - remember height
     #- say "¿Me puedes decir cuál es el peso que deseas alcanzar?"
-    - say "y dime ¿cuál es el peso que deseas alcanzar?"
+    - say "y dime cual es el peso que deseas alcanzar?"
     - input weight_goal
     #- prueba2.procesa_watson(weight_goal)
     - remember weight_goal
-    - say "¿y cuánto es lo que pesas hoy?"
+    - say " cuáanto es lo que pesas hoy?"
     - input weight_ini
     #- prueba2.procesa_watson(weight_ini)
     - remember weight_ini
@@ -85,10 +92,10 @@ script:
     - input preference_sweet
     #- prueba2.procesa_watson(preference_sweet)
     - remember preference_sweet
-    - say "Salada"
-    - input preference_salty
+#    - say "Salada"
+#    - input preference_salty
     #- prueba2.procesa_watson(preference_salty)
-    - remember preference_salty
+#    - remember preference_salty
     - say "Mariscos"
     - input preference_seafood
     #- prueba2.procesa_watson(preference_seafood)
@@ -97,14 +104,14 @@ script:
     - input preference_soup
     #- prueba2.procesa_watson(preference_soup)
     - remember preference_soup
-    - say "Café"
-    - input preference_coffee
+#    - say "Cafe"
+#    - input preference_coffee
     #- prueba2.procesa_watson(preference_coffee)
-    - remember preference_coffee
-    - say "Té"
-    - input preference_tea
+#    - remember preference_coffee
+#    - say "Te"
+#    - input preference_tea
     #- prueba2.procesa_watson(preference_tea)
-    - remember preference_tea
+#    - remember preference_tea
     
     #Se menciona a modo de comparacion las preferencias previamente especificadas por el usuario
     # :( "YAML is a data serialisation language, so it's not meant 
@@ -114,12 +121,12 @@ script:
     - say "Esto me sirve para saber que tipo de comida es más de tu agrado." 
     - if float(preference_spicy) <3 say "Veo que no te gusta tanto la comida picante"
     - if not float(preference_spicy) <3 say "Veo que sí te gusta la comida picante"
-    - if float(preference_salty) < float(preference_sweet) say "y que prefieres lo dulce a lo salado."
-    - if not float(preference_salty) < float(preference_sweet) say "y que prefieres lo salado a lo dulce."
+#    - if float(preference_salty) < float(preference_sweet) say "y que prefieres lo dulce a lo salado."
+#    - if not float(preference_salty) < float(preference_sweet) say "y que prefieres lo salado a lo dulce."
     - if float(preference_seafood) < 3 say "Noto que no eres gran fan de la comida del mar "
-    - if not float(preference_seafood) < 3 say "Noto que sí te agrada la comida del mar "
+    - if not float(preference_seafood) < 3 say "Noto que si te agrada la comida del mar "
     - if float(preference_soup) < 3 say "aunque, no mucho los caldos"
-    - if not float(preference_soup) < 3 say "aunque, sí los caldos"
+    - if not float(preference_soup) < 3 say "y si los caldos"
 
 
     #Se pregunta la preferencia de comprar o preparar
@@ -135,9 +142,4 @@ script:
 
 
     #Explicacion de que la entrevista será una sola vez
-    - say "Esta pequeña entrevista fue para conocerte un poco mejor y sólo será necesaria para esta vez."
-
-    #Introducción a las platicas diarias
-    - say "De ahora en adelante te acompañaré por 6 semanas con un monitoreo semanal de tu nuevo peso para darle seguimiento a tu objetivo."
-    - say "Y bueno, si gustas puedes preguntarme en que consiste tu dieta, o tu monitoreo de peso semanal, acerca de que más puedo platicarte o si lo prefieres, puedo darte una recomendación de platillo para lo que puedes comer hoy..."
-#    - say "Y bueno, pues ahora si gustas puedes pedirme una recomendación "
+    - say "Esta pequenia entrevista fue para conocerte un poco mejor y solo sera necesaria para esta vez."

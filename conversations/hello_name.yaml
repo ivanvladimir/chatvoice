@@ -10,10 +10,17 @@ conversations:
     - 'motivation.yaml'
     - 'hello2.yaml'
     - 'imc.yaml'
+    - 'transition_to_daily_talk.yaml'
     - 'daily_chat.yaml'
+
+slots:
+    - name
+    - ya_pasamos_por_aqui
+    - intencion_de_peticion
 
 
 kb: kb.db
+
 
 plugins:
     - random_greeting
@@ -21,21 +28,38 @@ plugins:
     - random_greeting_with_name
     - p1
     - consultas
+    - verify_name
 
 
 script:
 
-#Primera interacción, resolucion de entrevista
+#Primera interaccion, resolucion de entrevista
     - solve hello
     - say greeting
-    - solve interview_united
-    - solve imc
-    - say evaluacion
+    - say "Cual es tu nombre?"
+    - input name
+#    - remember name
+    - verify_name.verify('usuario_existente', name)
+#    - say usuario_existente
+    - if float(usuario_existente) == 0 remember name
+#    - say name 
+    - if float(usuario_existente) == 0 solve interview_united
+    - if float(usuario_existente) == 0 solve imc
+    #- say evaluacion
+#Transicion a la conversacion diaria
+    - if float(usuario_existente) == 0 solve transition_to_daily_talk
+    - if float(usuario_existente) == 0 set_slot ya_pasamos_por_aqui 1
 
-#Saludo de entrada
-    - solve hello2
-    - say greeting_name
-    - solve daily_chat
+#Saludo a la conversacion diaria
+    - if float(usuario_existente) == 1 solve hello2
+    - if float(usuario_existente) == 1 say greeting_name
+#Conversacion diaria
+    - set_slot peticion "hola" 
+#    - say prueba2.procesa_watson(intencion_de_peticion)
+#    - if prueba2.procesa_watson(intencion_de_peticion) != "set_slot watson \"despedida\"" solve daily_chat
+    - while prueba2.procesa_watson(peticion) != "set_slot watson \"despedida\"" solve daily_chat
 
+#Despedida
+    - say "Nos vemos luego!"
 
 

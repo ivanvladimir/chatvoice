@@ -61,54 +61,127 @@ else:
 
 var = ''
 
-def conversacion_diaria(var):
+
+def conversacion_diaria(*intencion):
+    respuesta_bella=intencion[0]
+    var = intencion[1]
+    #print( var)
+    #print(respuesta_bella)
+    import sqlite3
+    connection_platillos = sqlite3.connect("/home/ljanine/repo/chatvoice/conversations/platillos.db")
+    cursor_platillo = connection_platillos.cursor()
+    #var = intencion
+    #print(var)
+    #print(type(var))
+    #print(str(len(var)))
 
     #dar recomendacion de comida
-    if var == "pedir_comida":
+    if var == "set_slot watson \"pedir_comida\"":
         horario = 'comida'
-        consulta = cursor_platillo.execute('SELECT * FROM platillos WHERE horario=? and picante=? and caldo=? and mar=? ', (horario, picante, caldo, mar))
-        msg = "Que te parecería comer " + str(cursor_platillo.fetchone())
-        print(str(msg))
+        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ORDER BY random() LIMIT 1;', (horario, picante, caldo, mar))
+        m = cursor_platillo.fetchone()
+        ms = m[0]
+        msg = "Que te pareceria comer " + ms
+        #return 'set_slot {0} "{1}" '.format("respuesta".msg)
+        #print(msg)
     #dar recomendacion de desayuno
-    elif var == "pedir_desayuno":
+    elif var == "set_slot watson \"pedir_desayuno\"":
         horario = 'desayuno'
-        consulta = cursor_platillo.execute('SELECT * FROM platillos WHERE horario=? and picante=? and caldo=? and mar=? ', (horario, picante, caldo, mar))
-        msg = "Que te parecería comer " + cursor_platillo.fetchone()
-        print( str(msg))
+        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ORDER BY random() LIMIT 1;', (horario, picante, caldo, mar))
+        m = cursor_platillo.fetchone()
+        ms = m[0]
+        msg = "Que te pareceria desayunar " + ms
+        #print( str(msg))
     #dar recomendacion de cena
-    elif var == "pedir_cena":
+    elif var == "set_slot watson \"pedir_cena\"":
         horario = 'cena'
-        consulta = cursor_platillo.execute('SELECT * FROM platillos WHERE horario=? and picante=? and caldo=? and mar=? ', (horario, picante, caldo, mar))
-        msg = "Que te parecería comer " + cursor_platillo.fetchone()
-        print(str(msg))
+        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ORDER BY random() LIMIT 1;', (horario, picante, caldo, mar))
+        m = cursor_platillo.fetchone()
+        ms = m[0]
+        msg = "Que te pareceria cenar " + ms
+        #print(str(msg))
     #dar recomendacion de colacion
-    elif var == "peticion_colacion":
+    elif var == "set_slot watson \"peticion_colacion\"":
         horario = 'colacion'
-        consulta = cursor_platillo.execute('SELECT * FROM platillos WHERE horario=? and picante=? and caldo=? and mar=? ', (horario, picante, caldo, mar))
-        msg = "Que te parecería comer " + cursor_platillo.fetchone()
-        print(str(msg))
+        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ORDER BY random() LIMIT 1;', (horario, picante, caldo, mar))
+        m = cursor_platillo.fetchone()
+        ms = m[0]
+        msg = "Que te pareceria comer " + ms
+        #print(str(msg))
     #dar respuesas acerca del peso
-    elif var == "chequeo_peso":
+    elif var == "set_slot watson \"chequeo_peso\"":
         msg = "Disculpa. Sigo trabajando en el chequeo de peso"
-        print(str(msg))
+        #print(str(msg))
     #dar respuesas acerca del monitoreo del progreso
-    elif var == "monitoreo":
+    elif var == "set_slot watson \"monitoreo\"":
         msg = "Disculpa. Sigo trabajando en el monitoreo de peso"
-        print(str(msg))
+        #print(str(msg))
     #dar respuesas acerca de Bella
-    elif var == "dudas_de_bella":
-        msg = "Disculpa. Sigo trabajando en poder solucionar tus dudas"
-        print(str(msg))
+    elif var == "set_slot watson \"dudas_de_bella\"":
+        msg = "Mi nombre es Bella y mi objetivo es apoyarte dandote recomendaciones de platillos todas las veces por las que preguntes por algo de desayunar, comer o cenar, o incluso con alguna colación. Así te daré ideas de lo que puedes comer para que no te aburras con esta dieta de cero azucares y cero harinas  y logres alcanzar la meta de tu peso ideal"
+        #print(str(msg))
     #dar respuesas acerca de la dieta
-    elif var == "dudas_de_dieta":
-        msg = "Disculpa. Sigo trabajando en poder solucionar tus dudas"
-        print(str(msg))
+    elif var == "set_slot watson \"dudas_de_dieta\"":
+        msg = "La dieta consta de evitar lo mas posible los alimentos que tengan harinas o azucares para poder bajar de peso. Con esto tú podrías disminuir de talla lo de 9 kilos si eres mujer o incluso, lo de 12 kilos en el caso de que seas hombre. Esta dieta dura 6 semanas y consta de 3 etapas. Así que aunque, yo solo sea la encargada de la primer etapa, TÚ podrás pedirme las recomendaciones de platillos para el desayuno, comida, cena o entre comidas, las veces que quieras por dos semanas."
+        #print(str(msg))
+    #dar diferente recomendacion de comida
+    elif var == "set_slot watson \"pedir_sugerencia_diferente\"":
+        horario = 'comida'
+        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ORDER BY random() LIMIT 1;', (horario, picante, caldo, mar))
+        m = cursor_platillo.fetchone()
+        ms = m[0]
+        msg = "Esta bien. Entonces, que te parece " + ms
+        #print(msg)
+    #decirle al usuario qué puede preguntar
+    elif var == "set_slot watson \"dudas_de_que_hacer\"":
+        msg = "Preguntame qu puedo sugirte para comer hoy"
+    #dar mensaje de despedida
+    elif var == "set_slot watson \"despedida\"":
+        msg = ""
+        #print(str(msg))
+    #dar mensaje de adios
+    elif var == "set_slot watson \"no_quiere_algo_mas\"":
+        msg = "De acuerdo, adios."
     #Intentar pedir que diga algo de lo que podemos responder
+    elif var == "set_slot watson \"dar_las_gracias_si_le_gusto\"":
+        msg = "Que mas puedo hacer por ti? "
+    #dar recomendacion de comida picosa
+    elif var == "set_slot watson \"pedir_algo_picante\"":
+        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE picante=1 ORDER BY random() LIMIT 1;')
+        m = cursor_platillo.fetchone()
+        ms = m[0]
+        msg = "Que te pareceria comer " + ms
+    #dar recomendacion de comida no picosa
+    elif var == "set_slot watson \"pedir_algo_no_picante\"":
+        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE picante=0 ORDER BY random() LIMIT 1;')
+        m = cursor_platillo.fetchone()
+        ms = m[0]
+        msg = "Que te pareceria comer " + ms
+    #dar recomendacion de algo dulce
+    elif var == "set_slot watson \"pedir_algo_dulce\"":
+        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE dulce=1 ORDER BY random() LIMIT 1;')
+        m = cursor_platillo.fetchone()
+        ms = m[0]
+        msg = "Que te pareceria comer " + ms
+    #dar recomendacion de comida de mar
+    elif var == "set_slot watson \"pedir_algo_de_mar\"":
+        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE mar=1 ORDER BY random() LIMIT 1;')
+        m = cursor_platillo.fetchone()
+        ms = m[0]
+        msg = "Que te pareceria comer " + ms
+    #dar recomendacion de comida caldosa
+    elif var == "set_slot watson \"pedir_algo_caldoso\"":
+        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE caldo=1 ORDER BY random() LIMIT 1;')
+        m = cursor_platillo.fetchone()
+        ms = m[0]
+        msg = "Que te pareceria comer " + ms
     else:
-        msg = "Disculpa, no te entendí."
+        msg = "Disculpa, no te entendi. A que te refieres?"
         print(str(msg))
 
-    return 'set_slot {0} "{1}"'.format("var",str(msg))
+
+    return 'set_slot {0} "{1}"'.format(respuesta_bella,str(msg))
+
 
 f.close()
 

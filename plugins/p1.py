@@ -10,9 +10,10 @@ for x in data:
 y = json.loads(x)
 
 
+
 def val(*args):
     var=args[0]
-
+    msg=''
 
     #CALCULA CATEGORIA SEGÚN IMC
 

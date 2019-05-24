@@ -26,6 +26,8 @@ from plugins import random_motivation
 from plugins import prueba2
 from plugins import p1
 from plugins import consultas
+from plugins import verify_name
+from plugins import remember_user_name
 
 # TODO make a better system for filters
 from filters import *
@@ -341,6 +343,11 @@ class Conversation:
         self.kb[arg]=self.slots[arg]
         with open(self.kbfilename,"w") as json_file:
             json.dump(self.kb,json_file)
+    
+    def remember_name_(self,arg):
+        self.nb[arg]=self.slots[arg]
+        with open(self.nbfilename,"w") as json_file:
+            json.dump(self.nb,json_file)
 
     def empty_slot_(self,line):
         self.slots[line]=None

@@ -1,0 +1,13 @@
+# Conversation for Bella´s answer
+settings:
+    name: BELLA
+
+plugins:
+    - consultas
+    - prueba2 
+
+script:
+    - input peticion
+#    - say prueba2.procesa_watson(peticion)
+    - consultas.conversacion_diaria('sugerencia', prueba2.procesa_watson(peticion))
+    - say sugerencia

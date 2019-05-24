@@ -14,15 +14,20 @@ caldo = 0
 mar = 1
 dulce = 0
 
-consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ', (horario, picante, caldo, mar))
+consulta = cursor_platillo.execute('SELECT * FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ', (horario, picante, caldo, mar))
 msg = cursor_platillo.fetchone()
 
+consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ', (horario, picante, caldo, mar))
+msg2 = cursor_platillo.fetchone()
 
-
-#print(type(msg))
+print(type(msg))
 print(msg)
-#print(msg[1])
+print(msg[1])
 print(picante)
 print(caldo)
 print(mar)
 print(dulce)
+#los buenos
+print(msg2)
+#el mero mero bueno
+print(msg2[0])
