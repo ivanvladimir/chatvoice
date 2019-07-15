@@ -1,4 +1,5 @@
-# chatvoice
+# chatvoice 
+#Modificado por Jesús Ernesto Martínez Olmos
 
 A language for chatbots, uses ASR and TTS technology.
 
