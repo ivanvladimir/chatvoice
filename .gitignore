@@ -93,3 +93,7 @@ pip-selfcheck.json
 
 # moni_files
 conversations/moni*
+audios/
+audios.json
+conversations/kb.db
+rec_voice_audios/
