@@ -30,6 +30,7 @@ yarl = "*"
 duckduckpy = "*"
 socketIO-client = "*"
 python-socketio = "*"
+request = "*"
 
 [dev-packages]
 
