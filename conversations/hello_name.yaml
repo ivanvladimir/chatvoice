@@ -1,7 +1,7 @@
 # Conversation example for simple hello and ask a name
 
 settings:
-    name: HAL
+    name: Viernes
 
 conversations:
     - 'hello.yaml'
@@ -34,5 +34,5 @@ script:
     - if status == "good" solve excelent
     - if status == "bad" solve sorry
     - say "Hay algunas cosas que se"
-    - say "hecho {} {}".format(*db['main'][0])
+    #- say "hecho {} {}".format(*db['main'][0])
     - say "adios {}".format(name)
