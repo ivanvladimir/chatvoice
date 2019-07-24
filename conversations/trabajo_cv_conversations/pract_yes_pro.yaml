@@ -1,4 +1,3 @@
-
 strategies:
     num_lugar:
         - say "¿En cuantos lugares?"

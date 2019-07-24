@@ -1,17 +1,14 @@
 ﻿settings:
-    name: Workbot
+    name: JobBot
 
 conversations:
-    - 'entrevista.yaml'
-    - 'chatbot.yaml'
+    - 'datos_personales.yaml'
+    - 'hello.yaml'
     - 'pract_yes_pro.yaml'
     - 'idioma.yaml'
+    - 'entrevista.yaml'
     - 'trabajo.yaml'
-    - 'hello.yaml'
-
-
-slots:
-    - respuesta
+    - 'curriculum.yaml'
 
 dbs:
     main: import_csv data.csv
@@ -20,15 +17,15 @@ kb: kb.db
 
 strategies:
     empezar:
-        - say "BIENVENIDO AL CHATBOT PARA QUE CONSIGAS TRABAJO"
+        - say "BIENVENIDO, SOY JOBBOT EL CHATBOT QUE TE AYUDARÁ A CONSEGUIR TRABAJO"
         - say "Tenemos 2 opciones para ti"
-        - say "1 Realizar tu CV"
-        - say "2 Hacer una entrevista de trabajo simulacion"
+        - say "Realizar tu Curriculum"
+        - say "Hacer una entrevista de trabajo simulacion"
 
     
 script:
    - solve empezar
-   - input respuesta
-   - if respuesta == "1" solve chatbot
-   - if respuesta == "2" solve entrevista
+   - input respuesta | asign curriculum:cv entrevista:ent
+   - if respuesta == "cv" solve curriculum
+   - if respuesta == "ent" solve entrevista
 
