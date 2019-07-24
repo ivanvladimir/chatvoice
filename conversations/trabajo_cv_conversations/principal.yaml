@@ -21,7 +21,6 @@ strategies:
         - say "Tenemos 2 opciones para ti"
         - say "Realizar tu Curriculum"
         - say "Hacer una entrevista de trabajo simulacion"
-
     
 script:
    - solve empezar
