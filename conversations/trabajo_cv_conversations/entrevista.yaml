@@ -1,0 +1,14 @@
+﻿conversations:
+    - 'datos_personales.yaml'
+    - 'idioma.yaml'
+    - 'trabajo.yaml'
+    - 'escolar.yaml'
+
+dbs:
+    main: import_csv data.csv
+ 
+script:
+    - solve datos_personales
+    - solve escolar
+    - solve trabajo
+  

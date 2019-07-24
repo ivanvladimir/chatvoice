@@ -1,0 +1,34 @@
+﻿settings:
+    name: Workbot
+
+conversations:
+    - 'entrevista.yaml'
+    - 'chatbot.yaml'
+    - 'pract_yes_pro.yaml'
+    - 'idioma.yaml'
+    - 'trabajo.yaml'
+    - 'hello.yaml'
+
+
+slots:
+    - respuesta
+
+dbs:
+    main: import_csv data.csv
+
+kb: kb.db
+
+strategies:
+    empezar:
+        - say "BIENVENIDO AL CHATBOT PARA QUE CONSIGAS TRABAJO"
+        - say "Tenemos 2 opciones para ti"
+        - say "1 Realizar tu CV"
+        - say "2 Hacer una entrevista de trabajo simulacion"
+
+    
+script:
+   - solve empezar
+   - input respuesta
+   - if respuesta == "1" solve chatbot
+   - if respuesta == "2" solve entrevista
+
