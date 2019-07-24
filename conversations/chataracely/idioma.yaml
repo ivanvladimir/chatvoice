@@ -1,0 +1,22 @@
+strategies:
+    num_idioma:
+        - say "¿Cuantos idiomas sabes hablar?"
+        - input num_idioma
+    primero:
+        - say "Menciona el primer idioma"
+        - input primero
+    nivel:
+        - say "¿Nivel de idioma?"
+        - input nivel
+    segundo:
+        - say "Menciona el segundo idoma"
+        - input segundo
+    snivel:
+        - say "¿Nivel de idioma?"
+        - input snivel
+script:
+    - solve num_idioma
+    - solve primero
+    - solve nivel
+    - solve segundo
+    - solve snivel

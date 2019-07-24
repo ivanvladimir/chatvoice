@@ -1,0 +1,56 @@
+# Conversation example for simple hello and ask a name
+
+settings:
+    name: Florence
+
+conversations:
+    - 'hello.yaml'
+
+slots:
+    - nombre
+    - edad
+    - alergia
+dbs:
+    main: import_csv data_enf.csv
+
+kb: kb.db
+
+strategies:
+    nombre:
+        - say "¿cúal es tu nombre?"
+        - input nombre
+        - say "mucho gusto en conocerte"
+    edad:
+        - say "¿qué edad tienes?"
+        - input edad
+    alergia:
+        - say "¿tienes alguna alergia?"
+        - input alergia | yesno
+    alergia_yes:
+        - say "Dime porfavor todas tus alergias"
+        - add_slot alergias
+        - set_slot alergias []
+        - input alergias
+    headache:
+        - say "Siento que te duela la cabeza {} pero no te preocupes tengo algunas opciones que te pueden ayudar.".format(nombre)
+        - say "La manzanilla es ideal para aliviar el dolor de cabeza. Tómala en una infusión, dos tazas diarias."
+        - say "La lavanda, además de ser una planta aromática, alivia los dolores de cabeza causados por la fiebre y el insomnio. Aplica un poco de aceite de lavanda en las sienes, mezclado con otro poco de aceite de oliva. Esto generará un efecto calmante y analgésico."
+    stomachache:
+        - say "Siento que te duela el estómago {}".format(nombre)
+    malestar:
+        - input status | asign cabeza:head estómago:stomach
+        - if status == "head" solve headache
+        - if status == "stomach" solve stomachache
+        - say "¿Tienes algún otro malestar?"
+        - input males | asign si:yes no:no
+script:
+    - solve hello
+    - say "Me llamo Florence"
+    - loop_slots
+    - if alergia solve alergia_yes
+    - say "{}, te puedo ayudar con los siguientes malestares".format(nombre)
+    - say "{}".format(db['main'])
+    - say "¿Tienes algún malestar?"
+    - input males | asign si:yes no:no
+    - while males == "yes" solve malestar
+    - say "Espero te alivies pronto {}, cuidate.".format(nombre)

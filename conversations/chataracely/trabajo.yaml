@@ -1,0 +1,20 @@
+strategies:
+    puesto:
+        - say "¿Que puesto de trabajo buscas preferentemente?"
+        - input puesto
+    primeros:
+        - say "Otro puesto de trabajo?"
+        - input primeros
+    horario:
+        - say " En que horario, Mañana,  Tarde,  Noche o Mixto"
+        - input horario
+    correo:
+        - say "Perfecto, ahora generaremos tu CV. y buscaremos en ferias de empleo, deja tu correo para hacerte llegar todo"
+        - input correo
+    
+script:
+    - solve puesto
+    - solve primeros
+    - solve horario
+    - solve correo
+    

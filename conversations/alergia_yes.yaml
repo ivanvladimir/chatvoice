@@ -1,0 +1,23 @@
+strategies:
+    num_children:
+        - say "¿cuantos hijos tienes?"
+        - input num_children
+    age_children:
+        - say "¿qué edades tienen?"
+        - input age_children
+    subject_children:
+        - say "¿ya sabes que quieren estudiar?"
+        - input status
+    where_study_children:
+        - say "¿y dónde quieren estudiar?"
+        - input where_study_children
+    insurance_education:
+        - say "¿tienes algún seguro que cubra su educación?"
+        - input insurance_education
+script:
+    - while number_creditcard_counter < number_creditcard solve card_info
+    - say num_children
+    - solve age_children
+    - solve subject_children
+    - solve where_study_children
+    - solve insurance_education

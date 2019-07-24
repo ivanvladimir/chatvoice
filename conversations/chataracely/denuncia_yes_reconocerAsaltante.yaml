@@ -1,0 +1,9 @@
+# Moni conversation for children information
+strategies:
+    reconocer:
+        - say "¿Como era?"
+        - input reconocer
+    
+script:
+    - solve reconocer
+

@@ -1,0 +1,77 @@
+# Conversation example for simple hello and ask a name
+
+settings:
+    name: DenunciaBot
+
+conversations:
+    - 'denuncia_yes_reconocerAsaltante.yaml'
+    - 'denuncia_yes_antecedentes.yaml'
+
+slots:
+    - name
+    - denuncia
+    - descripcionDenuncia
+    - fecha
+    - hora
+    - lugar
+    - reconocerAsaltante
+    - arma
+    - antecedentes
+    - objetoRobado
+    - valorObjetoRobado
+    - tipoDenuncia
+    
+strategies:
+    name:
+        - say "Hola, soy Denunciabot, el chatbot que recibe denuncias.. ¿Cual es tu nombre?"
+        - input name
+    denuncia:
+        - say "En que puedo ayudarte?"
+        - input denuncia
+    descripcionDenuncia:
+        - say "Sobre que es tu denuncia"
+        - input descripcionDenuncia
+    fecha:
+        - say "En que fecha fue asaltado?"
+        - input fecha
+    hora:
+        - say "A que hora ocurrieron los hechos?"
+        - input hora
+    lugar:
+        - say "Donde ocurrio el asalto?"
+        - input lugar
+    reconocerAsaltante:
+        - say "Reconocio al asaltante"
+        - input reconocerAsaltante | yesno
+    arma:
+        - say "Con que fue asaltado?"
+        - input arma
+    antecedentes:
+        - say "Ya habia sido asaltado con anterioridad por esa zona?"
+        - input antecedentes | yesno
+    objetoRobado:
+        - say "Que le fue despojado?"
+        - input objetoRobado
+    valorObjetoRobado:
+        - say "Que valor tenia?"
+        - input valorObjetoRobado
+    tipoDenuncia:
+        - say "¿Muy bien, desea hacer la denuncia anonima o nos permite saber sus datos?"
+        - input tipoDenuncia
+
+script:
+    - loop_slots
+    - if denuncia_yes_reconocerAsaltante
+    - if denuncia_yes_antecedentes
+    - solve name
+    - solve denuncia
+    - solve descripcionDenuncia
+    - solve fecha
+    - solve hora
+    - solve lugar
+    - solve reconocerAsaltante
+    - solve arma
+    - solve antecedentes
+    - solve objetoRobado
+    - solve valorObjetoRobado
+    - solve tipoDenuncia

@@ -1,0 +1,9 @@
+# Moni conversation for children information
+strategies:
+    antecedentes:
+        - say "¿Cuando?"
+        - input antecedentes
+    
+script:
+    - solve antecedentes
+

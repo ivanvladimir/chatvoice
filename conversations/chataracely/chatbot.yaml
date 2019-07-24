@@ -1,0 +1,35 @@
+settings:
+    name: ChatBot
+
+conversations:
+   - 'pract_yes_pro.yaml'
+   - 'idioma.yaml'
+   - 'trabajo.yaml'
+   - 'hello.yaml'
+
+slots:
+    - name
+    - age
+    - Grado_Aca
+    - Pract_Profesionales
+
+strategies:
+    name:
+        - say "Hola ¿Cómo te llamas?"
+        - input name 
+        - say "mucho gusto en conocerte"
+    age:
+        - say "¿y qué edad tienes?"
+        - input age
+    Grado_Aca:
+        - say "¿Cual es tu grado academico?"
+        - input Grado_Aca
+    Pract_Profesionales:
+        - say " ¿Haz trabajado, realizado practicas profesionales, etc?"
+        - input Pract_Profesionales | yesno
+script:
+    - loop_slots
+    - if Pract_Profesionales solve pract_yes_pro
+    - solve idioma
+    - solve trabajo
+    - say "adios {}".format(name)
