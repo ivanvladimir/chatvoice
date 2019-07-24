@@ -18,9 +18,9 @@ strategies:
     nacionalidad:
         - say "¿Cual es tu nacionalidad?"
         - input nacionalidad
-    estado civil:
+    estadocivil:
         - say "¿Cual es tu estado civil? Soltero, Casado, Divorciado, Viudo"
-        - input estadoCivil
+        - input estadocivil
     telefono:
         - say "¿Cual es tu numero telefonico?"
         - input telefono
@@ -33,6 +33,6 @@ script:
     - solve fechaNacimiento
     - solve domicilio
     - solve nacionalidad
-    - solve estadoCivil
+    - solve estadocivil
     - solve telefono
     - solve correo
