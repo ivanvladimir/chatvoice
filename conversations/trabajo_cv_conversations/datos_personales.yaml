@@ -1,28 +1,38 @@
 # DATOS PERSONALES
 strategies:
+
     nombre:
-        - say "¿Cual es tu nombre?"
+        - say "Hola.. ¿Cual es tu nombre?"
         - input nombre
     apellidos:
-        - say "Apellido Paterno"
+        - say "Ingresa tu apellido paterno"
         - input apellidoP
-        - say "Apellido Materno"
+        - say "Ingresa tu apellido materno"
         - input apellidoM
-    edad:
-        - say "Ingresa tu edad"
-        - input edad
+    fechaNacimiento:
+        - say "Fecha de Nacimiento Dia/Mes/Año"
+        - input fechaN
     domicilio:
-        - say "¿Cual es tu domicilio?"
+        - say "¿Cual es tu domicilio? calle, numero, colonia, ciudad"
         - input domicilio
+    nacionalidad:
+        - say "¿Cual es tu nacionalidad?"
+        - input nacionalidad
     estado civil:
-        - say "Estado civil"
+        - say "¿Cual es tu estado civil? Soltero, Casado, Divorciado, Viudo"
         - input estadoCivil
     telefono:
         - say "¿Cual es tu numero telefonico?"
         - input telefono
+    correo:
+        - say "Ingresa tu e-mail"
+        - input correo
 script:
     - solve nombre
     - solve apellidos
-    - solve edad
-    - solve where_study_children
-    - solve insurance_education
+    - solve fechaNacimiento
+    - solve domicilio
+    - solve nacionalidad
+    - solve estadoCivil
+    - solve telefono
+    - solve correo
