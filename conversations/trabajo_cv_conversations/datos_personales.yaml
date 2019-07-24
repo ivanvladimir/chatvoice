@@ -1,23 +1,28 @@
-# Moni conversation for children information
+# DATOS PERSONALES
 strategies:
-    num_children:
-        - say "¿cuantos hijos tienes?"
-        - input num_children
-    age_children:
-        - say "¿qué edades tienen?"
-        - input age_children
-    subject_children:
-        - say "¿ya sabes que quieren estudiar?"
-        - input status
-    where_study_children:
-        - say "¿y dónde quieren estudiar?"
-        - input where_study_children
-    insurance_education:
-        - say "¿tienes algún seguro que cubra su educación?"
-        - input insurance_education
+    nombre:
+        - say "¿Cual es tu nombre?"
+        - input nombre
+    apellidos:
+        - say "Apellido Paterno"
+        - input apellidoP
+        - say "Apellido Materno"
+        - input apellidoM
+    edad:
+        - say "Ingresa tu edad"
+        - input edad
+    domicilio:
+        - say "¿Cual es tu domicilio?"
+        - input domicilio
+    estado civil:
+        - say "Estado civil"
+        - input estadoCivil
+    telefono:
+        - say "¿Cual es tu numero telefonico?"
+        - input telefono
 script:
-    - solve num_children
-    - solve age_children
-    - solve subject_children
+    - solve nombre
+    - solve apellidos
+    - solve edad
     - solve where_study_children
     - solve insurance_education
