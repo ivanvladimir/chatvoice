@@ -1,0 +1,9 @@
+# HABILIDADES CONOCIMIENTO
+strategies:
+    nombreIdiomas:
+        - say "Muy Bien!! saber idiomas ayuda a entender a otras personas y ver el mundo con otros ojos"
+        - say "¿Cuales son?"
+        - input nombreIdiomas
+script:
+    - solve nombreIdiomas
+
