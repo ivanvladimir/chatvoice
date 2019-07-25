@@ -5,7 +5,6 @@ conversations:
     - 'datos_personales.yaml'
     - 'hello.yaml'
     - 'pract_yes_pro.yaml'
-    - 'idioma.yaml'
     - 'entrevista.yaml'
     - 'trabajo.yaml'
     - 'curriculum.yaml'

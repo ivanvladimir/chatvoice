@@ -1,10 +1,8 @@
-    conversations:
-    - 'Otras_habilidades_conocimiento.yaml
-    - 'Otras_habilidades_conocimiento_idiomas.yaml
-     
-slots:
+conversations:
+    - 'Otras_habilidades_conocimiento.yaml'
+    - 'Otras_habilidades_idiomas.yaml'
+slots: 
     - idiomas
-    - nombreIdiomas
     - conocimiento
     - capacidad
     - creativo
@@ -12,7 +10,6 @@ slots:
     - potencial
     - aprender
     - relaciones
-
 
 strategies:
 
@@ -39,8 +36,7 @@ strategies:
         - input aprender
     relaciones:
         - say "¿Cuales son tus relaciones interpersonales?"
-        - input relaciones        
-        
+        - input relaciones
 script:
     - loop_slots
     - if idiomas>=2 solve Otras_habilidades_idiomas
@@ -51,4 +47,3 @@ script:
     - potencial
     - aprender
     - relaciones
-

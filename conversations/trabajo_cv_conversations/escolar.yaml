@@ -1,25 +1,28 @@
-
 strategies:
-    
+    grado_escolar:
+        - say "Ahora te hare preguntas hacerca de tu escolaridad"
+        - say "¿Que puedes contarme hacerca de esto?"
+        - input datos_escolares
     num_pro:
         - say "¿Cuantos proyectos consideras relevantes en los que has participado?"
         - input num_pro | number
     proyecto:
-        - solve nombre
+        - solve nombre_escolar
         - solve periodo
         - solve guardar_info
-    nombre:
+    nombre_escolar:
         - say "Menciona el nombre del proyecto"
-        - input nombre
+        - input nombre_escolar
     descripcion:
         - say "¿Podrias hablarme hacerca de el?"
         - input descripcion
     guardar_info:
-        - execute self.slots['lugares'].append((self.slots['nombre'],self.slots['descripcion']))
-        - empty_slot nombre
+        - execute self.slots['lugares'].append((self.slots['nombre_escolar'],self.slots['descripcion']))
+        - empty_slot nombre_escolar
         - empty_slot descripcion
         - execute self.slots['numero_contador']+=1
 script:
+    - solve grado_escolar 
     - solve num_pro
     - add_slot lugares
     - set_slot lugares []

@@ -1,9 +1,9 @@
 # HABILIDADES CONOCIMIENTO
 strategies:
-    herramientas:
-        - say "¿Cuales son?"
-        - input herramientas
-        - say "Excelente!"
+  herramientas:
+    - say "Â¿Cuales son?"
+    - input herramientas
+    - say "Excelente!"
 script:
     - solve herramientas
 
