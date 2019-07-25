@@ -1,0 +1,59 @@
+# HABILIDADES
+settings:
+    name: CHATJOB
+    
+conversations:
+    - 'Otras_habilidades_conocimiento.yaml
+    - 'Otras_habilidades_conocimiento_idiomas.yaml
+     
+slots:
+    - name
+    - idiomas
+    - nombreIdiomas
+    - conocimiento
+    - capacidad
+    - creativo
+    - trabajar
+    - potencial
+    - aprender
+    - relaciones
+
+
+strategies:
+
+    idiomas:
+        - say "¿Cuantos idiomas hablas?"
+        - input idiomas
+    conocimiento:
+        - say "Otra pregunta... ¿Cuentas con el conocimiento de informática básico (herramientas Office)?"
+        - input conocimiento | yesno
+    capacidad:
+        - say "¿Tienes capacidad para resolver problemas?"
+        - input capacidad
+    creativo:
+        - say "¿Eres creativo?"
+        - input creativo
+    trabajar:
+        - say "¿Te gusta trabajar en equipo?"
+        - input trabajar
+    potencial:
+        - say "¿Tienes potencial de crecimiento?"
+        - input potencial
+    aprender:
+        - say "¿Tienes deseos de aprender?"
+        - input aprender
+    relaciones:
+        - say "¿Cuales son tus relaciones interpersonales?"
+        - input relaciones        
+        
+script:
+    - loop_slots
+    - if idiomas>=2 solve Otras_habilidades_idiomas
+    - if conocimiento solve Otras_habilidades_conocimiento
+    - capacidad
+    - creativo
+    - trabajar
+    - potencial
+    - aprender
+    - relaciones
+
