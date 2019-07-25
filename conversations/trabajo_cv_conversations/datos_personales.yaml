@@ -1,6 +1,5 @@
 # DATOS PERSONALES
 strategies:
-
     nombre:
         - say "Hola.. ¿Cual es tu nombre?"
         - input nombre
