@@ -1,0 +1,40 @@
+# Objetivos y metas
+slots:
+    - finances_mode
+    - montly_income
+    - montly_saving
+    - saving_plan
+    - living_of_savings
+    - montly_payment_debt
+    - daily_expenses
+
+strategies:
+    objetivos_corto:
+        - say "Cuéntame acerca de ellos por favor"
+        - input objeti_corto
+        - say "Me parecen bien tus objetivos a corto plazo"
+    objetivos_largo:
+        - say "Cuéntame acerca de ellos por favor"
+        - input objeti_largo
+        - say "Me agradan tus objetivos a largo plazo"
+    metas_corto:
+        - say "Cuéntame acerca de ellas por favor"
+        - input meta_corto
+        - say "Me parece bien que tengas metas a corto plazo"
+    metas_largo:
+        - say "Cuéntame acerca de ellas"
+        - input meta_largo
+        - say "Me parece excelente que tengas metas a corto plazo"
+script:
+    - say "¿Tienes algún objetivo a corto plazo?" 
+    - input si_objet_c | yesno 
+    - if si_objet_c solve objetivos_corto
+    - say "¿Tienes algún objetivo a largo plazo?" 
+    - input si_objet_l | yesno 
+    - if si_objet_l solve objetivos_largo
+    - say "¿Tienes alguna meta a corto plazo?" 
+    - input si_meta_c | yesno 
+    - if si_meta_c solve metas_corto
+    - say "¿Tienes alguna meta a largo plazo?" 
+    - input si_meta_l | yesno 
+    - if si_meta_l solve metas_largo

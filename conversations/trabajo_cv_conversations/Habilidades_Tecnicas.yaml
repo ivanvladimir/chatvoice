@@ -1,13 +1,8 @@
-# HABILIDADES
-settings:
-    name: CHATJOB
-    
-conversations:
+    conversations:
     - 'Otras_habilidades_conocimiento.yaml
     - 'Otras_habilidades_conocimiento_idiomas.yaml
      
 slots:
-    - name
     - idiomas
     - nombreIdiomas
     - conocimiento

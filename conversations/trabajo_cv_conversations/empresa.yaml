@@ -1,0 +1,6 @@
+strategies: 
+
+    grado_escolar:
+        - say "Ahora te hare preguntas hacerca de tu escolaridad"
+        - say "¿Que puedes contarme hacerca de esto?"
+        - input datos_escolares

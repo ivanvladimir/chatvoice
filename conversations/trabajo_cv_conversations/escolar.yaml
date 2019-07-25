@@ -1,21 +1,22 @@
+
 strategies:
     
     num_pro:
         - say "¿Cuantos proyectos consideras relevantes en los que has participado?"
         - input num_pro | number
     proyecto:
-        - solve nombre_proy
+        - solve nombre
         - solve periodo
         - solve guardar_info
-    nombre_proy:
+    nombre:
         - say "Menciona el nombre del proyecto"
-        - input nombre_proy
+        - input nombre
     descripcion:
         - say "¿Podrias hablarme hacerca de el?"
         - input descripcion
     guardar_info:
-        - execute self.slots['lugares'].append((self.slots['nombre_proy'],self.slots['descripcion']))
-        - empty_slot nombre_proy
+        - execute self.slots['lugares'].append((self.slots['nombre'],self.slots['descripcion']))
+        - empty_slot nombre
         - empty_slot descripcion
         - execute self.slots['numero_contador']+=1
 script:
