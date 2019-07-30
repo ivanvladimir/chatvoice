@@ -14,4 +14,7 @@ script:
     - solve trabajo
     - solve empresa
     - solve objetivos_metas
+    - solve actitudes_aptitudes
+    - solve analisis_psi
+    - solve empezar
   

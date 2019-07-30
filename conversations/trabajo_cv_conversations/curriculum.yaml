@@ -1,15 +1,7 @@
-conversations:
-    - 'datos_personales.yaml'
-    - 'trabajo.yaml'
-    - 'escolar.yaml'
-    - 'Habilidades_Tecnicas.yaml'
-
-dbs:
-    main: import_csv data.csv
- 
 script:
-    #- solve datos_personales
+    - solve datos_personales
     - solve escolar
     - solve trabajo
     - solve Habilidades_Tecnicas
+    - solve hello
   

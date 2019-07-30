@@ -1,8 +1,7 @@
-# Conversation example for simple hello
-
 plugins:
-    - random_greeting
+    #- random_greeting
+    #- spacy
+    - doc_generator
 
 script:
-    - set_slot options ["whatsup"]
-    - random_greeting.execute('greeting',options)
+  - doc_generator.execute(nombre,apellidoP,apellidoM,fechaN,domicilio,nacionalidad,estadocivil,telefono,correo,datos_escolares,lugares_esc,lugares,nombreIdiomas,herramientas)

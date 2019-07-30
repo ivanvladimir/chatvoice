@@ -1,31 +1,31 @@
 strategies:
     grado_escolar:
-        - say "Ahora te hare preguntas hacerca de tu escolaridad"
-        - say "¿Que puedes contarme hacerca de esto?"
+        - say "Ahora te haré preguntas acerca de tu escolaridad"
+        - say "¿Qué puedes contarme acerca de eso?"
         - input datos_escolares
     num_pro:
-        - say "¿Cuantos proyectos consideras relevantes en los que has participado?"
+        - say "¿Cuántos proyectos consideras relevantes en los que has participado?"
         - input num_pro | number
     proyecto:
         - solve nombre_escolar
-        - solve periodo
-        - solve guardar_info
+        - solve descripcion_esc
+        - solve guardar_info_esc
     nombre_escolar:
         - say "Menciona el nombre del proyecto"
         - input nombre_escolar
-    descripcion:
-        - say "¿Podrias hablarme hacerca de el?"
-        - input descripcion
-    guardar_info:
-        - execute self.slots['lugares'].append((self.slots['nombre_escolar'],self.slots['descripcion']))
+    descripcion_esc:
+        - say "¿Podrías hablarme acerca de él?"
+        - input descripcion_esc
+    guardar_info_esc:
+        - execute self.slots['lugares_esc'].append((self.slots['nombre_escolar'],self.slots['descripcion_esc']))
         - empty_slot nombre_escolar
-        - empty_slot descripcion
-        - execute self.slots['numero_contador']+=1
+        - empty_slot descripcion_esc
+        - execute self.slots['numero_contador_esc']+=1
 script:
     - solve grado_escolar 
     - solve num_pro
-    - add_slot lugares
-    - set_slot lugares []
-    - add_slot numero_contador
-    - set_slot numero_contador 0
-    - while numero_contador < num_lugar solve proyecto
+    - add_slot lugares_esc
+    - set_slot lugares_esc []
+    - add_slot numero_contador_esc
+    - set_slot numero_contador_esc 0
+    - while numero_contador_esc < num_pro solve proyecto

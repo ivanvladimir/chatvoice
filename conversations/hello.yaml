@@ -5,4 +5,4 @@ plugins:
 
 script:
     - set_slot options ["whatsup"]
-    - random_greeting.execute('greeting',options)
+    - .execute('greeting',options)

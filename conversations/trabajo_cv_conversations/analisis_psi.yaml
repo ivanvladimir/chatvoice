@@ -1,0 +1,31 @@
+strategies: 
+    analisis_de:
+        - say "cuentame de ti, ¿Podrias decirme cuál es tu mayor debilidad y tu mayor habilidad?"
+        - input analisis_dibilidades
+    analisis_sueno:
+        - say "¿Es éste tu trabajo soñado?"
+        - input analisis_sue
+    analisis_encargad:
+        - say "Si fueses tu la persona encargada de contratar a alguien para el puesto de trabajo, ¿qué cualidades le exigirías?"
+        - input analisis_encargado
+    analisis_motiva:
+        - say "¿Qué te impulsa a levantarte por las mañanas?"
+        - input analisis_motivacion
+    analisis_presion:
+        - say "¿Cómo manejas la presión?"
+        - input analisis_presio
+    analisis_pasa:
+        - say "¿Cuáles son tus pasatiempos?"
+        - input analisis_pasat
+    analisis_libro:
+        - say "¿Cuál fue el último libro que leíste por diversión?"
+        - input analisis_libr
+script:
+    - solve analisis_de
+    - solve analisis_sueno
+    - solve analisis_encargad
+    - solve analisis_motiva
+    - solve analisis_presion
+    - solve analisis_pasa
+    - solve analisis_libro
+        

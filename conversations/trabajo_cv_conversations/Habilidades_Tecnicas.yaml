@@ -1,49 +1,26 @@
-conversations:
-    - 'Otras_habilidades_conocimiento.yaml'
-    - 'Otras_habilidades_idiomas.yaml'
-slots: 
-    - idiomas
-    - conocimiento
-    - capacidad
-    - creativo
-    - trabajar
-    - potencial
-    - aprender
-    - relaciones
-
 strategies:
-
     idiomas:
-        - say "¿Cuantos idiomas hablas?"
-        - input idiomas
+        - say "¿Cuántos idiomas hablas?"
+        - input idiomas | number 
     conocimiento:
         - say "Otra pregunta... ¿Cuentas con el conocimiento de informática básico (herramientas Office)?"
         - input conocimiento | yesno
-    capacidad:
-        - say "¿Tienes capacidad para resolver problemas?"
-        - input capacidad
-    creativo:
-        - say "¿Eres creativo?"
-        - input creativo
-    trabajar:
-        - say "¿Te gusta trabajar en equipo?"
-        - input trabajar
-    potencial:
-        - say "¿Tienes potencial de crecimiento?"
-        - input potencial
-    aprender:
-        - say "¿Tienes deseos de aprender?"
-        - input aprender
-    relaciones:
-        - say "¿Cuales son tus relaciones interpersonales?"
-        - input relaciones
+    nombreIdiomas:
+        - say "Muy Bien!! saber idiomas ayuda a entender a otras personas y ver el mundo con otros ojos"
+        - say "¿Cuales son?"
+        - empty_slot nombreIdiomas
+        - input nombreIdiomas
+    herramientas:
+        - say "¿Cuales son?"
+        - empty_slot herramientas
+        - input herramientas
+        - say "Excelente!"
 script:
-    - loop_slots
-    - if idiomas>=2 solve Otras_habilidades_idiomas
-    - if conocimiento solve Otras_habilidades_conocimiento
-    - capacidad
-    - creativo
-    - trabajar
-    - potencial
-    - aprender
-    - relaciones
+    - solve idiomas
+    - add_slot nombreIdiomas
+    - set_slot nombreIdiomas "Natal"
+    - if idiomas>=2 solve nombreIdiomas
+    - add_slot herramientas
+    - set_slot herramientas "Ninguna"
+    - solve conocimiento
+    - if conocimiento solve herramientas

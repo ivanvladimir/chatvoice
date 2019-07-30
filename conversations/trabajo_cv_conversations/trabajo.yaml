@@ -1,11 +1,10 @@
-
 strategies:
     num_lugar:
         - say "¿En cuantos lugares has trabajado anteriormente?"
         - input num_lugar | number
     lugar:
         - solve lugar_puesto
-        - solve periodo
+        - solve periodo 
         - solve guardar_info
     lugar_puesto:
         - say "Menciona el lugar y en que puesto trabajaste"

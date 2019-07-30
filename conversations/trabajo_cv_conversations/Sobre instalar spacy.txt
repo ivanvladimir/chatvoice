@@ -1,0 +1,18 @@
+Sobre instalar spacy:
+
+pipenv install spacy
+
+pip install spacy
+
+vim spacy_test.py
+
+python spacy_test.py
+
+python -m spacy download en_core_web_sm
+
+python spacy_test.py
+
+python -m spacy download es_core_news_sm
+
+https://python-docx.readthedocs.io/en/latest/?fbclid=IwAR2LGSCEe3cpE3RjWs9Vgu0aZyAzVB0_K21aADhaWBWo_riktnsC080sNrg
+

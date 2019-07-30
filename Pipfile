@@ -31,6 +31,8 @@ duckduckpy = "*"
 socketIO-client = "*"
 python-socketio = "*"
 request = "*"
+spacy = "*"
+python-docx = "*"
 
 [dev-packages]
 

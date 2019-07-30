@@ -1,0 +1,42 @@
+strategies:
+    capacidad:
+        - say "¿Tienes capacidad para resolver problemas?"
+        - input capacidad
+    creativo:
+        - say "¿Eres creativo?"
+        - input creativo
+    trabajar:
+        - say "¿Te gusta trabajar en equipo?"
+        - input trabajar
+    potencial:
+        - say "¿Tienes potencial de crecimiento?"
+        - input potencial
+    aprender:
+        - say "¿Tienes deseos de aprender?"
+        - input aprender
+    relaciones:
+        - say "¿Cuales son tus relaciones interpersonales?"
+        - input relaciones
+    adaptacion:
+        - say "¿Tienes buena capacidad de adaptación en entornos complicados?"
+        - input adaptacion
+    proactivo:
+        - say "¿Crees ser alguien proactivo?"
+        - input proactivo
+    innovador:
+        - say "¿Consideras ser alguien innovador?"
+        - input innovador
+    analizar:
+        - say "¿Eres bueno analizando las situaciones en general?"
+        - input analizar
+script:
+    - solve capacidad
+    - solve creativo
+    - solve trabajar
+    - solve potencial
+    - solve aprender
+    - solve relaciones
+    - solve adaptacion
+    - solve proactivo
+    - solve innovador
+    - solve analizar
