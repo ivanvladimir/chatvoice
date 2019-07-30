@@ -12,6 +12,11 @@ conversations:
     - 'Habilidades_Tecnicas.yaml'
     - 'actitudes_aptitudes.yaml'
     - 'analisis_psi.yaml'
+    - 'empresa.yaml'
+    - 'objetivos_metas.yaml'
+
+slots:
+  - respuesta
 
 dbs:
     main: import_csv data.csv
@@ -26,15 +31,15 @@ strategies:
         - say "Te puedo ayudar con dos herramientas para ti"
         - say "Realizar tu Curriculum"
         - say "Hacer una entrevista de trabajo de simulacion"
-        - input respuesta | asign curriculum:cv entrevista:ent nada:na
+        - input respuesta | asign curriculum:cv entrevista:ent
         - if respuesta == "cv" solve curriculum
         - if respuesta == "ent" solve entrevista
-        - if not respuesta=="na" and not respuesta=="cv" and not respuesta=="ent" solve error  
+        #- if nombre say "¡Hasta luego {}!".format(nombre)
+        - say "¡Hasta luego!"
+        #- if not respuesta=="na" and not respuesta=="cv" and not respuesta=="ent" solve error  
 script:
    #- solve hello
    #- say greeting
    - say "BIENVENIDO, SOY HAUNTER EL CHATBOT QUE TE AYUDARÁ A CONSEGUIR TRABAJO"
    - solve empezar
-   - if nombre say "¡Hasta luego {}!".format(nombre)
-   - if not nombre say "¡Hasta luego!"
    

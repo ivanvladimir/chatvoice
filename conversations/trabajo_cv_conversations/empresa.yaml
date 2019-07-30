@@ -1,6 +1,7 @@
 strategies: 
-
-    grado_escolar:
-        - say "Ahora te hare preguntas hacerca de tu escolaridad"
-        - say "¿Que puedes contarme hacerca de esto?"
-        - input datos_escolares
+  grado_escolar:
+    - say "Ahora te hare preguntas acerca de tu escolaridad"
+    - say "¿Que puedes contarme acerca de esto?"
+    - input grado_escolar
+script:
+    - solve grado_escolar

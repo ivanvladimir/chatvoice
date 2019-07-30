@@ -1,8 +1,6 @@
 # DATOS PERSONALES
 slots:
-    - nombre
-    - apellidoP
-    - apellidoM
+    - nombrec
     - fechaN
     - domicilio
     - nacionalidad
@@ -11,18 +9,12 @@ slots:
     - correo
 
 strategies:
-    nombre:
-        - say "Hola ¿cuál es tu nombre?"
-        - input nombre
-    apellidoP:
-        - say "¿Cuál es tu apellido paterno?"
-        - input apellidoP
-    apellidoM:
-        - say "¿Cuál es tu apellido materno?"
-        - input apellidoM
+    nombrec:
+        - say "Hola ¿Cuál es tu nombre completo?"
+        - input nombrec
     fechaN:
-        - say "Bien, ahora coloca tu fecha de nacimiento en orden Día/Mes/Año"
-        - input fechaN
+        - say "Bien, ahora coloca tu fecha de nacimiento"
+        - input fechaN | fecha
     domicilio:
         - say "¿Cuál es tu domicilio? (Calle, numero, colonia, ciudad)"
         - input domicilio

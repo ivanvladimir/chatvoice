@@ -4,4 +4,4 @@ plugins:
     - doc_generator
 
 script:
-  - doc_generator.execute(nombre,apellidoP,apellidoM,fechaN,domicilio,nacionalidad,estadocivil,telefono,correo,datos_escolares,lugares_esc,lugares,nombreIdiomas,herramientas)
+  - doc_generator.execute(nombre,fechaN,domicilio,nacionalidad,estadocivil,telefono,correo,datos_escolares,lugares_esc,lugares,nombreIdiomas,herramientas)

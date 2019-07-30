@@ -303,7 +303,7 @@ class Conversation:
                 result=eval(conditional,globals(),self.slots)
             except NameError:
                 print(bcolors.WARNING, "False because variable not defined",bcolors.ENDC)
-                result=True
+                result=False
             if result:
                 self.execute_line_(cmd)
 

@@ -3,7 +3,6 @@
     - 'trabajo.yaml'
     - 'escolar.yaml'
     - 'empresa.yaml'
-    - 'objetivos_metas'
 
 dbs:
     main: import_csv data.csv

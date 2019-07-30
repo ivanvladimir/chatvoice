@@ -1,13 +1,3 @@
-# Objetivos y metas
-slots:
-    - finances_mode
-    - montly_income
-    - montly_saving
-    - saving_plan
-    - living_of_savings
-    - montly_payment_debt
-    - daily_expenses
-
 strategies:
     objetivos_corto:
         - say "Cuéntame acerca de ellos por favor"

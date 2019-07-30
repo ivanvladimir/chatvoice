@@ -11,26 +11,24 @@ from docx.shared import Inches
 
 def execute(*args):
     nom=args[0]
-    apP=args[1]
-    apM=args[2]
-    fec=args[3]
-    dom=args[4]
-    nac=args[5]
-    civ=args[6]
-    tel=args[7]
-    ema=args[8]
-    d_e=args[9]
-    l_e=args[10]
-    lug=args[11]
-    idio=args[12]
-    offi=args[13]
+    fec=args[1]
+    dom=args[2]
+    nac=args[3]
+    civ=args[4]
+    tel=args[5]
+    ema=args[6]
+    d_e=args[7]
+    l_e=args[8]
+    lug=args[9]
+    idio=args[10]
+    offi=args[11]
     f = open('plantilla.docx', 'rb')
     document = Document(f)
     f.close()
     p=document.add_paragraph('Datos personales', style='Intense Quote')
     n=document.add_paragraph('')
     n.add_run('Nombre: ').bold = True
-    nn=nom+" "+apP+" "+apM
+    nn=nom
     nn=nn.title()
     n.add_run(nn)
     f=document.add_paragraph('')
