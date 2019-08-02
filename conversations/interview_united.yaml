@@ -108,32 +108,46 @@ script:
 
     #Se preguntan las preferencias de consumo
     - say "Ahora, continuemos con tus gustos."
-    - say "Dime del 1 al 5 que tanto te gusta la comida…"
-    - say "Picante"
+    - say "Dime del 1 al 5 ¿qué tanto te gusta la comida picante?"
     - input preference_spicy
     - verify_preference.verify('preferencia_valida',preference_spicy)
     - if float(preferencia_valida) == 1 remember preference_spicy
-    - if float(preferencia_valida) != 1 say "Ups! podrías escribir sólo el número, porfavor. Recuerda, el 1 es de que te gusta muy poco así, casi nada; mientras que el 5 es de que te gusta muchísimo."
+    - if float(preferencia_valida) != 1 say "Ups! podrías escribir sólo el número, por favor. Recuerda, el 1 es de que te gusta muy poco así, casi nada; mientras que el 5 es de que te gusta muchísimo."
     - if float(preferencia_valida) != 1 input preference_spicy
     - verify_preference.verify('preferencia_valida',preference_spicy)
     - if float(preferencia_valida) == 1 remember preference_spicy
     - if float(preferencia_valida) != 1 set_slot preference_spicy 3
-    - say "Dulce"
+
+    - say "También del 1 al 5 ¿que tanto te gusta lo dulce?"
     - input preference_sweet
-    #- prueba2.procesa_watson(preference_sweet)
-    - remember preference_sweet
-#    - say "Salada"
-#    - input preference_salty
-    #- prueba2.procesa_watson(preference_salty)
-#    - remember preference_salty
-    - say "Mariscos"
+    - verify_preference.verify('preferencia_valida',preference_sweet)
+    - if float(preferencia_valida) == 1 remember preference_sweet
+    - if float(preferencia_valida) != 1 say "Ups! podrías escribir sólo el número, por favor. Recuerda, el 1 es de que te gusta muy poco así, casi nada; mientras que el 5 es de que te gusta muchísimo."
+    - if float(preferencia_valida) != 1 input preference_sweet
+    - verify_preference.verify('preferencia_valida',preference_sweet)
+    - if float(preferencia_valida) == 1 remember preference_sweet
+    - if float(preferencia_valida) != 1 set_slot preference_sweet 3
+
+    - say "y del 1 al 5 ¿qué tanto te gusta la comida del mar como los mariscos o las mojarras?"
     - input preference_seafood
-    #- prueba2.procesa_watson(preference_seafood)
-    - remember preference_seafood
-    - say "Caldos"
+    - verify_preference.verify('preferencia_valida',preference_seafood)
+    - if float(preferencia_valida) == 1 remember preference_seafood
+    - if float(preferencia_valida) != 1 say "Ups! podrías escribir sólo el número, por favor. Recuerda, el 1 es de que te gusta muy poco así, casi nada; mientras que el 5 es de que te gusta muchísimo."
+    - if float(preferencia_valida) != 1 input preference_seafood
+    - verify_preference.verify('preferencia_valida',preference_seafood)
+    - if float(preferencia_valida) == 1 remember preference_seafood
+    - if float(preferencia_valida) != 1 set_slot preference_seafood 3
+
+    - say "y por último, ¿que tanto te gustan los platillos que son caldos? Recuerda sólo del 1 al 5."
     - input preference_soup
-    #- prueba2.procesa_watson(preference_soup)
-    - remember preference_soup
+    - verify_preference.verify('preferencia_valida',preference_soup)
+    - if float(preferencia_valida) == 1 remember preference_soup
+    - if float(preferencia_valida) != 1 say "Ups! podrías escribir sólo el número, porfavor. Recuerda, el 1 es de que te gusta muy poco así, casi nada; mientras que el 5 es de que te gusta muchísimo."
+    - if float(preferencia_valida) != 1 input preference_soup
+    - verify_preference.verify('preferencia_valida',preference_soup)
+    - if float(preferencia_valida) == 1 remember preference_soup
+    - if float(preferencia_valida) != 1 set_slot preference_soup 3
+
 #    - say "Cafe"
 #    - input preference_coffee
     #- prueba2.procesa_watson(preference_coffee)
@@ -149,14 +163,14 @@ script:
     #     that's the responsibility of the programming language you're using."
     # :''''c
     - say "Esto me sirve para saber que tipo de comida es más de tu agrado." 
-    - if float(preference_spicy) <3 say "Veo que no te gusta tanto la comida picante,"
-    - if not float(preference_spicy) <3 say "Veo que sí te gusta la comida picante,"
+    - if float(preference_spicy) <3 say "Veo que no te gusta tanto la comida picante."
+    - if not float(preference_spicy) <3 say "Veo que sí te gusta la comida picante."
 #    - if float(preference_salty) < float(preference_sweet) say "y que prefieres lo dulce a lo salado."
 #    - if not float(preference_salty) < float(preference_sweet) say "y que prefieres lo salado a lo dulce."
-    - if float(preference_seafood) < 3 say "Noto que no eres gran fan de la comida del mar "
-    - if not float(preference_seafood) < 3 say "Noto que sí te agrada la comida del mar "
-    - if float(preference_soup) < 3 say "aunque, no mucho los caldos."
-    - if not float(preference_soup) < 3 say "y sí te gustan los caldos."
+    - if float(preference_seafood) < 3 say "Tambien noto que no eres gran fan de la comida del mar."
+    - if not float(preference_seafood) < 3 say "Tambien noto que sí te agrada la comida del mar."
+    - if float(preference_soup) < 3 say "Y finalmente, no te gustan mucho los caldos."
+    - if not float(preference_soup) < 3 say "Y finalmente, sí te gustan los caldos."
 
 
     #Se pregunta la preferencia de comprar o preparar
@@ -172,4 +186,4 @@ script:
 
 
     #Explicacion de que la entrevista será una sola vez
-    - say "Esta pequeña entrevista fue para conocerte un poco mejor y solo sera necesaria para esta vez."
+    - say "Esta pequeña entrevista fue para conocerte un poco mejor y sólo será necesaria para esta vez."
