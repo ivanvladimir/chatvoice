@@ -4,5 +4,5 @@ plugins:
     - random_greeting_with_name
 
 script:
-    - set_slot options ["Hola, hola ¿cómo puedo ayudarte, "]
+    - set_slot options ["Hola, hola. Dime cómo puedo ayudarte, "]
     - random_greeting_with_name.execute('greeting_name',options)

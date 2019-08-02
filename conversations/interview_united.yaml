@@ -19,19 +19,20 @@ slots:
     - preference_sweet
     - preference_seafood
     - preference_soup
-    - preference_coffe
-    - preference_tea
-    - preference_purchase
+#    - preference_coffe
+#    - preference_tea
+#    - preference_purchase
 
 #   - weight_actual
 #   - weight_new
-
+    - estatura_valida
 
 plugins:
     - random_motivation
     - prueba2
-    - p1
+#    - p1
     - remember_user_name
+    - verify_height
 
 
 script:
@@ -56,16 +57,25 @@ script:
     - say "Asi que necesito que platiquemos un poco de ella para que yo esta mas enterada y te pueda apoyar aun mejor"
 
     #Se pregunta acerca de estatura, peso deseado y el peso actual
-    - say "Antes que nada cual es tu estatura en centietros?"
+    - say "Antes que nada, ¿cuál es tu estatura en centímetros?"
     - input height
-    #- prueba2.procesa_watson(height)
-    - remember height
+    - verify_height.verify('estatura_valida',height)
+    #estatura valida
+    - if float(estatura_valida) == 1 remember height
+    #estatura no valida, la pide de nuevo especificando el formato con un ejemplo
+    - if float(estatura_valida) != 1 say "Recuerda que tu estatura tal vez está entre los 140 y los 200 centímetros. Por favor, esta vez sólo escribe el número."
+    - if float(estatura_valida) != 1 input height
+    - verify_height.verify('estaura_valida',height)
+    #estatura corregida por el usuario, ahora validada es guardada
+    - if float(estatura_valida) == 1 remember height
+    #estatura no valida, se le designa un valor promedio de 164
+    - if float(estatura_valida) != 1 set_slot height 164
     #- say "¿Me puedes decir cuál es el peso que deseas alcanzar?"
-    - say "y dime cual es el peso que deseas alcanzar?"
+    - say "y dime cuál es el peso en kilos que deseas alcanzar"
     - input weight_goal
     #- prueba2.procesa_watson(weight_goal)
     - remember weight_goal
-    - say " cuáanto es lo que pesas hoy?"
+    - say "Cuánto es lo que pesas hoy?"
     - input weight_ini
     #- prueba2.procesa_watson(weight_ini)
     - remember weight_ini
@@ -119,14 +129,14 @@ script:
     #     that's the responsibility of the programming language you're using."
     # :''''c
     - say "Esto me sirve para saber que tipo de comida es más de tu agrado." 
-    - if float(preference_spicy) <3 say "Veo que no te gusta tanto la comida picante"
-    - if not float(preference_spicy) <3 say "Veo que sí te gusta la comida picante"
+    - if float(preference_spicy) <3 say "Veo que no te gusta tanto la comida picante,"
+    - if not float(preference_spicy) <3 say "Veo que sí te gusta la comida picante,"
 #    - if float(preference_salty) < float(preference_sweet) say "y que prefieres lo dulce a lo salado."
 #    - if not float(preference_salty) < float(preference_sweet) say "y que prefieres lo salado a lo dulce."
     - if float(preference_seafood) < 3 say "Noto que no eres gran fan de la comida del mar "
-    - if not float(preference_seafood) < 3 say "Noto que si te agrada la comida del mar "
-    - if float(preference_soup) < 3 say "aunque, no mucho los caldos"
-    - if not float(preference_soup) < 3 say "y si los caldos"
+    - if not float(preference_seafood) < 3 say "Noto que sí te agrada la comida del mar "
+    - if float(preference_soup) < 3 say "aunque, no mucho los caldos."
+    - if not float(preference_soup) < 3 say "y sí te gustan los caldos."
 
 
     #Se pregunta la preferencia de comprar o preparar
@@ -142,4 +152,4 @@ script:
 
 
     #Explicacion de que la entrevista será una sola vez
-    - say "Esta pequenia entrevista fue para conocerte un poco mejor y solo sera necesaria para esta vez."
+    - say "Esta pequeña entrevista fue para conocerte un poco mejor y solo sera necesaria para esta vez."

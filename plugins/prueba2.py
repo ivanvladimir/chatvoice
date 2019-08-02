@@ -37,12 +37,14 @@ def procesa_watson(user_input):
     if response['output']['intents']:
         res = response['output']['intents'][0]['intent']
         #print(str(res))
+    else:
+        res = "Disculpa, no te entendí."
 
 
 
     # Print the output from dialog, if any. Assumes a single text response.
-    if response['output']['generic']:
-        res2 = response['output']['generic'][0]['text']
+#    if response['output']['generic']:
+#        res2 = response['output']['generic'][0]['text']
 	# esa es la respuesta escrita en el dialogo de la plataforma de watson
         #print(res) #esta se escribiria enseguida de la intencion detectada
 

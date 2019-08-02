@@ -9,7 +9,7 @@ conversations:
     - 'interview_united.yaml'
     - 'motivation.yaml'
     - 'hello2.yaml'
-    - 'imc.yaml'
+#    - 'imc.yaml'
     - 'transition_to_daily_talk.yaml'
     - 'daily_chat.yaml'
 
@@ -26,7 +26,7 @@ plugins:
     - random_greeting
     - prueba2
     - random_greeting_with_name
-    - p1
+#    - p1
     - consultas
     - verify_name
 
@@ -36,7 +36,7 @@ script:
 #Primera interaccion, resolucion de entrevista
     - solve hello
     - say greeting
-    - say "Cual es tu nombre?"
+    - say "¿Cúal es tu nombre?"
     - input name
 #    - remember name
     - verify_name.verify('usuario_existente', name)
@@ -44,7 +44,7 @@ script:
     - if float(usuario_existente) == 0 remember name
 #    - say name 
     - if float(usuario_existente) == 0 solve interview_united
-    - if float(usuario_existente) == 0 solve imc
+#    - if float(usuario_existente) == 0 solve imc
     #- say evaluacion
 #Transicion a la conversacion diaria
     - if float(usuario_existente) == 0 solve transition_to_daily_talk

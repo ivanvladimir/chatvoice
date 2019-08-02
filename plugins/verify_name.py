@@ -8,7 +8,7 @@
 import json
 
 
-with open('/home/pi/chatvoice/conversations/kb.db','r') as f:
+with open('/home/ljanine/repo/chatvoice/conversations/kb.db','r') as f:
     data = f.readlines()
 
 for x in data:
