@@ -25,7 +25,7 @@ slots:
 
 #   - weight_actual
 #   - weight_new
-    - estatura_valida
+
 
 plugins:
     - random_motivation
@@ -33,6 +33,7 @@ plugins:
 #    - p1
     - remember_user_name
     - verify_height
+    - verify_weight
 
 
 script:
@@ -71,11 +72,16 @@ script:
     #estatura no valida, se le designa un valor promedio de 164
     - if float(estatura_valida) != 1 set_slot height 164
     #- say "¿Me puedes decir cuál es el peso que deseas alcanzar?"
-    - say "y dime cuál es el peso en kilos que deseas alcanzar"
+    - say "y dime ¿cuál es el peso en kilos que deseas alcanzar?"
     - input weight_goal
-    #- prueba2.procesa_watson(weight_goal)
-    - remember weight_goal
-    - say "Cuánto es lo que pesas hoy?"
+    - verify_weight.verify_goal('peso_objetivo_valido',weight_goal)
+    - if float(peso_objetivo_valido) == 1 remember weight_goal
+    - if float(peso_objetivo_valido) != 1 say "Disculpa, podrías esta vez escribir sólo el número, porfavor. Así solito, sin niguna otra palabra."
+    - if float(peso_objetivo_valido) != 1 input weight_goal
+    - verify_weight.verify_goal('peso_objetivo_valido',weight_goal)
+    - if float(peso_objetivo_valido) == 1 remember weight_goal
+    - if float(peso_objetivo_valido) != 1 set_slot weight_goal 80
+    - say "¿Cuánto es lo que pesas hoy?"
     - input weight_ini
     #- prueba2.procesa_watson(weight_ini)
     - remember weight_ini

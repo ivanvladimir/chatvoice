@@ -29,6 +29,7 @@ from plugins import consultas
 from plugins import verify_name
 from plugins import remember_user_name
 from plugins import verify_height
+from plugins import verify_weight
 
 # TODO make a better system for filters
 from filters import *
