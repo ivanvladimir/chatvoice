@@ -34,6 +34,7 @@ plugins:
     - remember_user_name
     - verify_height
     - verify_weight
+    - verify_preference
 
 
 script:
@@ -45,7 +46,7 @@ script:
 #    - set_slot name nombre_usuario
 #    - say name
     #Se saluda por primera vez al usuario
-    - say "Hola! mucho gusto de conocerte. Mi nombre es Bella y voy a ayudarte a alcanzar tu peso ideal recomendandote platillos adecuados a una dieta para bajar de peso"
+    - say "¡Hola! mucho gusto de conocerte. Mi nombre es Bella y voy a ayudarte a alcanzar tu peso ideal recomendandote platillos adecuados a una dieta para bajar de peso."
 
     #Se pregunta por el nombre de la persona con quien está interactuando 
 #    - say "¿Cúal es tu nombre?"
@@ -55,7 +56,7 @@ script:
 
 #    - say "mucho gusto en conocerte {}".format(name)
     - say "Yo se que pondras mucho esfuerzo para cumplir tu meta."
-    - say "Asi que necesito que platiquemos un poco de ella para que yo esta mas enterada y te pueda apoyar aun mejor"
+    - say "Así que necesito que platiquemos un poco de ella para que yo esté más enterada y te pueda apoyar aun mejor."
 
     #Se pregunta acerca de estatura, peso deseado y el peso actual
     - say "Antes que nada, ¿cuál es tu estatura en centímetros?"
@@ -110,8 +111,13 @@ script:
     - say "Dime del 1 al 5 que tanto te gusta la comida…"
     - say "Picante"
     - input preference_spicy
-    #- prueba2.procesa_watson(preference_spicy)
-    - remember preference_spicy
+    - verify_preference.verify('preferencia_valida',preference_spicy)
+    - if float(preferencia_valida) == 1 remember preference_spicy
+    - if float(preferencia_valida) != 1 say "Ups! podrías escribir sólo el número, porfavor. Recuerda, el 1 es de que te gusta muy poco así, casi nada; mientras que el 5 es de que te gusta muchísimo."
+    - if float(preferencia_valida) != 1 input preference_spicy
+    - verify_preference.verify('preferencia_valida',preference_spicy)
+    - if float(preferencia_valida) == 1 remember preference_spicy
+    - if float(preferencia_valida) != 1 set_slot preference_spicy 3
     - say "Dulce"
     - input preference_sweet
     #- prueba2.procesa_watson(preference_sweet)
