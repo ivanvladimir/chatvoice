@@ -71,20 +71,28 @@ script:
     - if float(estatura_valida) == 1 remember height
     #estatura no valida, se le designa un valor promedio de 164
     - if float(estatura_valida) != 1 set_slot height 164
+
     #- say "¿Me puedes decir cuál es el peso que deseas alcanzar?"
     - say "y dime ¿cuál es el peso en kilos que deseas alcanzar?"
     - input weight_goal
     - verify_weight.verify_goal('peso_objetivo_valido',weight_goal)
     - if float(peso_objetivo_valido) == 1 remember weight_goal
-    - if float(peso_objetivo_valido) != 1 say "Disculpa, podrías esta vez escribir sólo el número, porfavor. Así solito, sin niguna otra palabra."
+    - if float(peso_objetivo_valido) != 1 say "Disculpa, podrías esta vez escribir sólo el número de tu peso que esté entre 40 y 597, porfavor. Así solito, sin niguna otra palabra."
     - if float(peso_objetivo_valido) != 1 input weight_goal
     - verify_weight.verify_goal('peso_objetivo_valido',weight_goal)
     - if float(peso_objetivo_valido) == 1 remember weight_goal
     - if float(peso_objetivo_valido) != 1 set_slot weight_goal 80
     - say "¿Cuánto es lo que pesas hoy?"
+
     - input weight_ini
-    #- prueba2.procesa_watson(weight_ini)
-    - remember weight_ini
+    - verify_weight.verify_ini('peso_inicial_valido',weight_ini,weight_goal)
+    - if float(peso_inicial_valido) == 1 remember weight_ini
+    - if float(peso_inicial_valido) != 1 say "Discúlpame, mi intención no es incomodarte pero es necesario que menciones este detalle. Te prometo que no es nada de que avergonzarse así que, podrías esta vez escribir sólo el número."
+    - if float(peso_inicial_valido) != 1 input weight_ini
+    - verify_weight.verify_goal('peso_inicial_valido',weight_ini,weight_goal)
+    - if float(peso_inicial_valido) == 1 remember weight_ini
+    - if float(peso_inicial_valido) != 1 set_slot weight_ini 90
+
     #- say "Bueno, pues ahora puedes preguntarme acerca de lo que te gustaría saber respecto dieta y despues podemos continuar la plática con tus gustos respecto a la comida"
     #- say "Pregúntame que es lo que quisieras saber de la dieta "
 
