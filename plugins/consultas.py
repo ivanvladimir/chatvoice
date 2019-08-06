@@ -130,14 +130,14 @@ def conversacion_diaria(*intencion):
         consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE horario=? or picante=? or caldo=? or mar=? ORDER BY random() LIMIT 1;', (horario, picante, caldo, mar))
         m = cursor_platillo.fetchone()
         ms = m[0]
-        msg = "Esta bien. Entonces, que te parece " + ms
+        msg = "Está bien. Entonces, que te parece " + ms
         #print(msg)
     #decirle al usuario qué puede preguntar
     elif var == "set_slot watson \"dudas_de_que_hacer\"":
         msg = "Puedes pedirme una sugerencia de qué comer hoy."
     #dar mensaje de despedida
     elif var == "set_slot watson \"despedida\"":
-        msg = ""
+        msg = "Me da gusto poderte ayudar. Nos vemos luego."
         #print(str(msg))
     #dar mensaje de adios
     elif var == "set_slot watson \"no_quiere_algo_mas\"":

@@ -118,7 +118,7 @@ script:
 
     #Se preguntan las preferencias de consumo
     - say "Ahora, podemos platicar de tus gustos para que logre ver que tipo de comida es más de tu agrado y así mis sugerencias sean más adecuadas."
-    - say "Dime {}, del 1 al 5 ¿qué tanto te gusta la comida picante?".format(name)
+    - say "Primero dime, {}, del 1 al 5 ¿qué tanto te gusta la comida picante?".format(name)
     - input preference_spicy
     - verify_preference.verify('preferencia_valida',preference_spicy)
 #    - if float(preferencia_valida) == 1 remember preference_spicy
@@ -134,7 +134,7 @@ script:
     - if not float(preference_spicy) <3 say "¡Que padre que te guste! La comida picante es de lo más rico de la comida mexicana."
 
 
-    - say "También del 1 al 5 ¿que tanto te gusta lo dulce?"
+    - say "Segundo, también del 1 al 5 ¿qué tanto te gusta lo dulce?"
     - input preference_sweet
     - verify_preference.verify('preferencia_valida',preference_sweet)
 #    - if float(preferencia_valida) == 1 remember preference_sweet
@@ -148,7 +148,7 @@ script:
     - if float(preference_sweet) < 3 say "¡Que bueno, {}! Así será más facil la dieta.".format(name)
     - if not float(preference_sweet) < 3 say "Tendremos que recortarle mucho a esos dulces, {}.".format(name)
 
-    - say "y del 1 al 5 ¿qué tanto te gusta la comida del mar como los mariscos o las mojarras?"
+    - say "Tercero, del 1 al 5 ¿qué tanto te gusta la comida del mar como los mariscos o las mojarras?"
     - input preference_seafood
     - verify_preference.verify('preferencia_valida',preference_seafood)
 #    - if float(preferencia_valida) == 1 remember preference_seafood
@@ -163,7 +163,7 @@ script:
     - if not float(preference_seafood) < 3 say "¡Pejcao! Un cevichito siempre cae bien, y veo que tú sí lo disfrutarías."
 
 
-    - say "y por último {}, ¿que tanto te gustan los caldos? Recuerda sólo del 1 al 5.".format(name)
+    - say "Cuarto y último, {}, ¿qué tanto te gustan los caldos? Recuerda, sólo del 1 al 5.".format(name)
     - input preference_soup
     - verify_preference.verify('preferencia_valida',preference_soup)
 #    - if float(preferencia_valida) == 1 remember preference_soup

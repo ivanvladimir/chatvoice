@@ -33,6 +33,7 @@ plugins:
 
 script:
 
+    - set_slot peticion "hola"
 #Primera interaccion, resolucion de entrevista
     - solve hello
     - say greeting
@@ -54,12 +55,12 @@ script:
     - if float(usuario_existente) == 1 solve hello2
     - if float(usuario_existente) == 1 say greeting_name
 #Conversacion diaria
-    - set_slot peticion "hola" 
+#    - set_slot peticion "hola" 
 #    - say prueba2.procesa_watson(intencion_de_peticion)
 #    - if prueba2.procesa_watson(intencion_de_peticion) != "set_slot watson \"despedida\"" solve daily_chat
     - while prueba2.procesa_watson(peticion) != "set_slot watson \"despedida\"" solve daily_chat
 
 #Despedida
-    - say "Nos vemos luego!"
+#    - say "Nos vemos luego!"
 
 

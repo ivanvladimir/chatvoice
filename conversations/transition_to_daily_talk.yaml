@@ -7,8 +7,11 @@ plugins:
 
 script:
     #Introducción a las platicas diarias
-    - say "De ahora en adelante te acompañaré por 6 semanas con un monitoreo semanal de tu nuevo peso para darle seguimiento a tu objetivo."
-    - say "Y bueno, si gustas puedes preguntar acerca de mí o si prefieres, puedo darte una recomendación de platillo para lo que puedes comer hoy..."
+#    - say "De ahora en adelante te acompañaré por 6 semanas con un monitoreo semanal de tu nuevo peso para darle seguimiento a tu objetivo."
+    - say "Ahora que terminamos con la entrevista, puedo comenzar por platicarte de mí o de la dieta. Tú pregunta lo que quieras."
+    - say "Pero si lo que prefieres es una recomendación de platillo, tú pídeme lo que se te antoje; quizá algo de comer para hoy, o para desayunar mañana o, tal vez alguna comida que pique o que no tenga chile o, a lo mejor una simple colación para el antojo."
+    - say "En caso de que tengas dudas de cómo preguntar, tú dí \"¿Qué te puedo preguntar?\""
+    - say "Y si ya no quieres platicar más con un simple adiós nos podemos despedir."
     - input peticion
     - consultas.conversacion_diaria('sugerencia', prueba2.procesa_watson(peticion))
     - say sugerencia 
