@@ -174,7 +174,7 @@ def conversacion_diaria(*intencion):
         consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE caldo=1 ORDER BY random() LIMIT 1;')
         m = cursor_platillo.fetchone()
         ms = m[0]
-        msg = "Tal vez te gustaría comer " + ms
+        msg = "Si un calditos se te antoja, tal vez te gustaría comer " + ms
     else:
         msg = "Discúlpame, no entendí a qué te refieres."
         #print(str(msg))
