@@ -145,8 +145,8 @@ script:
     - if float(preferencia_valida) != 1 set_slot preference_sweet 3
     - remember preference_sweet
 
-    - if float(preference_seafood) < 3 say "Yo tampoco soy muy fan de la comida del mar, dicen que huele feo."
-    - if not float(preference_seafood) < 3 say "¡Pejcao! Un cevichito siempre cae bien, y veo que tú sí lo disfrutarías."
+    - if float(preference_sweet) < 3 say "¡Que bueno, {}! Así será más facil la dieta.".format(name)
+    - if not float(preference_sweet) < 3 say "Tendremos que recortarle mucho a esos dulces, {}.".format(name)
 
     - say "y del 1 al 5 ¿qué tanto te gusta la comida del mar como los mariscos o las mojarras?"
     - input preference_seafood
@@ -159,7 +159,11 @@ script:
     - if float(preferencia_valida) != 1 set_slot preference_seafood 3
     - remember preference_seafood
 
-    - say "y por último {}, ¿que tanto te gustan los platillos que son caldos? Recuerda sólo del 1 al 5.".format(name)
+    - if float(preference_seafood) < 3 say "Yo tampoco soy muy fan de la comida del mar, dicen que huele raro. Aunque, claro, yo no tengo nariz para comprobarlo."
+    - if not float(preference_seafood) < 3 say "¡Pejcao! Un cevichito siempre cae bien, y veo que tú sí lo disfrutarías."
+
+
+    - say "y por último {}, ¿que tanto te gustan los caldos? Recuerda sólo del 1 al 5.".format(name)
     - input preference_soup
     - verify_preference.verify('preferencia_valida',preference_soup)
 #    - if float(preferencia_valida) == 1 remember preference_soup
@@ -169,6 +173,9 @@ script:
 #    - if float(preferencia_valida) == 1 remember preference_soup
     - if float(preferencia_valida) != 1 set_slot preference_soup 3
     - remember preference_soup 
+
+    - if float(preference_soup) < 3 say "Noto que no te gustan mucho los caldos."
+    - if not float(preference_soup) < 3 say "Noto que sí te disfrutas de los caldos ¡sí que son sabrosos!."
 
 #    - say "Cafe"
 #    - input preference_coffee
@@ -187,10 +194,6 @@ script:
 
 #    - if float(preference_salty) < float(preference_sweet) say "y que prefieres lo dulce a lo salado."
 #    - if not float(preference_salty) < float(preference_sweet) say "y que prefieres lo salado a lo dulce."
-    - if float(preference_seafood) < 3 say "Tambien noto que no eres gran fan de la comida del mar."
-    - if not float(preference_seafood) < 3 say "Tambien noto que sí te agrada la comida del mar."
-    - if float(preference_soup) < 3 say "Y finalmente, no te gustan mucho los caldos."
-    - if not float(preference_soup) < 3 say "Y finalmente, sí te gustan los caldos."
 
 
     #Se pregunta la preferencia de comprar o preparar
