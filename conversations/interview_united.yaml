@@ -39,14 +39,15 @@ plugins:
 
 script:
     #Trael el nombre del usuario de la kb.db para recordarlo
-    - say name
+#    - say name
     - remember name
 #    - remember_user_name.remember_name('name')
 #    - say name 
 #    - set_slot name nombre_usuario
 #    - say name
     #Se saluda por primera vez al usuario
-    - say "¡Hola! mucho gusto de conocerte. Mi nombre es Bella y voy a ayudarte a alcanzar tu peso ideal recomendandote platillos adecuados a una dieta para bajar de peso."
+    - say "¡Hola! mucho gusto de conocerte, {}. Mi nombre es Bella, yo soy un chatbot con la misión de recomendarte platillos adecuados a tus gustos que siguen una dieta para bajar de peso.".format(name)
+#    - say "Mi nombre es Bella, soy un chatbot con la misión de recomendarte platillos adecuados a tus gustos que siguen una dieta para bajar de peso."
 
     #Se pregunta por el nombre de la persona con quien está interactuando 
 #    - say "¿Cúal es tu nombre?"
@@ -54,45 +55,54 @@ script:
     #- prueba2.procesa_watson(name)
 #    - remember name
 
-#    - say "mucho gusto en conocerte {}".format(name)
-    - say "Yo se que pondras mucho esfuerzo para cumplir tu meta."
-    - say "Así que necesito que platiquemos un poco de ella para que yo esté más enterada y te pueda apoyar aun mejor."
+    - say "Así que por ser esta la primera vez que platicamos, necesito que me cuentes un poquito de tí en esta pequeña entrevista."
 
     #Se pregunta acerca de estatura, peso deseado y el peso actual
-    - say "Antes que nada, ¿cuál es tu estatura en centímetros?"
+    - say "Comencemos ¿cuál es tu estatura en centímetros?"
     - input height
     - verify_height.verify('estatura_valida',height)
     #estatura valida
-    - if float(estatura_valida) == 1 remember height
+#    - if float(estatura_valida) == 1 remember height
     #estatura no valida, la pide de nuevo especificando el formato con un ejemplo
     - if float(estatura_valida) != 1 say "Recuerda que tu estatura tal vez está entre los 140 y los 200 centímetros. Por favor, esta vez sólo escribe el número."
     - if float(estatura_valida) != 1 input height
-    - verify_height.verify('estaura_valida',height)
+    - if float(estatura_valida) != 1 verify_height.verify('estatura_valida',height)
     #estatura corregida por el usuario, ahora validada es guardada
-    - if float(estatura_valida) == 1 remember height
+#    - if float(estatura_valida) == 1 remember height
     #estatura no valida, se le designa un valor promedio de 164
     - if float(estatura_valida) != 1 set_slot height 164
+#    - if float(estatura_valida) != 1 remember height
+    - remember height
 
     #- say "¿Me puedes decir cuál es el peso que deseas alcanzar?"
     - say "y dime ¿cuál es el peso en kilos que deseas alcanzar?"
     - input weight_goal
     - verify_weight.verify_goal('peso_objetivo_valido',weight_goal)
-    - if float(peso_objetivo_valido) == 1 remember weight_goal
+#    - if float(peso_objetivo_valido) == 1 remember weight_goal
+#    - remember weight_goal
     - if float(peso_objetivo_valido) != 1 say "Disculpa, podrías esta vez escribir sólo el número de tu peso que esté entre 40 y 597, porfavor. Así solito, sin niguna otra palabra."
     - if float(peso_objetivo_valido) != 1 input weight_goal
-    - verify_weight.verify_goal('peso_objetivo_valido',weight_goal)
-    - if float(peso_objetivo_valido) == 1 remember weight_goal
+    - if float(peso_objetivo_valido) != 1 verify_weight.verify_goal('peso_objetivo_valido',weight_goal)
+#    - if float(peso_objetivo_valido) == 1 remember weight_goal
+#    - remember weight_goal
     - if float(peso_objetivo_valido) != 1 set_slot weight_goal 80
-    - say "¿Cuánto es lo que pesas hoy?"
+#    - if float(peso_objetivo_valido) != 1 remember weight_goal
+    - remember weight_goal
 
+    - say "¿Cuánto es lo que pesas hoy?"
     - input weight_ini
     - verify_weight.verify_ini('peso_inicial_valido',weight_ini,weight_goal)
-    - if float(peso_inicial_valido) == 1 remember weight_ini
-    - if float(peso_inicial_valido) != 1 say "Discúlpame, mi intención no es incomodarte pero es necesario que menciones este detalle. Te prometo que no es nada de que avergonzarse así que, podrías esta vez escribir sólo el número."
+#    - if float(peso_inicial_valido) == 1 remember weight_ini
+#    - remember weight_ini
+    - if float(peso_inicial_valido) != 1 say "Discúlpame, mi intención no es incomodarte pero es necesario que menciones este detalle. Te prometo que no es nada de que avergonzarse así que, podrías esta vez escribir sólo el número y recuerda que el peso meta es menor a este peso actual."
     - if float(peso_inicial_valido) != 1 input weight_ini
-    - verify_weight.verify_goal('peso_inicial_valido',weight_ini,weight_goal)
-    - if float(peso_inicial_valido) == 1 remember weight_ini
+    - if float(peso_inicial_valido) != 1 verify_weight.verify_ini('peso_inicial_valido',weight_ini,weight_goal)
+#    - if float(peso_inicial_valido) == 1 remember weight_ini
+#    - remember weight_ini
     - if float(peso_inicial_valido) != 1 set_slot weight_ini 90
+#    - if float(peso_inicial_valido) != 1 remember weight_ini
+    - remember weight_ini
+#    - say weight_ini
 
     #- say "Bueno, pues ahora puedes preguntarme acerca de lo que te gustaría saber respecto dieta y despues podemos continuar la plática con tus gustos respecto a la comida"
     #- say "Pregúntame que es lo que quisieras saber de la dieta "
@@ -107,46 +117,58 @@ script:
 #    Ej." Solo recordandote que en este periodo de 6 semanas, nuestra meta máxima son 12/8 (escoger segun hombre/mujer)"
 
     #Se preguntan las preferencias de consumo
-    - say "Ahora, continuemos con tus gustos."
-    - say "Dime del 1 al 5 ¿qué tanto te gusta la comida picante?"
+    - say "Ahora, podemos platicar de tus gustos para que logre ver que tipo de comida es más de tu agrado y así mis sugerencias sean más adecuadas."
+    - say "Dime {}, del 1 al 5 ¿qué tanto te gusta la comida picante?".format(name)
     - input preference_spicy
     - verify_preference.verify('preferencia_valida',preference_spicy)
-    - if float(preferencia_valida) == 1 remember preference_spicy
+#    - if float(preferencia_valida) == 1 remember preference_spicy
     - if float(preferencia_valida) != 1 say "Ups! podrías escribir sólo el número, por favor. Recuerda, el 1 es de que te gusta muy poco así, casi nada; mientras que el 5 es de que te gusta muchísimo."
     - if float(preferencia_valida) != 1 input preference_spicy
-    - verify_preference.verify('preferencia_valida',preference_spicy)
-    - if float(preferencia_valida) == 1 remember preference_spicy
+    - if float(preferencia_valida) != 1 verify_preference.verify('preferencia_valida',preference_spicy)
+#    - if float(preferencia_valida) == 1 remember preference_spicy
+    - say preferencia_valida
     - if float(preferencia_valida) != 1 set_slot preference_spicy 3
+    - remember preference_spicy
+
+    - if float(preference_spicy) <3 say "Veo que no te gusta tanto la comida picante, está bien, a veces tanto picante irrita al estomago."
+    - if not float(preference_spicy) <3 say "¡Que padre que te guste! La comida picante es de lo más rico de la comida mexicana."
+
 
     - say "También del 1 al 5 ¿que tanto te gusta lo dulce?"
     - input preference_sweet
     - verify_preference.verify('preferencia_valida',preference_sweet)
-    - if float(preferencia_valida) == 1 remember preference_sweet
+#    - if float(preferencia_valida) == 1 remember preference_sweet
     - if float(preferencia_valida) != 1 say "Ups! podrías escribir sólo el número, por favor. Recuerda, el 1 es de que te gusta muy poco así, casi nada; mientras que el 5 es de que te gusta muchísimo."
     - if float(preferencia_valida) != 1 input preference_sweet
-    - verify_preference.verify('preferencia_valida',preference_sweet)
-    - if float(preferencia_valida) == 1 remember preference_sweet
+    - if float(preferencia_valida) != 1 verify_preference.verify('preferencia_valida',preference_sweet)
+#    - if float(preferencia_valida) == 1 remember preference_sweet
     - if float(preferencia_valida) != 1 set_slot preference_sweet 3
+    - remember preference_sweet
+
+    - if float(preference_seafood) < 3 say "Yo tampoco soy muy fan de la comida del mar, dicen que huele feo."
+    - if not float(preference_seafood) < 3 say "¡Pejcao! Un cevichito siempre cae bien, y veo que tú sí lo disfrutarías."
 
     - say "y del 1 al 5 ¿qué tanto te gusta la comida del mar como los mariscos o las mojarras?"
     - input preference_seafood
     - verify_preference.verify('preferencia_valida',preference_seafood)
-    - if float(preferencia_valida) == 1 remember preference_seafood
+#    - if float(preferencia_valida) == 1 remember preference_seafood
     - if float(preferencia_valida) != 1 say "Ups! podrías escribir sólo el número, por favor. Recuerda, el 1 es de que te gusta muy poco así, casi nada; mientras que el 5 es de que te gusta muchísimo."
     - if float(preferencia_valida) != 1 input preference_seafood
-    - verify_preference.verify('preferencia_valida',preference_seafood)
-    - if float(preferencia_valida) == 1 remember preference_seafood
+    - if float(preferencia_valida) != 1 verify_preference.verify('preferencia_valida',preference_seafood)
+#    - if float(preferencia_valida) == 1 remember preference_seafood
     - if float(preferencia_valida) != 1 set_slot preference_seafood 3
+    - remember preference_seafood
 
-    - say "y por último, ¿que tanto te gustan los platillos que son caldos? Recuerda sólo del 1 al 5."
+    - say "y por último {}, ¿que tanto te gustan los platillos que son caldos? Recuerda sólo del 1 al 5.".format(name)
     - input preference_soup
     - verify_preference.verify('preferencia_valida',preference_soup)
-    - if float(preferencia_valida) == 1 remember preference_soup
+#    - if float(preferencia_valida) == 1 remember preference_soup
     - if float(preferencia_valida) != 1 say "Ups! podrías escribir sólo el número, porfavor. Recuerda, el 1 es de que te gusta muy poco así, casi nada; mientras que el 5 es de que te gusta muchísimo."
     - if float(preferencia_valida) != 1 input preference_soup
-    - verify_preference.verify('preferencia_valida',preference_soup)
-    - if float(preferencia_valida) == 1 remember preference_soup
+    - if float(preferencia_valida) != 1 verify_preference.verify('preferencia_valida',preference_soup)
+#    - if float(preferencia_valida) == 1 remember preference_soup
     - if float(preferencia_valida) != 1 set_slot preference_soup 3
+    - remember preference_soup 
 
 #    - say "Cafe"
 #    - input preference_coffee
@@ -162,9 +184,7 @@ script:
     #     to contain if/else style executable statements: 
     #     that's the responsibility of the programming language you're using."
     # :''''c
-    - say "Esto me sirve para saber que tipo de comida es más de tu agrado." 
-    - if float(preference_spicy) <3 say "Veo que no te gusta tanto la comida picante."
-    - if not float(preference_spicy) <3 say "Veo que sí te gusta la comida picante."
+
 #    - if float(preference_salty) < float(preference_sweet) say "y que prefieres lo dulce a lo salado."
 #    - if not float(preference_salty) < float(preference_sweet) say "y que prefieres lo salado a lo dulce."
     - if float(preference_seafood) < 3 say "Tambien noto que no eres gran fan de la comida del mar."
@@ -186,4 +206,4 @@ script:
 
 
     #Explicacion de que la entrevista será una sola vez
-    - say "Esta pequeña entrevista fue para conocerte un poco mejor y sólo será necesaria para esta vez."
+#    - say "Esta pequeña entrevista fue para conocerte un poco mejor y sólo será necesaria para esta vez."

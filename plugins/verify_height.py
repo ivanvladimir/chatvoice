@@ -22,4 +22,4 @@ def verify(*height):
     else:
         #la estatura no es un número
         msg = 2
-    return 'set_slot {0} "{1}"'.format(var,str(msg))
+    return 'set_slot {0} "{1}"'.format(var,msg)
