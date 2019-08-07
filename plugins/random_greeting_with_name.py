@@ -33,7 +33,7 @@ def execute(*args):
         msg = (random.choice(['Hola! En que puedo ayudarte ','Buenos dias, en que puedo ayudarte ']+opts)) + y['name']     #lista de saludo para horario de la ma;ana
     
     elif now < today7pm :
-        msg = (random.choice(['Hola! en que puedo ayudarte ','Buenas tardes, en que puedo ayudarte ','Que gusto verte de nuevo, en que puedo ayudarte ', 'Me da gusto volver a verte, en que puedo ayudarte']+opts))+y['name']
+        msg = (random.choice(['Hola! en que puedo ayudarte ','Buenas tardes, en que puedo ayudarte ','Que gusto verte de nuevo, en que puedo ayudarte ', 'Me da gusto volver a verte, en que puedo ayudarte ']+opts))+y['name']
     
     else:
         msg = (random.choice(['Hola! en que puedo ayudarte ','Buenas noches, en que puedo ayudarte ']+opts)) + y['name']     #lista de saludo para horario de noche

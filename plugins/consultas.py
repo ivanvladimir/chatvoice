@@ -1,6 +1,6 @@
 import json
-
 import numpy as np
+import random_questions
 
 #conexion con la base de datos de platillos de desayuno, comida, cena y colacion
 import sqlite3
@@ -134,17 +134,17 @@ def conversacion_diaria(*intencion):
         #print(msg)
     #decirle al usuario qué puede preguntar
     elif var == "set_slot watson \"dudas_de_que_hacer\"":
-        msg = "Puedes pedirme una sugerencia de qué comer hoy."
+        msg = excecute()
     #dar mensaje de despedida
     elif var == "set_slot watson \"despedida\"":
-        msg = "Me da gusto poderte ayudar. Nos vemos luego."
+        msg = "Nos vemos luego."
         #print(str(msg))
     #dar mensaje de adios
     elif var == "set_slot watson \"no_quiere_algo_mas\"":
         msg = "De acuerdo, adiós."
     #Intentar pedir que diga algo de lo que podemos responder
     elif var == "set_slot watson \"dar_las_gracias_si_le_gusto\"":
-        msg = "¿Qué más puedo hacer por ti? "
+        msg = "Me alegra ayudarte ¿Qué más puedo hacer por ti? "
     #dar recomendacion de comida picosa
     elif var == "set_slot watson \"pedir_algo_picante\"":
         consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE picante=1 ORDER BY random() LIMIT 1;')
@@ -174,7 +174,7 @@ def conversacion_diaria(*intencion):
         consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE caldo=1 ORDER BY random() LIMIT 1;')
         m = cursor_platillo.fetchone()
         ms = m[0]
-        msg = "Si un calditos se te antoja, tal vez te gustaría comer " + ms
+        msg = "Si un caldito se te antoja, tal vez te gustaría comer " + ms
     else:
         msg = "Discúlpame, no entendí a qué te refieres."
         #print(str(msg))

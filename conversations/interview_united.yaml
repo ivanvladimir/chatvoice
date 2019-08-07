@@ -126,7 +126,7 @@ script:
     - if float(preferencia_valida) != 1 input preference_spicy
     - if float(preferencia_valida) != 1 verify_preference.verify('preferencia_valida',preference_spicy)
 #    - if float(preferencia_valida) == 1 remember preference_spicy
-    - say preferencia_valida
+#    - say preferencia_valida
     - if float(preferencia_valida) != 1 set_slot preference_spicy 3
     - remember preference_spicy
 
