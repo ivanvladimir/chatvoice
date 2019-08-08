@@ -118,7 +118,7 @@ def conversacion_diaria(*intencion):
         #print(str(msg))
     #dar respuesas acerca de Bella
     elif var == "set_slot watson \"dudas_de_bella\"":
-        msg = "Mi nombre es Bella y mi objetivo es apoyarte dandote recomendaciones de platillos todas las veces por las que preguntes por algo de desayunar, comer o cenar, o incluso con alguna colación. Así te daré ideas de lo que puedes comer para que no te aburras con esta dieta de cero azucares y cero harinas  y logres alcanzar la meta de tu peso ideal"
+        msg = "Mi nombre es Bella, soy un bot diseñado para dar sugerencias de platillos para desayunar, comer o cenar, o incluso para alguna colación, siguiendo tus gustos de lo que prefieres respecto a la comida picante, de caldo o de mar, con el fin de que logres seguir al 100 tu dieta de cero azúcares y cero harinas. También puedo platicarte un poco de la misma dieta, así como de los alimentos que puedes comer o darte ejemplos de los que no. Aunque algunas veces me tardo un poco en responder, siempre lo hago. Si es que alguna vez te llego a confundir y no sabes qué puedes preguntarme, con confianza tú dime: \'¿Que te puedo preguntar?\' ó \'No sé qué hacer\' y yo siempre te sugeriré una pregunta diferente."
         #print(str(msg))
     #dar respuesas acerca de la dieta
     elif var == "set_slot watson \"dudas_de_dieta\"":
