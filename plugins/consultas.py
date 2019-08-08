@@ -110,11 +110,11 @@ def conversacion_diaria(*intencion):
         #print(str(msg))
     #dar respuesas acerca del peso
     elif var == "set_slot watson \"chequeo_peso\"":
-        msg = "Disculpa. Sigo trabajando en el chequeo de peso"
+        msg = "Disculpa. Sigo trabajando en el chequeo de peso pero, te puedo comentar que en dos semanas podrías llegar a bajar de 3 a 6 kilos si logras eliminar de tu dieta diaria todas las harinas y todo el azúcar. Pero si tienes dudas de la dieta puedes preguntarme por ella así \'Bella, háblame de la dieta\'."
         #print(str(msg))
     #dar respuesas acerca del monitoreo del progreso
     elif var == "set_slot watson \"monitoreo\"":
-        msg = "Disculpa. Sigo trabajando en el monitoreo de peso"
+        msg = "Disculpa. Sigo trabajando en el monitoreo de peso pero, te puedo comentar que en dos semanas podrías llegar a bajar de 3 a 6 kilos si logras eliminar de tu diaria todo lo que tenga harina o azucar. Si quieres saber más de la dieta pregúntame por ella diciendo algo así \'Platícame más de la dieta, Bella\'."
         #print(str(msg))
     #dar respuesas acerca de Bella
     elif var == "set_slot watson \"dudas_de_bella\"":
