@@ -122,7 +122,7 @@ def conversacion_diaria(*intencion):
         #print(str(msg))
     #dar respuesas acerca de la dieta
     elif var == "set_slot watson \"dudas_de_dieta\"":
-        msg = "La dieta consta de evitar lo mas posible los alimentos que tengan harinas o azucares para poder bajar de peso. Con esto tú podrías disminuir de talla y bajar de 9 a 12 kilos. Esta dieta dura 6 semanas y consta de 3 etapas. Así que aunque, yo solo sea la encargada de la primer etapa, TÚ podrás pedirme las recomendaciones de platillos para el desayuno, comida, cena o entre comidas, las veces que quieras. Las porciones son ilimitadas, así que puedes comer los platos que quieras sin tener que contar las calorias."
+        msg = "Esta dieta, específica para bajar de peso, consta de evitar a toda costa los alimentos que tengan harinas o azúcares por dos semanas, así que todos los demás alimentos como carnes, quesos o verduras, son los que deberás comer en las porciones que logren satisfacer tu hambre, así que estás pueden ser ilimitadas; por lo que nunca tendrás que preocuparte por el conteo de calorias. Para los tiempos, yo te recomiendo no pasar más de 4 horas de ayuno, así que entre comida puedes incluir alguna colación ¡y para eso yo te puedo ayudar recomendandote alguna también!. Si quieres algunos ejemplos de lo que NO puedes comer, tú puedes preguntarme por ellos."
         #print(str(msg))
     #dar diferente recomendacion de comida
     elif var == "set_slot watson \"pedir_sugerencia_diferente\"":
