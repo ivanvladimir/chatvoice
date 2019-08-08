@@ -185,8 +185,8 @@ def conversacion_diaria(*intencion):
     elif var == "set_slot watson \"consultar_alimento\"":
         msg = "Aún no logro ser tan específica para explicar cada platillo pero, estoy trabajando en ello. Aunque lo que sí te puedo decir es que puedes comer lo que sea, carne, verduras, quesos, con la única restricción de que no tenga harina o azúcar. Así que nada de tortillas, papas o fruta pero si quieres algunos ejemplos más detallados de lo que no deberías comer puedes preguntarme por ellos."
     #dar respuesta a consulta de alimentos no permitidos
-    elif var == "set_slot watson \"\"":
-        msg = "En general, todo aquello con azúcar o harina está prohibido. Pero para ser más específica, por mencionar algunos ejemplos de lo que no debes comer te enlisto las tortillas, el bolillo, las galletas saladas, la sopida de fideo u otras pastas, la leche, los jugos, el refresco, cualquier fruta, los frijoles, el arroz, el garbanzo, la papa, la zanahoria; o cualquier guisado o platillo que los contenga. Aunque si tienes antojo de algo dulce tú puedes preguntarme por alguna sugerencia y con gusto te ayudo."
+    elif var == "set_slot watson \"peticion_de_que_no_comer\"":
+        msg = "En general, todo aquello con azúcar o harina está prohibido. Pero para ser más específica, por mencionar algunos ejemplos de lo que no debes comer te enlisto las tortillas, el bolillo, las galletas saladas, la sopida de fideo u otras pastas, la leche, los jugos, el refresco, cualquier fruta, los frijoles, el arroz, el garbanzo, la papa, la zanahoria; o cualquier guisado o platillo que los contenga. Aunque si tienes antojo de algo dulce tú puedes preguntarme \'¿que cosas dulces puedo comer?\' y yo con gusto te ayudo."
     #dar respuesta de lo que contiene un platillo
     elif var == "set_slot watson \"aclaracion_de_lo_que_es\"":
         msg = "Disculpa, aun no logro aprenderme las recetas y lo que lleva cada platillo pero te puedo decir que no lleva ni harina o azucar, aunque si quieres saber que cosas son las que NO puedes comer puedes decirme \'Bella ¿que es lo que no puedo comer?\' y yo te daré algunos ejemplos."
