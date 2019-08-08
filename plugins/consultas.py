@@ -187,6 +187,9 @@ def conversacion_diaria(*intencion):
     #dar respuesta a consulta de alimentos no permitidos
     elif var == "set_slot watson \"\"":
         msg = "En general, todo aquello con azúcar o harina está prohibido. Pero para ser más específica, por mencionar algunos ejemplos de lo que no debes comer te enlisto las tortillas, el bolillo, las galletas saladas, la sopida de fideo u otras pastas, la leche, los jugos, el refresco, cualquier fruta, los frijoles, el arroz, el garbanzo, la papa, la zanahoria; o cualquier guisado o platillo que los contenga. Aunque si tienes antojo de algo dulce tú puedes preguntarme por alguna sugerencia y con gusto te ayudo."
+    #dar respuesta de lo que contiene un platillo
+    elif var == "set_slot watson \"aclaracion_de_lo_que_es\"":
+        msg = "Disculpa, aun no logro aprenderme las recetas y lo que lleva cada platillo pero te puedo decir que no lleva ni harina o azucar, aunque si quieres saber que cosas son las que NO puedes comer puedes decirme \'Bella ¿que es lo que no puedo comer?\' y yo te daré algunos ejemplos."
     else:
         msg = "Discúlpame, no entendí a qué te refieres. Aunque si me pidieras una recomendación de lo que puedes comer hoy, seguro que eso sí te lo respondería."
         #print(str(msg))
