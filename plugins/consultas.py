@@ -1,6 +1,6 @@
 import json
 import numpy as np
-import random_questions
+import random
 
 #conexion con la base de datos de platillos de desayuno, comida, cena y colacion
 import sqlite3
@@ -122,7 +122,7 @@ def conversacion_diaria(*intencion):
         #print(str(msg))
     #dar respuesas acerca de la dieta
     elif var == "set_slot watson \"dudas_de_dieta\"":
-        msg = "La dieta consta de evitar lo mas posible los alimentos que tengan harinas o azucares para poder bajar de peso. Con esto tú podrías disminuir de talla lo de 9 kilos si eres mujer o incluso, lo de 12 kilos en el caso de que seas hombre. Esta dieta dura 6 semanas y consta de 3 etapas. Así que aunque, yo solo sea la encargada de la primer etapa, TÚ podrás pedirme las recomendaciones de platillos para el desayuno, comida, cena o entre comidas, las veces que quieras por dos semanas. Las porciones son ilimitadas, así que puedes comer los platos que quieras"
+        msg = "La dieta consta de evitar lo mas posible los alimentos que tengan harinas o azucares para poder bajar de peso. Con esto tú podrías disminuir de talla y bajar de 9 a 12 kilos. Esta dieta dura 6 semanas y consta de 3 etapas. Así que aunque, yo solo sea la encargada de la primer etapa, TÚ podrás pedirme las recomendaciones de platillos para el desayuno, comida, cena o entre comidas, las veces que quieras. Las porciones son ilimitadas, así que puedes comer los platos que quieras sin tener que contar las calorias."
         #print(str(msg))
     #dar diferente recomendacion de comida
     elif var == "set_slot watson \"pedir_sugerencia_diferente\"":
@@ -134,7 +134,7 @@ def conversacion_diaria(*intencion):
         #print(msg)
     #decirle al usuario qué puede preguntar
     elif var == "set_slot watson \"dudas_de_que_hacer\"":
-        msg = excecute()
+        msg = (random.choice(['Puedes decir \'¿Qué me sugieres comer hoy?\' y yo te doy una recomendación de platillo. ','Puedes decirme \'Sugiéreme algo para desayunar\' y yo te sugiero un platillo para tu desayuno.','Podrías decirme \'¿Qué podría cenar hoy?\' y yo te doy una sugerencia.','Puedes decirme \'Recomiendame algo dulce\' y yo te daré una sugerencia..','Puedes decirme \'Se me antoja algo picoso\' y yo te lo recomiendo.','Puedes decirme \'Quisiera comer algo sin chile\' y claro que yo te recomiendo algo.', 'Puedes decirme \'Bella, háblame de tí\' y yo te platico un poquito de mí.', 'Puedes decirme \'Quiero saber de la dieta\' y yo te platico un poquito de la dieta.']))
     #dar mensaje de despedida
     elif var == "set_slot watson \"despedida\"":
         msg = "Nos vemos luego."
@@ -169,14 +169,23 @@ def conversacion_diaria(*intencion):
         m = cursor_platillo.fetchone()
         ms = m[0]
         msg = "Si algo del mar es lo que se te antoja, podrías probar " + ms
+    #dar recomendacion de comida no de mar
+    elif var == "set_slot watson \"pedir_algo_no_de_mar\"":
+        consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE mar=0 ORDER BY random() LIMIT 1;')
+        m = cursor_platillo.fetchone()
+        ms = m[0]
+        msg = "Si prefieres algo que no sea comida de mar, podrías probar " + ms
     #dar recomendacion de comida caldosa
     elif var == "set_slot watson \"pedir_algo_caldoso\"":
         consulta = cursor_platillo.execute('SELECT platillo FROM platillos WHERE caldo=1 ORDER BY random() LIMIT 1;')
         m = cursor_platillo.fetchone()
         ms = m[0]
         msg = "Si un caldito se te antoja, tal vez te gustaría comer " + ms
+    #dar respuesta a consulta de un alimento en especifico
+    elif var == "set_slot watson \"consultar_alimento\"":
+        msg = "Aún no logro ser tan específica para explicar cada platillo pero, estoy trabajando en ello. Aunque lo que sí te puedo decir es que puedes comer lo que sea, con que no tenga harina o azúcar. Así que nada de tortillas, papas o fruta."
     else:
-        msg = "Discúlpame, no entendí a qué te refieres."
+        msg = "Discúlpame, no entendí a qué te refieres. Aunque si me pidieras una recomendación de lo que puedes comer hoy, seguro que eso sí te lo respondería."
         #print(str(msg))
 
 
