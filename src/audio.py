@@ -28,12 +28,13 @@ import speech_recognition as sr
 # setting
 db = TinyDB('audios.json')
 Audio = Query()
-engine_local = pyttsx3.init('espeak');
+engine_local = pyttsx3.init('sapi5');
 voices = engine_local.getProperty('voices')
 for voice in voices:
-    if voice.languages[0] == b'\x05es':
-        engine_local.setProperty('voice', voice.id)
-        break
+    print(voice)
+    #if voice.languages[0] == b'\x05es':
+    #    engine_local.setProperty('voice', voice.id)
+    #    break
 audio = pyaudio.PyAudio()
 vad = webrtcvad.Vad()
 stream= None
