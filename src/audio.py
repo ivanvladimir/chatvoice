@@ -112,7 +112,6 @@ def audio_connect(device=None,samplerate=16000,block_duration=10,padding_duratio
         socket = SocketIO(host,port)
         socket_state = socket.define(StateNamespace, '/state')
 
-    samplerate=samplerate
     FRAMES_PER_BUFFER=int(samplerate*block_duration/1000)
     NUM_PADDING_CHUNKS=int(padding_duration/block_duration)
     NUM_WINDOW_CHUNKS=int(250/block_duration)

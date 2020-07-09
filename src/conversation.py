@@ -7,8 +7,10 @@
 # imports
 import yaml
 import os.path
+import sys
 import re
 import time
+import importlib
 from collections import OrderedDict
 #from socketIO_client import SocketIO, BaseNamespace
 import json
@@ -22,7 +24,7 @@ from audio import tts_google, tts_local, pull_latest, sr_google, audio_state, st
 # TODO make a better system for plugins
 # from plugins import random_greeting
 # TODO make a better system for filters
-# from filters import *
+from filters import *
 
 re_conditional = re.compile("if (?P<conditional>.*) (?P<cmd>(solve|say|input|loop_slots).*)")
 re_while = re.compile("while (?P<conditional>.*) (?P<cmd>(solve|say|input|loop_slots).*)")
@@ -34,39 +36,40 @@ re_set = re.compile(r"set_slot (?P<id>[^ ]+) +(?P<val>.*)$")
 #    pass
 
 class Conversation:
-    def __init__(self, filename, name="SYSTEM", verbose=False, tts='google', rec_voice=False, host=None, port=None, samplerate=16000, device=0, channels=1):
+    def __init__(self, filename, name="SYSTEM", verbose=False, **config):
         """ Creates a conversation from a file"""
-
         #Variables
-        self.verbose_ = verbose
+        self.verbose_=verbose
         self.path = os.path.dirname(filename)
         self.basename = os.path.basename(filename)
         self.modulename = os.path.splitext(self.basename)[0]
         self.strategies = {}
         self.contexts = {}
+        self.plugins = config.get('plugins',{})
         self.package = ".".join(['plugins'])
         self.script = []
         self.slots = OrderedDict()
         self.history = []
         self.name = name
-        self.channels = channels
-        self.tts = tts
         self.pause = False
-        self.host = host
-        self.port = port
-        self.kbfilename = None
+        self.channels = config.get('channels',2)
+        self.tts = config.get('tts',None)
+        self.host = config.get('host',None)
+        self.port = config.get('port',None)
         self.kb={}
-        self.rec_voice = rec_voice
-
+        self.speech_recognition = config.get('speech_recognition',None)
+        self.dirplugins = config.get('dirplugins','plugins')
+        if not self.path in sys.path:
+            sys.path.append(os.path.join(self.path,config.get('dirplugins','plugins')))
         with open(filename, 'r') as stream:
             try:
-                definition=yaml.load(stream)
+                definition=yaml.safe_load(stream)
             except yaml.YAMLError as exc:
                 print(exc)
         self.load_conversation(definition)
         self.thread = None
-        self.samplerate = samplerate
-        self.device = device
+        self.samplerate = int(config.get('samplerate',16000))
+        self.device = config.get('device',None)
 
     def set_thread(self,thread):
         self.thread = thread
@@ -91,12 +94,18 @@ class Conversation:
         for conversation in conversations:
             conversation=os.path.join(path,conversation)
             self.verbose(bcolors.OKGREEN,"Loading conversation",conversation,bcolors.ENDC)
-            conversation_=Conversation(filename=conversation)
+            conversation_=Conversation(filename=conversation,
+                    config={
+                        'plugins':self.plugins,
+                        }
+                    )
             self.update_(conversation_)
 
     def _load_plugings(self,plugins_):
         for plugin in plugins_:
             self.verbose(bcolors.OKGREEN,"Importing plugin",plugin,bcolors.ENDC)
+            thisplug = importlib.import_module(plugin)
+            self.plugins[plugin]=thisplug
 
     def _load_strategies(self,strategies):
         for strategy,script in strategies.items():
@@ -154,6 +163,7 @@ class Conversation:
         except KeyError:
             pass
 
+
     def load_conversation(self,definition):
         """ Loads a full conversation"""
         try:
@@ -206,11 +216,16 @@ class Conversation:
             if args[0] in self.contexts:
                 self.current_context=self.contexts[args[0]]
                 slots_tmp=OrderedDict(self.current_context.slots)
+                plugins_tmp=OrderedDict(self.current_context.plugins)
                 slots_tmp_ = self.slots
+                plugins_tmp_ = self.plugins
                 self.slots=self.current_context.slots
+                self.plugins=self.current_context.plugins
                 self.slots.update(slots_tmp_)
+                self.plugins.update(plugins_tmp_)
                 self.execute_(self.current_context.script)
                 self.current_context.slots=slots_tmp
+                self.current_context.plugins=plugins_tmp
                 self.current_context=self
             elif args[0] in self.strategies:
                 self.execute_(self.strategies[args[0]])
@@ -222,7 +237,9 @@ class Conversation:
 
     def eval_(self,cmd):
         """ evaluate python expression"""
-        result=eval(cmd,globals(),self.slots)
+        loc=dict(self.slots)
+        loc.update(self.plugins)
+        result=eval(cmd,globals(),loc)
         if result:
             self.execute_line_(result)
         else:
@@ -261,7 +278,7 @@ class Conversation:
 
         if m:
             print("USER: ",end='')
-            if self.rec_voice:
+            if self.speech_recognition:
                 start_listening()
                 filename=None
                 while not filename:
@@ -390,7 +407,7 @@ class Conversation:
         if self.host:
             self.socket = SocketIO(self.host,self.port)
             self.socket_state = self.socket.define(StateNamespace, '/state')
-        audio_connect(samplerate=self.samplerate,device=self.device, host=self.host, port=self.port, activate = self.rec_voice, channels = self.channels)
+        audio_connect(samplerate=self.samplerate,device=self.device, host=self.host, port=self.port, activate = self.speech_recognition, channels = self.channels)
         self.current_context=self
         self.execute_(self.script)
 
