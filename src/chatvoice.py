@@ -7,6 +7,7 @@
 # imports
 import argparse
 import sys
+import configparser
 import os.path
 
 
@@ -14,36 +15,44 @@ import os.path
 import conversation
 from audio import audio_connect, audio_close, audio_devices, set_audio_dirname
 
+# load config
+config = configparser.ConfigParser()
+if os.path.exists("config.ini"):
+    config.read('config.ini')
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser("chatvoice")
     p.add_argument("CONV",
             help="Conversation file")
-    p.add_argument("--list_devices",
+    g1 = p.add_argument_group('Information', 'Display alternative information')
+    g1.add_argument("--list_devices",
             action="store_true", dest="list_devices",
             help="List audio devices")
-    p.add_argument("--rec_voice",
-            action="store_true", dest="rec_voice",
-            help="Activate voice recognition")
-    p.add_argument("--audio_dir",default="rec_voice_audios",
+    g11 = p.add_argument_group('Paths', 'Information to control paths')
+    g11.add_argument("--audio_dir",default="rec_voice_audios",
             action="store", dest="audio_dir",
             help="Directory for audios for speech recognition")
-    p.add_argument("--google_tts",
+    g2 = p.add_argument_group('Speech', 'Options to control speech')
+    g2.add_argument("--rec_voice",
+            action="store_true", dest="rec_voice",
+            help="Activate voice recognition")
+    g2.add_argument("--google_tts",
             action="store_true", dest="google_tts",
             help="Use google tts")
-    p.add_argument("--local_tts",
+    g2.add_argument("--local_tts",
             action="store_true", dest="local_tts",
             help="Use espeak local tts")
-    p.add_argument("--samplerate",type=int,default=16000,
+    g3 = p.add_argument_group('Audio', 'Options to control audio')
+    g3.add_argument("--samplerate",type=int,default=16000,
             action="store", dest="samplerate",
             help="Samplerate")
-    p.add_argument("--channels",type=int,default=2,
+    g3.add_argument("--channels",type=int,default=2,
             action="store", dest="channels",
             help="Number of channels microphone (1|2|...)")
-    p.add_argument("--device",type=int,default=None,
+    g3.add_argument("--device",type=int,default=None,
             action="store", dest="device",
             help="Device number to connect audio")
-    p.add_argument("--aggressiveness",type=int,default=None,
+    g3.add_argument("--aggressiveness",type=int,default=None,
             action="store", dest="aggressiveness",
             help="VAD aggressiveness")
     p.add_argument("-v", "--verbose",

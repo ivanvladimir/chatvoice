@@ -10,7 +10,7 @@ import os.path
 import re
 import time
 from collections import OrderedDict
-from socketIO_client import SocketIO, BaseNamespace
+#from socketIO_client import SocketIO, BaseNamespace
 import json
 
 
@@ -20,9 +20,9 @@ from audio import tts_google, tts_local, pull_latest, sr_google, audio_state, st
 
 # Import plugins
 # TODO make a better system for plugins
-from plugins import random_greeting
+# from plugins import random_greeting
 # TODO make a better system for filters
-from filters import *
+# from filters import *
 
 re_conditional = re.compile("if (?P<conditional>.*) (?P<cmd>(solve|say|input|loop_slots).*)")
 re_while = re.compile("while (?P<conditional>.*) (?P<cmd>(solve|say|input|loop_slots).*)")
@@ -30,8 +30,8 @@ re_input = re.compile(r"input (?P<id>[^ ]+)(?: *\| *(?P<filter>\w+)(?P<args>.*)?
 re_set = re.compile(r"set_slot (?P<id>[^ ]+) +(?P<val>.*)$")
 
 
-class StateNamespace(BaseNamespace):
-    pass
+#class StateNamespace(BaseNamespace):
+#    pass
 
 class Conversation:
     def __init__(self, filename, name="SYSTEM", verbose=False, tts='google', rec_voice=False, host=None, port=None, samplerate=16000, device=0, channels=1):
