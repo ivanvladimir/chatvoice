@@ -11,6 +11,7 @@ import sys
 import re
 import time
 import importlib
+from tinydb import TinyDB, Query
 from collections import OrderedDict
 #from socketIO_client import SocketIO, BaseNamespace
 import json
@@ -18,7 +19,7 @@ import json
 
 #local imports
 from colors import bcolors
-from audio import tts_google, tts_local, pull_latest, sr_google, audio_state, start_listening, stop_listening, audio_connect
+from audio import pull_latest, sr_google, audio_state, start_listening, stop_listening, enable_tts, enable_audio_listening, tts
 
 # Import plugins
 # TODO make a better system for plugins
@@ -56,9 +57,10 @@ class Conversation:
         self.tts = config.get('tts',None)
         self.host = config.get('host',None)
         self.port = config.get('port',None)
-        self.kb={}
+        self.IS={}
         self.speech_recognition = config.get('speech_recognition',None)
         self.dirplugins = config.get('dirplugins','plugins')
+        self.isfilename = os.path.join(self.path,config.get('isfilenama','is.json'))
         if not self.path in sys.path:
             sys.path.append(os.path.join(self.path,config.get('dirplugins','plugins')))
         with open(filename, 'r') as stream:
@@ -70,6 +72,26 @@ class Conversation:
         self.thread = None
         self.samplerate = int(config.get('samplerate',16000))
         self.device = config.get('device',None)
+        self.audios_tts_db_name = os.path.join(
+                self.path,
+                config.get('audios_dir','audios'),
+                config.get('audios_tts_db','audios_tts.tinydb'))
+        self.speech_recognition_dir = os.path.join(
+                self.path,
+                config.get('audios_dir','audios'),
+                config.get('speech_recognition_dir','speech_recognition'))
+        os.makedirs(self.speech_recognition_dir, exist_ok=True)
+        self.tts_dir = os.path.join(
+                self.path,
+                config.get('audios_dir','audios'),
+                config.get('tts_dir','tts'))
+        os.makedirs(self.tts_dir, exist_ok=True)
+        if self.tts:
+            self.audios_tts_db = TinyDB(self.audios_tts_db_name)
+            self.Audio = Query()
+        else:
+            self.audios_tts_db = None
+            self.Audio = None
 
     def set_thread(self,thread):
         self.thread = thread
@@ -95,9 +117,10 @@ class Conversation:
             conversation=os.path.join(path,conversation)
             self.verbose(bcolors.OKGREEN,"Loading conversation",conversation,bcolors.ENDC)
             conversation_=Conversation(filename=conversation,
-                    config={
+                    **{
                         'plugins':self.plugins,
-                        }
+                        'tts':self.tts,
+                    }
                     )
             self.update_(conversation_)
 
@@ -140,18 +163,14 @@ class Conversation:
                 self.slots['db'][dbname]=db
 
 
-    def _load_kb(self,kbname,path="."):
-        jsonfile=os.path.join(path,kbname)
-        self.verbose(bcolors.OKBLUE,"Loading kb",bcolors.ENDC)
-        self.verbose(bcolors.OKBLUE,"Loading json",jsonfile,bcolors.ENDC)
+    def _load_is(self,isname):
+        self.verbose(bcolors.OKBLUE,"Loading IS",isname,bcolors.ENDC)
         try:
-            with open(jsonfile) as json_file:
-                kb = json.load(json_file)
+            with open(isname) as json_file:
+                self.IS = json.load(json_file)
         except FileNotFoundError:
-            kb={}
-        for slotname,slotvalue in kb.items():
-            self.slots[slotname]=slotvalue
-        self.kbfilename=jsonfile
+            self.IS={}
+        self.slots.update(self.IS)
 
     def _load_slots(self,slots):
         for slot in slots:
@@ -188,10 +207,8 @@ class Conversation:
             self._load_dbs(definition['dbs'],path=self.path)
         except KeyError:
             pass
-        try:
-            self._load_kb(definition['kb'],path=self.path)
-        except KeyError:
-            pass
+        if self.isfilename:
+            self._load_is(self.isfilename)
         try:
             self._load_settings(definition['settings'])
         except KeyError:
@@ -253,24 +270,18 @@ class Conversation:
 
     def say_(self,cmd):
         """ Say command """
-
         result=eval(cmd,globals(),self.slots)
-        if self.tts=='google':
-            stop_listening()
-            tts_google(result)
-            start_listening()
-        elif self.tts=='local':
-            stop_listening()
-            tts_local(result)
-            start_listening()
-        else:
-            pass
         MSG="{}: {}".format(self.name, result)
         if self.host:
             self.socket_state.emit('say',{"msg":MSG})
         else:
             print(MSG)
-
+        if self.tts:
+            stop_listening()
+            tts(result)
+            start_listening()
+        else:
+            pass
 
     def input_(self,line):
         """ Input command """
@@ -349,9 +360,9 @@ class Conversation:
         del self.slots[arg]
 
     def remember_(self,arg):
-        self.kb[arg]=self.slots[arg]
-        with open(self.kbfilename,"w") as json_file:
-            json.dump(self.kb,json_file)
+        self.IS[arg]=self.slots[arg]
+        with open(self.isfilename,"w") as json_file:
+            json.dump(self.IS,json_file)
 
     def empty_slot_(self,line):
         self.slots[line]=None
@@ -407,7 +418,21 @@ class Conversation:
         if self.host:
             self.socket = SocketIO(self.host,self.port)
             self.socket_state = self.socket.define(StateNamespace, '/state')
-        audio_connect(samplerate=self.samplerate,device=self.device, host=self.host, port=self.port, activate = self.speech_recognition, channels = self.channels)
+        if self.speech_recognition:
+            enable_audio_listening(
+                    samplerate=self.samplerate,
+                    device=self.device,
+                    host=self.host,
+                    port=self.port,
+                    activate = self.speech_recognition,
+                    channels = self.channels,
+                    speech_recognition_dir=self.speech_recognition_dir
+                    )
+        if self.tts:
+            enable_tts(
+                engine=self.tts,
+                tts_dir=self.tts_dir
+                    )
         self.current_context=self
         self.execute_(self.script)
 

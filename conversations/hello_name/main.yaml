@@ -12,8 +12,6 @@ slots:
 dbs:
     main: import_csv data.csv
 
-kb: kb.db
-
 strategies:
     name:
         - say "¿cúal es tu nombre?"

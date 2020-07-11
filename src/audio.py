@@ -9,7 +9,6 @@ import hashlib
 import pyaudio
 from datetime import datetime, timedelta
 import time
-from tinydb import TinyDB, Query
 from gtts import gTTS
 import pyttsx3
 import webrtcvad
@@ -26,8 +25,6 @@ import speech_recognition as sr
 #    pass
 
 # setting
-db = TinyDB('audios.json')
-Audio = Query()
 #engine_local = pyttsx3.init('sapi5');
 #voices = engine_local.getProperty('voices')
 #for voice in voices:
@@ -35,10 +32,10 @@ Audio = Query()
     #if voice.languages[0] == b'\x05es':
     #    engine_local.setProperty('voice', voice.id)
     #    break
-audio = pyaudio.PyAudio()
-vad = webrtcvad.Vad()
-stream= None
+tream= None
 socket_state=None
+audio=None
+vad=None
 
 samplerate=16000
 block_duration=10
@@ -51,7 +48,10 @@ ring_buffer_flags = [0] * NUM_WINDOW_CHUNKS
 ring_buffer_index=0
 
 AUDIOS=[]
-DIRAUDIOS='rec_voice_audios'
+SPEECHRECDIR=None
+TTSDIR=None
+TTS=None
+DB=None
 rec = sr.Recognizer()
 
 # 0 - not connected
@@ -67,32 +67,38 @@ STATE={
 def clear_audios():
     AUDIOS=[]
 
-# TTS
-if not os.path.exists(os.path.join(os.getcwd(), 'audios')):
-    os.mkdir(os.path.join(os.getcwd(), 'audios'))
+def tts(msg,lang="es-us"):
+    if TTS==0:
+        tts_local(msg,lang=lang)
+    elif TTS==1:
+        tts_google(msg,lang=lang)
+    else:
+        pass
 
-def tts_local(msg):
+def tts_local(msg,lang='es-us'):
     engine_local.say(msg)
     engine_local.runAndWait() ;
 
 def tts_google(msg,lang='es-us'):
     hashing = hashlib.md5(msg.encode('utf-8')).hexdigest()
-    res = db.search((Audio.hash == hashing) & (Audio.type=='google'))
+    if DB:
+        res = DB.search((Audio.hash == hashing) & (Audio.type=='google'))
+    else:
+        res=[]
     if len(res)>0:
         p = Popen(['mpg321',os.path.join(os.getcwd(),'audios',res[0]['mp3'])], stdout=DEVNULL, stderr=STDOUT)
         p.communicate()
         assert p.returncode == 0
         return None
-    mp3_filename=os.path.join(os.getcwd(), 'audios', '{}_{}.mp3'.format(hashing,'google'))
-    tts = gTTS(msg, 'es-us')
+    mp3_filename=os.path.join(TTSDIR, '{}_{}.mp3'.format(hashing,'google'))
+    tts = gTTS(msg,lang=lang)
     tts.save(mp3_filename)
     p = Popen(['mpg321',mp3_filename], stdout=DEVNULL, stderr=STDOUT)
     p.communicate()
     assert p.returncode == 0
-    db.insert({'hash':hashing,'type':'google','mp3':'{}_{}.mp3'.format(hashing,'google')})
+    if DB:
+        DB.insert({'hash':hashing,'type':'google','mp3':'{}_{}.mp3'.format(hashing,'google')})
 
-
-# Vad
 def vad_aggressiveness(a):
     vad.set_mode(a)
 
@@ -105,14 +111,35 @@ def audio_devices():
 
     return devices
 
-def audio_connect(device=None,samplerate=16000,block_duration=10,padding_duration=1000, host=None, port=None, channels=1, activate=True):
-    if not activate:
-        return
+def enable_tts(engine=None,tts_dir=tts,db=None):
+    global TTSDIR
+    global TTS
+    global DB
+    TTSDIR=tts_dir
+    DB=db
+    if engine=='local':
+        TTS=0
+    elif engine=='google':
+        TTS=1
+    else:
+        TSS=None
+
+
+def enable_audio_listening(device=None,samplerate=16000,block_duration=10,padding_duration=1000, 
+        host=None, port=None, channels=1,aggressiveness=None,
+        speech_recognition_dir="speech_recognition"):
     global socket_state
+    global audio
+    global vad
+    global SPEECHRECDIR
+    audio = pyaudio.PyAudio()
+    vad = webrtcvad.Vad()
+    vad.aggressiveness(aggressiveness)
     if host:
         socket = SocketIO(host,port)
         socket_state = socket.define(StateNamespace, '/state')
 
+    SPEECHRECDIR=speech_recognition_dir
     FRAMES_PER_BUFFER=int(samplerate*block_duration/1000)
     NUM_PADDING_CHUNKS=int(padding_duration/block_duration)
     NUM_WINDOW_CHUNKS=int(250/block_duration)
