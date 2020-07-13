@@ -65,7 +65,7 @@ class Conversation:
         self.isfilename = os.path.join(self.path,config.get('isfilenama','is.json'))
         if not self.path in sys.path:
             sys.path.append(os.path.join(self.path,config.get('dirplugins','plugins')))
-        with open(filename, 'r') as stream:
+        with open(filename, 'r', encoding="utf-8") as stream:
             try:
                 definition=yaml.safe_load(stream)
             except yaml.YAMLError as exc:
@@ -147,7 +147,7 @@ class Conversation:
                     import csv
                     dbfile=os.path.join(path,bits[1])
                     self.verbose(bcolors.OKBLUE,"Loading csv",dbfile,bcolors.ENDC)
-                    with open(dbfile) as csv_file:
+                    with open(dbfile, encoding="utf-8") as csv_file:
                         csv_reader = csv.reader(csv_file, delimiter=',')
                         line_count = 0
                         for row in csv_reader:
@@ -167,7 +167,7 @@ class Conversation:
     def _load_is(self,isname):
         self.verbose(bcolors.OKBLUE,"Loading IS",isname,bcolors.ENDC)
         try:
-            with open(isname) as json_file:
+            with open(isname, encoding="utf-8") as json_file:
                 self.IS = json.load(json_file)
         except FileNotFoundError:
             self.IS={}
@@ -362,7 +362,7 @@ class Conversation:
 
     def remember_(self,arg):
         self.IS[arg]=self.slots[arg]
-        with open(self.isfilename,"w") as json_file:
+        with open(self.isfilename,"w", encoding="uft-8") as json_file:
             json.dump(self.IS,json_file)
 
     def empty_slot_(self,line):
