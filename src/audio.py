@@ -20,7 +20,6 @@ from struct import pack
 from subprocess import DEVNULL, Popen, PIPE, STDOUT
 from collections import deque
 import speech_recognition as sr
-import pygame
 #from socketIO_client import SocketIO, BaseNamespace
 
 #class StateNamespace(BaseNamespace):
