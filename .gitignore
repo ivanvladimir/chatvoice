@@ -92,8 +92,5 @@ pip-selfcheck.json
 .ropeproject
 
 # moni_files
-conversations/moni*
-audios/
-audios.json
-conversations/kb.db
-rec_voice_audios/
+conversations/**/is.json
+conversations/**/audios
