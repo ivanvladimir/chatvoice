@@ -38,8 +38,6 @@ socket_state=None
 audio=None
 vad=None
 Audio = tinydb.Query()
-pygame.init()
-pygame.mixer.init()
 
 block_duration=10
 padding_duration=1000
