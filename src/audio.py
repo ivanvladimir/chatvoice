@@ -9,16 +9,18 @@ import hashlib
 import pyaudio
 from datetime import datetime, timedelta
 import time
-from gtts import gTTS
+import gtts
 import pyttsx3
 import webrtcvad
 import wave
+import tinydb
 import numpy as np
 from array import array
 from struct import pack
 from subprocess import DEVNULL, Popen, PIPE, STDOUT
 from collections import deque
 import speech_recognition as sr
+import pygame
 #from socketIO_client import SocketIO, BaseNamespace
 
 #class StateNamespace(BaseNamespace):
@@ -36,6 +38,9 @@ tream= None
 socket_state=None
 audio=None
 vad=None
+Audio = tinydb.Query()
+pygame.init()
+pygame.mixer.init()
 
 samplerate=16000
 block_duration=10
@@ -51,6 +56,7 @@ AUDIOS=[]
 SPEECHRECDIR=None
 TTSDIR=None
 TTS=None
+ENGINE_LOCAL=None
 DB=None
 rec = sr.Recognizer()
 
@@ -76,28 +82,27 @@ def tts(msg,lang="es-us"):
         pass
 
 def tts_local(msg,lang='es-us'):
-    engine_local.say(msg)
-    engine_local.runAndWait() ;
+    ENGINE_LOCAL.say(msg)
+    ENGINE_LOCAL.runAndWait() ;
 
-def tts_google(msg,lang='es-us'):
+def tts_google(msg,lang=None):
+    global DB
     hashing = hashlib.md5(msg.encode('utf-8')).hexdigest()
     if DB:
         res = DB.search((Audio.hash == hashing) & (Audio.type=='google'))
     else:
         res=[]
     if len(res)>0:
-        p = Popen(['mpg321',os.path.join(os.getcwd(),'audios',res[0]['mp3'])], stdout=DEVNULL, stderr=STDOUT)
-        p.communicate()
-        assert p.returncode == 0
-        return None
-    mp3_filename=os.path.join(TTSDIR, '{}_{}.mp3'.format(hashing,'google'))
-    tts = gTTS(msg,lang=lang)
-    tts.save(mp3_filename)
+        mp3_filename=res[0]['mp3']
+    else:
+        mp3_filename=os.path.join(TTSDIR,f'{hashing}_google.mp3')
+        tts = gtts.gTTS(msg,lang=lang if lang else TTS_LANG )
+        tts.save(mp3_filename)
     p = Popen(['mpg321',mp3_filename], stdout=DEVNULL, stderr=STDOUT)
     p.communicate()
     assert p.returncode == 0
-    if DB:
-        DB.insert({'hash':hashing,'type':'google','mp3':'{}_{}.mp3'.format(hashing,'google')})
+    if not DB is None:
+        DB.insert({'hash':hashing,'type':'google','mp3':mp3_filename})
 
 def vad_aggressiveness(a):
     vad.set_mode(a)
@@ -111,16 +116,32 @@ def audio_devices():
 
     return devices
 
-def enable_tts(engine=None,tts_dir=tts,db=None):
+def list_voices(engine=None):
+    if engine=='local':
+        engine = pyttsx3.init() 
+        voices = engine.getProperty('voices')
+        for voice in voices:
+            print(voice)
+    if engine=="google":
+        langs=gtts.lang.tts_langs()
+        for lang in langs:
+            print(lang)
+
+def enable_tts(engine=None,tts_dir=tts,db=None,voice='es',language='es-us'):
     global TTSDIR
     global TTS
     global DB
+    global ENGINE_LOCAL
     TTSDIR=tts_dir
-    DB=db
+    if not DB:
+        DB=db
     if engine=='local':
         TTS=0
+        ENGINE_LOCAL = pyttsx3.init() 
+        ENGINE_LOCAL.setProperty('voice', voice)
     elif engine=='google':
         TTS=1
+        TTS_LANG=language
     else:
         TSS=None
 

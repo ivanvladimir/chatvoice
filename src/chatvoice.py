@@ -13,7 +13,7 @@ import yaml
 
 # local imports
 import conversation
-from audio import audio_close, audio_devices
+from audio import audio_close, audio_devices, list_voices
 
 # load config
 config = configparser.ConfigParser()
@@ -42,6 +42,12 @@ if __name__ == '__main__':
     g1.add_argument("--list_devices",
             action="store_true",
             help="List audio devices")
+    g1.add_argument("--list_voices_local_tts",
+            action="store_true",
+            help="List voices from local TTS")
+    g1.add_argument("--list_language_google_tts",
+            action="store_true",
+            help="List voices from local TTS")
     g11 = p.add_argument_group('Paths', 'Paths to auxiliary files')
     g11.add_argument("--audios_dir",
             default=config.get(CONFIG,'audios_dir',fallback='audios'),
@@ -85,6 +91,14 @@ if __name__ == '__main__':
             default=config.getboolean(CONFIG,'local_tts',fallback=False),
             action="store_true", dest="local_tts",
             help="Use espeak local tts [%(default)s]")
+    g2.add_argument("--local_tts_voice",
+            default=config.get(CONFIG,'local_tts_voice',fallback='spanish-latin-am'),
+            action="store_true", dest="local_tts",
+            help="Use espeak local tts [%(default)s]")
+    g2.add_argument("--google_tts_language",
+            default=config.get(CONFIG,'google_tts_langage',fallback='es-us'),
+            action="store_true", dest="local_tts",
+            help="Use espeak local tts [%(default)s]")
     g3 = p.add_argument_group('Audio', 'Options to control audio')
     g3.add_argument("--samplerate",type=int,
             default=config.getint(CONFIG,'samplerate',fallback=44100),
@@ -119,6 +133,12 @@ if __name__ == '__main__':
             for key,val in config[sec].items():
                 print(f'{key}={val}')
             print()
+        sys.exit()
+    elif args.list_voices_local_tts:
+        list_voices(engine='local')
+        sys.exit()
+    elif args.list_language_google_tts:
+        list_voices(engine='google')
         sys.exit()
 
     if not kargs.CONV:

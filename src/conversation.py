@@ -53,6 +53,8 @@ class Conversation:
         self.history = []
         self.name = name
         self.pause = False
+        self.language_google=config.get("tts_google_languege","es-us")
+        self.voice_local=config.get("tts_local_voice","es-us")
         self.channels = config.get('channels',2)
         self.tts = config.get('tts',None)
         self.host = config.get('host',None)
@@ -87,11 +89,10 @@ class Conversation:
                 config.get('tts_dir','tts'))
         os.makedirs(self.tts_dir, exist_ok=True)
         if self.tts:
+            self.verbose(bcolors.OKBLUE,"Loading audios tts db",self.audios_tts_db_name,bcolors.ENDC)
             self.audios_tts_db = TinyDB(self.audios_tts_db_name)
-            self.Audio = Query()
         else:
             self.audios_tts_db = None
-            self.Audio = None
 
     def set_thread(self,thread):
         self.thread = thread
@@ -426,13 +427,16 @@ class Conversation:
                     port=self.port,
                     activate = self.speech_recognition,
                     channels = self.channels,
-                    speech_recognition_dir=self.speech_recognition_dir
+                    speech_recognition_dir=self.speech_recognition_dir,
                     )
         if self.tts:
             enable_tts(
                 engine=self.tts,
-                tts_dir=self.tts_dir
-                    )
+                tts_dir=self.tts_dir,
+                language=self.language_google,
+                voice=self.voice_local,
+                db=self.audios_tts_db
+                )
         self.current_context=self
         self.execute_(self.script)
 
