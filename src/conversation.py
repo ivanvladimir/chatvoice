@@ -425,7 +425,6 @@ class Conversation:
                     device=self.device,
                     host=self.host,
                     port=self.port,
-                    activate = self.speech_recognition,
                     channels = self.channels,
                     speech_recognition_dir=self.speech_recognition_dir,
                     )

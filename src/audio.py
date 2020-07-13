@@ -42,10 +42,10 @@ Audio = tinydb.Query()
 pygame.init()
 pygame.mixer.init()
 
-samplerate=16000
 block_duration=10
 padding_duration=1000
-FRAMES_PER_BUFFER=samplerate*block_duration/1000
+SAMPLERATE=48000
+FRAMES_PER_BUFFER=SAMPLERATE*block_duration/1000
 NUM_PADDING_CHUNKS=int(padding_duration/block_duration)
 NUM_WINDOW_CHUNKS=int(400/block_duration)
 ring_buffer=deque(maxlen=NUM_PADDING_CHUNKS)
@@ -153,13 +153,15 @@ def enable_audio_listening(device=None,samplerate=16000,block_duration=10,paddin
     global audio
     global vad
     global SPEECHRECDIR
+    global SAMPLERATE
     audio = pyaudio.PyAudio()
     vad = webrtcvad.Vad()
-    vad.aggressiveness(aggressiveness)
+    #vad.aggressiveness(aggressiveness)
     if host:
         socket = SocketIO(host,port)
         socket_state = socket.define(StateNamespace, '/state')
 
+    SAMPLERATE=samplerate
     SPEECHRECDIR=speech_recognition_dir
     FRAMES_PER_BUFFER=int(samplerate*block_duration/1000)
     NUM_PADDING_CHUNKS=int(padding_duration/block_duration)
@@ -186,7 +188,7 @@ wave_file=None
 filename_wav="tmp.wav"
 # Audio capturing
 def callback(in_data, frame_count, time_info, status):
-    global ring_buffer_index, ring_buffer_flags,triggered, voiced_buffer, ring_buffer, wave_file, DIRAUDIOS, filename_wav, STATE, socket_state
+    global ring_buffer_index, ring_buffer_flags,triggered, voiced_buffer, ring_buffer, wave_file, SPEECHRECDIR, filename_wav, STATE, socket_state, SAMPLERATE
     if socket_state:
         socket_state.emit('audio',STATE)
     if STATE['main']==1 or STATE['main']==4:
@@ -205,11 +207,11 @@ def callback(in_data, frame_count, time_info, status):
         num_voiced = sum(ring_buffer_flags)
         if num_voiced > 0.5 * NUM_WINDOW_CHUNKS:
             STATE['main'] = 3
-            filename_wav = "{}/{}.wav".format(DIRAUDIOS,datetime.now().strftime("%Y%m%d_%H%M%S"))
+            filename_wav = os.path.join(SPEECHRECDIR,datetime.now().strftime("%Y%m%d_%H%M%S"))
             wave_file = wave.open(filename_wav, 'wb')
             wave_file.setnchannels(1)
             wave_file.setsampwidth(2)
-            wave_file.setframerate(samplerate)
+            wave_file.setframerate(SAMPLERATE)
             voiced_buffer=np.array(ring_buffer)
             ring_buffer=np.array([],dtype="Int16")
     else:
