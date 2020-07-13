@@ -72,7 +72,7 @@ class Conversation:
                 print(exc)
         self.load_conversation(definition)
         self.thread = None
-        self.samplerate = int(config.get('samplerate',16000))
+        self.samplerate = int(config.get('samplerate',48000))
         self.device = config.get('device',None)
         self.audios_tts_db_name = os.path.join(
                 self.path,

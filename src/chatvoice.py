@@ -93,21 +93,21 @@ if __name__ == '__main__':
             help="Use espeak local tts [%(default)s]")
     g2.add_argument("--local_tts_voice",
             default=config.get(CONFIG,'local_tts_voice',fallback='spanish-latin-am'),
-            action="store_true", dest="local_tts",
+            action="store_true",
             help="Use espeak local tts [%(default)s]")
     g2.add_argument("--google_tts_language",
             default=config.get(CONFIG,'google_tts_langage',fallback='es-us'),
-            action="store_true", dest="local_tts",
+            action="store_true",
             help="Use espeak local tts [%(default)s]")
     g3 = p.add_argument_group('Audio', 'Options to control audio')
     g3.add_argument("--samplerate",type=int,
-            default=config.getint(CONFIG,'samplerate',fallback=44100),
-            action="store", dest="samplerate",
-            help=f"Samplerate [%(default)s]")
+            default=config.getint(CONFIG,'samplerate',fallback=48000),
+            action="store",
+            help="Samplerate [%(default)s]")
     g3.add_argument("--channels",type=int,
             default=config.getint(CONFIG,'channels',fallback=2),
             action="store",
-            help=f"Number of channels microphone [%(default)s]")
+            help="Number of channels microphone [%(default)s]")
     g3.add_argument("--device",
             default=config.getint(CONFIG,'device',fallback=None),
             action="store",
