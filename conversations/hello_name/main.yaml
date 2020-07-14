@@ -29,8 +29,8 @@ script:
     - loop_slots
     - say "¿como estás hoy {}?".format(name)
     - input status | asign bien:good mal:bad
-    - if status == "good" solve excelent
-    - if status == "bad" solve sorry
+    - if status == "good" then solve excelent
+    - if status == "bad" then solve sorry
     - say "Hay algunas cosas que se"
     - say "hecho {} {}".format(*db['main'][0])
     - say "adios {}".format(name)
