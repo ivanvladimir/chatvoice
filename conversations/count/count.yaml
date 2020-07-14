@@ -1,0 +1,21 @@
+strategies:
+    number:
+        - say "¿hasta que numero quieres que cuente?"
+        - input number_from | number
+    say_number_ascendant:
+        - say "la cuenta va en {}".format(counter)
+        - execute self.slots['counter']+=1 #Esto es código en python
+    say_number_descendant:
+        - say "la cuenta va en {}".format(counter)
+        - execute self.slots['counter']-=1 #Esto es código en python
+
+
+script:
+    - solve number
+    - add_slot counter
+    - set_slot counter 0
+    - while counter < number_from then solve say_number_ascendant
+    - say "Ahora en reversa"
+    - while counter > -1 then solve say_number_descendant
+    - say "Listo terminé de contar"
+

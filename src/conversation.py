@@ -27,8 +27,8 @@ from audio import pull_latest, sr_google, audio_state, start_listening, stop_lis
 # TODO make a better system for filters
 from filters import *
 
-re_conditional = re.compile("if (?P<conditional>.*) (?P<cmd>(solve|say|input|loop_slots).*)")
-re_while = re.compile("while (?P<conditional>.*) (?P<cmd>(solve|say|input|loop_slots).*)")
+re_conditional = re.compile(r"if (?P<conditional>.*) then (?P<cmd>(solve|say|input|loop_slots).*)")
+re_while = re.compile(r"while (?P<conditional>.*) then (?P<cmd>(solve|say|input|loop_slots).*)")
 re_input = re.compile(r"input (?P<id>[^ ]+)(?: *\| *(?P<filter>\w+)(?P<args>.*)?$)?")
 re_set = re.compile(r"set_slot (?P<id>[^ ]+) +(?P<val>.*)$")
 

@@ -1,0 +1,33 @@
+settings:
+    name: CHATVOICE
+
+slots:
+    - name
+    - age
+    - city
+    - blue
+
+conversations:
+    - 'count.yaml'
+
+strategies:
+    name:
+        - say "Hola ¿cúal es tu nombre?"
+        - input name
+    age:
+        - say "¿y tu edad?"
+        - input age
+    city:
+        - say "¿en qué ciudad vives?"
+        - input city
+    blue:
+        - say "¿te gusta el color azul?"
+        - input blue | yesno
+
+
+script:
+    - loop_slots
+    - if blue==True then say "a mí también" 
+    - solve count
+    - say "Adios {}".format(name)
+
