@@ -27,7 +27,7 @@ strategies:
 
 script:
     - loop_slots
-    - if blue==True then say "a mí también" 
+    - if blue==True then say "a mí también"
     - solve count
     - say "Adios {}".format(name)
 

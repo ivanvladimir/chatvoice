@@ -362,7 +362,7 @@ class Conversation:
 
     def remember_(self,arg):
         self.IS[arg]=self.slots[arg]
-        with open(self.isfilename,"w", encoding="uft-8") as json_file:
+        with open(self.isfilename,"w", encoding="utf-8") as json_file:
             json.dump(self.IS,json_file)
 
     def empty_slot_(self,line):
