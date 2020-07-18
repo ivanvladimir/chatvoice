@@ -5,9 +5,7 @@ channels:
   - defaults
 dependencies:
   - _libgcc_mutex=0.1
-  - _openmp_mutex=4.5
   - aiohttp=3.6.2
-  - alsa-lib=1.2.3
   - async-timeout=3.0.1
   - attrs=19.3.0
   - ca-certificates=2020.6.20
@@ -15,20 +13,13 @@ dependencies:
   - chardet=3.0.4
   - idna=2.10
   - idna_ssl=1.1.0
-  - jack=0.125.0
-  - ld_impl_linux-64=2.34
   - libblas=3.8.0
   - libcblas=3.8.0
   - libdb=6.1.26
   - libffi=3.2.1
-  - libgcc-ng=9.2.0
-  - libgfortran-ng=7.5.0
-  - libgomp=9.2.0
   - liblapack=3.8.0
   - libopenblas=0.3.7
-  - libstdcxx-ng=9.2.0
   - multidict=4.7.5
-  - ncurses=6.1
   - numpy=1.18.5
   - openssl=1.1.1g
   - portaudio=19.6.0
@@ -38,7 +29,6 @@ dependencies:
   - python-socketio=4.5.1
   - python_abi=3.6
   - pyyaml=5.3.1
-  - readline=8.0
   - setuptools=49.1.0
   - six=1.15.0
   - speechrecognition=3.6.3
