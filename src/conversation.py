@@ -273,6 +273,7 @@ class Conversation:
         """ Say command """
         result=eval(cmd,globals(),self.slots)
         MSG="{}: {}".format(self.name, result)
+        print(MSG)
         if self.client:
             self.client.emit('say',{"msg":MSG},namespace="/cv")
         if self.tts:
