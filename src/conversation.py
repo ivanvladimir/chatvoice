@@ -93,6 +93,7 @@ class Conversation:
         else:
             self.audios_tts_db = None
         self.client=client
+        self.webclient_sid=None
     
     def set_thread(self,thread):
         self.thread = thread
@@ -100,10 +101,17 @@ class Conversation:
     def set_idd(self,idd):
         self.idd= idd
 
+    def set_webclient_sid(self,sid):
+        self.webclient_sid = sid
+
     def start(self):
         time.sleep(0.8)
         if self.thread:
             self.thread.start()
+
+    def stop(self):
+        if self.thread:
+            self.thread.exit()
 
     def pause(self):
         self.pause=True
@@ -275,7 +283,8 @@ class Conversation:
         MSG="{}: {}".format(self.name, result)
         print(MSG)
         if self.client:
-            self.client.emit('say',{"msg":MSG},namespace="/cv")
+            data={'msg':result,'spk':self.name,'webclient_sid':self.webclient_sid}
+            self.client.emit('say',data,namespace="/cv")
         if self.tts:
             stop_listening()
             tts(result)
@@ -291,7 +300,8 @@ class Conversation:
         if m:
             print("USER: ",end='')
             if self.client:
-                self.client.emit('input',namespace="/cv")
+                data={'webclient_sid':self.webclient_sid}
+                self.client.emit('input',data,namespace="/cv")
                 while not self.input:
                     time.sleep(0.1)
                 result=self.input

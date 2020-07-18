@@ -47,7 +47,6 @@ if __name__ == '__main__':
 
     args = p.parse_args(extra)
 
-    # Modes that print alternative information
     CONFIG={}
     for k, v in config[kargs.config_section].items():
         if v == 'False':
@@ -60,10 +59,8 @@ if __name__ == '__main__':
             except ValueError:
                 CONFIG[k]=v
     CONFIG.update(vars(args))
-
-    print(CONFIG)
+    
     web,app=server.start_server(CONFIG)
-
     web.run_app(app,
         host=CONFIG['host'],
         port=CONFIG['port'])

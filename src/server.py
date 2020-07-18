@@ -7,9 +7,22 @@ import uuid
 
 from templates import *
 
-conversations={}
+CONVERSATIONS={}
+CLIENTS={}
 config={}
 sio = socketio.AsyncServer()
+
+def create_new_conversation(idd):
+    client,conv_file=CLIENTS[idd]
+    conversation = Conversation(
+        filename=conv_file,
+        client=client,
+        **config)
+    t = threading.Thread(target=conversation.execute)
+    conversation.set_thread(t)
+    conversation.set_idd(idd)
+    CONVERSATIONS[idd]=conversation
+    return conversation
 
 # SOCKET communication
 @sio.on('connect', namespace='/cv')
@@ -18,14 +31,24 @@ async def connect(sid, environ):
 
 @sio.on('start', namespace='/cv')
 async def start(sid,vals):
-    conversation=CONVERSATIONS[vals['idd']]
+    conversation=CONVERSATIONS.get(vals['idd'],None)
+    if conversation is None:
+        conversation=create_new_conversation(vals['idd'])
+    conversation.set_webclient_sid(sid)
     conversation.start()
+    print("start")
+
+@sio.on('finished', namespace='/cv')
+async def finished(sid,vals):
+    conversation=CONVERSATIONS[vals['idd']]
+    conversation.end()
+    del CONVERSATIONS[vals['idd']]
     print("start")
 
 @sio.on('say', namespace='/cv')
 async def say(sid, data):
     print("say", data)
-    await sio.emit('say log', data , namespace="/cv")
+    await sio.emit('say log', data , namespace="/cv",room=data['webclient_sid'])
 
 @sio.on('input finish', namespace='/cv')
 async def input_finish(sid, data):
@@ -34,9 +57,9 @@ async def input_finish(sid, data):
     print("input finish",data['message'])
 
 @sio.on('input', namespace='/cv')
-async def input(sid):
+async def input(sid,data):
     print("input ->")
-    await sio.emit('input start', namespace="/cv")
+    await sio.emit('input start', namespace="/cv",room=data['webclient_sid'])
 
 @sio.on('audio', namespace='/cv')
 async def audio(sid, data):
@@ -71,16 +94,8 @@ async def conversation(request):
     conv_file=os.path.join(conversations_dir,conv,'main.yaml')
 
     client = socketio.Client()
-
-    conversation = Conversation(
-        filename=conv_file,
-        client=client,
-        **config)
-    t = threading.Thread(target=conversation.execute)
-    conversation.set_thread(t)
     idd=str(uuid.uuid4())
-    conversation.set_idd(idd)
-    CONVERSATIONS[idd]=conversation
+    CLIENTS[idd]=(client,conv_file)
     page=CONVERSATION.replace("IDD",idd)
     return web.Response(text=page, content_type='text/html')
 
