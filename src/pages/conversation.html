@@ -11,26 +11,37 @@
             namespace = '/cv';
             var msgCount = 1;
             var idd='IDD';
+            var spk='USER';
             var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
 			$('#send').click(function(e) {
-                var msg = $('#m').val();
+                var msg = $('#msg').val();
                 socket.emit('input finish',{'idd':idd,'message':msg});
-                $('#log').append('<br>' + $('<div/>').text(msgCount + '. ' + 'USER' + msg).html());
-                $('#m').val('');
+                $('#log').append('<br>' + $('<div/>').text(msgCount + '. ' + spk + ':' + msg).html());
+                $('#msg').val('');
+                $('#msg').focus();
 				console.log('input finish');
       			return false;
     		});
             $('#start').click(function(e) {
                 socket.emit('start',{'idd':idd});
 				console.log('start');
+                $('#start').prop('disabled',true)
       			return false;
     		});
-
             socket.on('say log', function(data) {
-                $('#log').append('<br>' + $('<div/>').text(msgCount + ': ' + data.msg).html());
+                $('#last_say').text(data.msg)
+                $('#log').append('<br>' + $('<div/>').text(msgCount + '. '+ data.spk + ':' + data.msg).html());
 				console.log('say');
                 msgCount += 1;
             });
+
+            socket.on('finished log', function(data) {
+                $('#start').prop('disabled',false)
+                msgCount = 0;
+                $('#log').append('<br><hr>');
+				console.log('finished');
+            });
+
             socket.on('input start', function(data) {
                 $('#send').prop('disabled',false)
 				console.log('input start');
@@ -62,7 +73,6 @@
 	</center>
 	</div>
 
-
     <div class="container">
 
     <h3>Audio status</h3>
@@ -70,9 +80,13 @@
 
     <form action="">
         <div class="row">
+              <div class="col-sm-12">
+        <label id="last_say">Mensaje</label>
+            </div>
+            </div>
+        <div class="row">
               <div class="col-sm-11">
-        <label for="username">Mensaje</label>
-        <input type="text" id="m" autocomplete="off"  style="width:80%;"/>
+        <input type="text" id="msg" autocomplete="off"  style="width:90%;"/>
                 </div>
               <div class="col-sm-1">
         <button id="send" class="primary" disabled>Enviar</button>

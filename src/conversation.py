@@ -110,8 +110,10 @@ class Conversation:
             self.thread.start()
 
     def stop(self):
+        if self.client:
+            self.client.emit('finished',{'webclient_sid':self.webclient_sid,'idd':self.idd},namespace="/cv")
         if self.thread:
-            self.thread.exit()
+            sys.exit()
 
     def pause(self):
         self.pause=True
@@ -452,4 +454,7 @@ class Conversation:
                 )
         self.current_context=self
         self.execute_(self.script)
+        if self.client:
+            self.stop()
+
 

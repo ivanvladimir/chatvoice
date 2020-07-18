@@ -40,9 +40,10 @@ async def start(sid,vals):
 
 @sio.on('finished', namespace='/cv')
 async def finished(sid,vals):
-    conversation=CONVERSATIONS[vals['idd']]
-    conversation.end()
     del CONVERSATIONS[vals['idd']]
+    client,_=CLIENTS[vals['idd']]
+    await sio.emit('finished log',{}, namespace="/cv",room=vals['webclient_sid'])
+    client.disconnect()
     print("start")
 
 @sio.on('say', namespace='/cv')
