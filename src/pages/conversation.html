@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="Chatbot" content="Test">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mini.css/3.0.1/mini-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.slim.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.slim.js"></script>
+	<script type="text/javascript" charset="utf-8">
+        $(document).ready(function(){
+            namespace = '/cv';
+            var msgCount = 1;
+            var idd='IDD';
+            var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
+			$('#send').click(function(e) {
+                var msg = $('#m').val();
+                socket.emit('input finish',{'idd':idd,'message':msg});
+                $('#log').append('<br>' + $('<div/>').text(msgCount + '. ' + 'USER' + msg).html());
+                $('#m').val('');
+				console.log('input finish');
+      			return false;
+    		});
+            $('#start').click(function(e) {
+                socket.emit('start',{'idd':idd});
+				console.log('start');
+      			return false;
+    		});
+
+            socket.on('say log', function(data) {
+                $('#log').append('<br>' + $('<div/>').text(msgCount + ': ' + data.msg).html());
+				console.log('say');
+                msgCount += 1;
+            });
+            socket.on('input start', function(data) {
+                $('#send').prop('disabled',false)
+				console.log('input start');
+            });
+
+ 			socket.on('audio log', function(data) {
+				console.log('audio');
+				if(data.main == 2){
+                	$('#audio').text("Esperando que hables");
+				}
+				if(data.main == 3){
+                	$('#audio').text("Escuchandote");
+				}if(data.main == 4){
+                	$('#audio').text("Hablando");
+				}
+            });
+        });
+    </script>
+
+  </head>
+  <body>
+	<header class="sticky">
+	  <a href="#" class="logo">🤖</a>
+	</header>
+
+	<div class="container">
+	<center>
+    <button id="start" class="primary">Start</button>
+	</center>
+	</div>
+
+
+    <div class="container">
+
+    <h3>Audio status</h3>
+    <p><div id='audio'></div></p>
+
+    <form action="">
+        <div class="row">
+              <div class="col-sm-11">
+        <label for="username">Mensaje</label>
+        <input type="text" id="m" autocomplete="off"  style="width:80%;"/>
+                </div>
+              <div class="col-sm-1">
+        <button id="send" class="primary" disabled>Enviar</button>
+                </div>
+                </div>
+    </form>
+    <div class="row">
+        <div class="card large">
+        <h3>Messages received</h3>
+        <div class="section dark">
+        <div id='log'>
+        </div>
+        </div>
+        </div>
+    </div>
+    </div>
+
+    <footer class="sticky">
+    <p>Ivan Meza, 2018</p>
+    </footer>
+
+  </body>
+</html>
+

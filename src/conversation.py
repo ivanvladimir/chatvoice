@@ -13,7 +13,7 @@ import time
 import importlib
 from tinydb import TinyDB, Query
 from collections import OrderedDict
-#from socketIO_client import SocketIO, BaseNamespace
+import socketio
 import json
 
 
@@ -32,12 +32,11 @@ re_while = re.compile(r"while (?P<conditional>.*) then (?P<cmd>(solve|say|input|
 re_input = re.compile(r"input (?P<id>[^ ]+)(?: *\| *(?P<filter>\w+)(?P<args>.*)?$)?")
 re_set = re.compile(r"set_slot (?P<id>[^ ]+) +(?P<val>.*)$")
 
+CONVERSATIONS={}
 
-#class StateNamespace(BaseNamespace):
-#    pass
 
 class Conversation:
-    def __init__(self, filename, name="SYSTEM", verbose=False, **config):
+    def __init__(self, filename, name="SYSTEM", client=None, verbose=False, **config):
         """ Creates a conversation from a file"""
         #Variables
         self.verbose_=verbose
@@ -57,8 +56,8 @@ class Conversation:
         self.voice_local=config.get("tts_local_voice","es-us")
         self.channels = config.get('channels',2)
         self.tts = config.get('tts',None)
-        self.host = config.get('host',None)
-        self.port = config.get('port',None)
+        self.host = config.get('host','0.0.0.0')
+        self.port = config.get('port',5000)
         self.IS={}
         self.speech_recognition = config.get('speech_recognition',None)
         self.dirplugins = config.get('dirplugins','plugins')
@@ -93,12 +92,13 @@ class Conversation:
             self.audios_tts_db = TinyDB(self.audios_tts_db_name)
         else:
             self.audios_tts_db = None
-
+        self.client=client
+    
     def set_thread(self,thread):
         self.thread = thread
 
-    def set_sid(self,sid):
-        self.sid = sid
+    def set_idd(self,idd):
+        self.idd= idd
 
     def start(self):
         time.sleep(0.8)
@@ -273,10 +273,8 @@ class Conversation:
         """ Say command """
         result=eval(cmd,globals(),self.slots)
         MSG="{}: {}".format(self.name, result)
-        if self.host:
-            self.socket_state.emit('say',{"msg":MSG})
-        else:
-            print(MSG)
+        if self.client:
+            self.client.emit('say',{"msg":MSG},namespace="/cv")
         if self.tts:
             stop_listening()
             tts(result)
@@ -286,12 +284,19 @@ class Conversation:
 
     def input_(self,line):
         """ Input command """
+        self.input=None
         m=re_input.match(line)
 
         if m:
             print("USER: ",end='')
-            if self.speech_recognition:
-                start_listening()
+            if self.client:
+                self.client.emit('input',namespace="/cv")
+                while not self.input:
+                    time.sleep(0.1)
+                result=self.input
+
+            elif self.speech_recognition:
+                staraudios_tts_dbt_listening()
                 filename=None
                 while not filename:
                     time.sleep(0.1)
@@ -310,8 +315,6 @@ class Conversation:
                 slots_ = dict(self.slots)
                 slots_['args']=args
                 result=eval('{}("{}",*args)'.format(fil,result),globals(),slots_)
-            if self.host:
-                self.socket_state.emit('input',{"msg":"USER: {}/{}".format(result,raw)})
             self.slots[idd]=result
 
     def loop_slots_(self):
@@ -416,9 +419,9 @@ class Conversation:
                 time.sleep(0.1)
 
     def execute(self):
-        if self.host:
-            self.socket = SocketIO(self.host,self.port)
-            self.socket_state = self.socket.define(StateNamespace, '/state')
+        if self.client:
+            self.client.connect(f"http://{self.host}:{self.port}", namespaces=['/cv'])
+
         if self.speech_recognition:
             enable_audio_listening(
                     samplerate=self.samplerate,

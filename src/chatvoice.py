@@ -35,6 +35,9 @@ if __name__ == '__main__':
     p = argparse.ArgumentParser("chatvoice")
     p.add_argument("CONV",nargs='?',
             help="Conversation file")
+    p.add_argument("-W","--webinterface",
+            action="store_true",
+            help="Run webinterface [%(default)s]")
     g1 = p.add_argument_group('Information', 'Display alternative information')
     g1.add_argument("--print_config",
             action="store_true",
@@ -78,6 +81,15 @@ if __name__ == '__main__':
             default=config.get(CONFIG,'remember_all',fallback=False),
             action="store",
             help="Remember all slots from conversation [%(default)s]")
+    g13 = p.add_argument_group('Webinterface', 'Webinterface settings')
+    g13.add_argument("--host",
+            default=config.get(CONFIG,'host',fallback='0.0.0.0'),
+            action="store",
+            help="Host [%(default)s]")
+    g13.add_argument("--port",
+            default=config.getint(CONFIG,'port',fallback=5000),
+            type=int, action="store",
+            help="Port [%(default)s]")
     g2 = p.add_argument_group('Speech', 'Options to control speech processing [%(default)s]')
     g2.add_argument("--speech_recognition",
             default=config.getboolean(CONFIG,'speech_recognition',fallback=False),
@@ -157,8 +169,26 @@ if __name__ == '__main__':
     else:
         CONFIG['tts']=None
 
-    # Main loop
-    conversation = conversation.Conversation(
-            filename=kargs.CONV,
-            **CONFIG)
-    conversation.execute()
+       # Modes of execution
+    if not args.webinterface:
+        # Main conversation
+        conversation = conversation.Conversation(
+        filename=kargs.CONV,
+        **CONFIG)
+
+        conversation.execute()
+    else:
+        # Loading web interface
+        import threading
+        import server
+        CONFIG['socket']=server.socket_state
+        conversation = conversation.Conversation(
+        filename=kargs.CONV,
+        **CONFIG)
+
+        t = threading.Thread(target=conversation.execute)
+        conversation.set_thread(t)
+        server.init(conversation)
+        server.web.run_app(server.app,
+                    host=CONFIG['host'],
+                    port=CONFIG['port'])

@@ -20,6 +20,7 @@ from struct import pack
 from subprocess import DEVNULL, Popen, PIPE, STDOUT
 from collections import deque
 import speech_recognition as sr
+import socketio
 #from socketIO_client import SocketIO, BaseNamespace
 
 #class StateNamespace(BaseNamespace):
@@ -34,7 +35,7 @@ import speech_recognition as sr
     #    engine_local.setProperty('voice', voice.id)
     #    break
 tream= None
-socket_state=None
+client=None
 audio=None
 vad=None
 Audio = tinydb.Query()
@@ -124,6 +125,10 @@ def list_voices(engine=None):
         for lang in langs:
             print(lang)
 
+def enable_server(client_=None):
+    global client
+    client=client_
+
 def enable_tts(engine=None,tts_dir=tts,db=None,voice='es',language='es-us'):
     global TTSDIR
     global TTS
@@ -146,7 +151,7 @@ def enable_tts(engine=None,tts_dir=tts,db=None,voice='es',language='es-us'):
 def enable_audio_listening(device=None,samplerate=16000,block_duration=10,padding_duration=1000, 
         host=None, port=None, channels=1,aggressiveness=None,
         speech_recognition_dir="speech_recognition"):
-    global socket_state
+    global client
     global audio
     global vad
     global SPEECHRECDIR
@@ -154,9 +159,6 @@ def enable_audio_listening(device=None,samplerate=16000,block_duration=10,paddin
     audio = pyaudio.PyAudio()
     vad = webrtcvad.Vad()
     #vad.aggressiveness(aggressiveness)
-    if host:
-        socket = SocketIO(host,port)
-        socket_state = socket.define(StateNamespace, '/state')
 
     SAMPLERATE=samplerate
     SPEECHRECDIR=speech_recognition_dir
@@ -185,9 +187,9 @@ wave_file=None
 filename_wav="tmp.wav"
 # Audio capturing
 def callback(in_data, frame_count, time_info, status):
-    global ring_buffer_index, ring_buffer_flags,triggered, voiced_buffer, ring_buffer, wave_file, SPEECHRECDIR, filename_wav, STATE, socket_state, SAMPLERATE
-    if socket_state:
-        socket_state.emit('audio',STATE)
+    global ring_buffer_index, ring_buffer_flags,triggered, voiced_buffer, ring_buffer, wave_file, SPEECHRECDIR, filename_wav, STATE, client, SAMPLERATE
+    if client:
+        client.emit('audio',STATE,namespace='/state')
     if STATE['main']==1 or STATE['main']==4:
         ring_buffer_index=0
         voiced_buffer=np.array([],dtype='Int16')
