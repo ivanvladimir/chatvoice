@@ -27,8 +27,8 @@ from audio import pull_latest, sr_google, audio_state, start_listening, stop_lis
 # TODO make a better system for filters
 from filters import *
 
-re_conditional = re.compile(r"if (?P<conditional>.*) then (?P<cmd>(solve|say|input|loop_slots).*)")
-re_while = re.compile(r"while (?P<conditional>.*) then (?P<cmd>(solve|say|input|loop_slots).*)")
+re_conditional = re.compile(r"if (?P<conditional>.*) then (?P<cmd>(solve|say|input|loop_slots|stop|exit).*)")
+re_while = re.compile(r"while (?P<conditional>.*) then (?P<cmd>(solve|say|input|loop_slots|stop|exit).*)")
 re_input = re.compile(r"input (?P<id>[^ ]+)(?: *\| *(?P<filter>\w+)(?P<args>.*)?$)?")
 re_set = re.compile(r"set_slot (?P<id>[^ ]+) +(?P<val>.*)$")
 
@@ -251,12 +251,12 @@ class Conversation:
                 self.plugins=self.current_context.plugins
                 self.slots.update(slots_tmp_)
                 self.plugins.update(plugins_tmp_)
-                self.execute_(self.current_context.script)
-                self.current_context.slots=slots_tmp
+                status=self.execute_(self.current_context.script)
                 self.current_context.plugins=plugins_tmp
                 self.current_context=self
+                return status
             elif args[0] in self.strategies:
-                self.execute_(self.strategies[args[0]])
+                return self.execute_(self.strategies[args[0]])
             else:
                 raise KeyError('The solving strategy was not found', args[0])
         except KeyError:
@@ -347,7 +347,7 @@ class Conversation:
                 print(bcolors.WARNING, "False because variable not defined",bcolors.ENDC)
                 result=True
             if result:
-                self.execute_line_(cmd)
+                return self.execute_line_(cmd)
 
     def while_(self,line):
         """ while execution """
@@ -361,8 +361,9 @@ class Conversation:
                 print(bcolors.WARNING, "False because variable not defined",bcolors.ENDC)
                 result=True
             if result:
-                self.execute_line_(cmd)
+                last=self.execute_line_(cmd)
                 self.execute_line_(line)
+            return last
 
     def add_slot_(self,arg):
         self.slots[arg]=None
@@ -381,6 +382,12 @@ class Conversation:
         with open(self.isfilename,"w", encoding="utf-8") as json_file:
             json.dump(self.IS,json_file)
 
+    def stop_(self):
+        return 1
+
+    def EXIT_(self):
+        return 0
+
     def empty_slot_(self,line):
         self.slots[line]=None
 
@@ -392,7 +399,7 @@ class Conversation:
                                                                 for x,y in self.slots.items()]), bcolors.ENDC)
         if line.startswith('solve '):
             cmd,args=line.split(maxsplit=1)
-            self.solve_(*args.split())
+            return self.solve_(*args.split())
         elif line.startswith('execute '):
             cmd,args=line.split(maxsplit=1)
             self.execute__(args)
@@ -404,9 +411,9 @@ class Conversation:
         elif line.startswith('loop_slots'):
             self.loop_slots_()
         elif line.startswith('if '):
-            self.conditional_(line)
+            return self.conditional_(line)
         elif line.startswith('while '):
-            self.while_(line)
+            return self.while_(line)
         elif line.startswith('add_slot'):
             cmd,args=line.split(maxsplit=1)
             self.add_slot_(args)
@@ -421,15 +428,25 @@ class Conversation:
         elif line.startswith('remember '):
             cmd,args=line.split(maxsplit=1)
             self.remember_(args)
+        elif line.startswith('stop'):
+            return self.stop_()
+        elif line.startswith('exit'):
+            return self.EXIT_()
         else:
-            self.eval_(line)
+            return self.eval_(line)
 
     def execute_(self,script):
+        status=None
         for line in script:
             if not self.pause:
-                self.execute_line_(line)
+                status=self.execute_line_(line)
+                if not status is None: # finish dialogue
+                    break
             else:
                 time.sleep(0.1)
+        if status == 0:
+            return 0
+
 
     def execute(self):
         if self.client:
