@@ -81,12 +81,12 @@ async def index(request):
             options.append((directory,main_path))
 
     rows=[]
-    for conversation,path in options:
-        rows.append(ROW_TABLE_CONVERSATION.format(path,conversation))
+    for ii,(conversation,path) in enumerate(options):
+        rows.append(ROW_TABLE_CONVERSATION.format(path,conversation,ii))
 
     table_conversation=TABLE_CONVERSATION.format("".join(rows))
 
-    page=INDEX.format(table_conversation)
+    page=INDEX.replace('TABLE',table_conversation)
     return web.Response(text=page, content_type='text/html')
 
 async def conversation(request):

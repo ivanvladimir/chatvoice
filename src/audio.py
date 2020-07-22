@@ -21,20 +21,8 @@ from subprocess import DEVNULL, Popen, PIPE, STDOUT
 from collections import deque
 import speech_recognition as sr
 import socketio
-#from socketIO_client import SocketIO, BaseNamespace
 
-#class StateNamespace(BaseNamespace):
-#    pass
-
-# setting
-#engine_local = pyttsx3.init('sapi5');
-#voices = engine_local.getProperty('voices')
-#for voice in voices:
-#    print(voice)
-    #if voice.languages[0] == b'\x05es':
-    #    engine_local.setProperty('voice', voice.id)
-    #    break
-tream= None
+stream= None
 client=None
 audio=None
 vad=None
