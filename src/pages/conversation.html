@@ -35,6 +35,12 @@
                 msgCount += 1;
             });
 
+            socket.on('input log', function(data) {
+                $('#log').append('<br>' + $('<div/>').text(msgCount + '. '+ data.spk + ':' + data.msg).html());
+				console.log('input log');
+                msgCount += 1;
+            });
+
             socket.on('finished log', function(data) {
                 $('#start').prop('disabled',false)
                 msgCount = 0;

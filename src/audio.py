@@ -40,6 +40,7 @@ ring_buffer_index=0
 
 AUDIOS=[]
 SPEECHRECDIR=None
+SPEECHREC=False
 TTSDIR=None
 TTS=None
 ENGINE_LOCAL=None
@@ -95,6 +96,7 @@ def vad_aggressiveness(a):
 
 # Monitoring
 def audio_devices():
+    audio = pyaudio.PyAudio()
     devices=[]
     for i in range(audio.get_device_count()):
         info=audio.get_device_info_by_index(i)
@@ -113,9 +115,9 @@ def list_voices(engine=None):
         for lang in langs:
             print(lang)
 
-def enable_server(client_=None):
+def enable_server(client_):
     global client
-    client=client_
+    client = client_
 
 def enable_tts(engine=None,tts_dir=tts,db=None,voice='es',language='es-us'):
     global TTSDIR
@@ -133,7 +135,7 @@ def enable_tts(engine=None,tts_dir=tts,db=None,voice='es',language='es-us'):
         TTS=1
         TTS_LANG=language
     else:
-        TSS=None
+        TTS=None
 
 
 def enable_audio_listening(device=None,samplerate=16000,block_duration=10,padding_duration=1000, 
@@ -144,6 +146,7 @@ def enable_audio_listening(device=None,samplerate=16000,block_duration=10,paddin
     global vad
     global SPEECHRECDIR
     global SAMPLERATE
+    global SPEECHREC
     audio = pyaudio.PyAudio()
     vad = webrtcvad.Vad()
     #vad.aggressiveness(aggressiveness)
@@ -167,7 +170,7 @@ def enable_audio_listening(device=None,samplerate=16000,block_duration=10,paddin
         )
     stream.start_stream()
     STATE['main']="1"
-
+    SPEECHREC=True
 
 voiced_buffer=np.array([],dtype='Int16')
 ring_buffer=np.array([],dtype='Int16')
@@ -177,7 +180,7 @@ filename_wav="tmp.wav"
 def callback(in_data, frame_count, time_info, status):
     global ring_buffer_index, ring_buffer_flags,triggered, voiced_buffer, ring_buffer, wave_file, SPEECHRECDIR, filename_wav, STATE, client, SAMPLERATE
     if client:
-        client.emit('audio',STATE,namespace='/state')
+        client.emit('audio',STATE,namespace='/cv')
     if STATE['main']==1 or STATE['main']==4:
         ring_buffer_index=0
         voiced_buffer=np.array([],dtype='Int16')
@@ -236,6 +239,8 @@ def audio_close():
     if stream:
         stream.close()
     audio.terminate()
+    SPEECHREC=False
+    TTS=None
 
 # Speech recogniser
 def sr_google(filename):

@@ -6,22 +6,25 @@ from aiohttp import web
 import uuid
 
 from templates import *
+import audio
 
 CONVERSATIONS={}
 CLIENTS={}
 config={}
 sio = socketio.AsyncServer()
-
 def create_new_conversation(idd):
-    client,conv_file=CLIENTS[idd]
+    client,conv_file,extra_config=CLIENTS[idd]
+    config_=dict(config)
+    config_.update(extra_config)
     conversation = Conversation(
         filename=conv_file,
         client=client,
-        **config)
+        **config_)
     t = threading.Thread(target=conversation.execute)
     conversation.set_thread(t)
     conversation.set_idd(idd)
     CONVERSATIONS[idd]=conversation
+    audio.enable_server(client)
     return conversation
 
 # SOCKET communication
@@ -41,7 +44,7 @@ async def start(sid,vals):
 @sio.on('finished', namespace='/cv')
 async def finished(sid,vals):
     del CONVERSATIONS[vals['idd']]
-    client,_=CLIENTS[vals['idd']]
+    client,_,_=CLIENTS[vals['idd']]
     await sio.emit('finished log',{}, namespace="/cv",room=vals['webclient_sid'])
     client.disconnect()
     print("start")
@@ -62,10 +65,22 @@ async def input(sid,data):
     print("input ->")
     await sio.emit('input start', namespace="/cv",room=data['webclient_sid'])
 
+@sio.on('input log', namespace='/cv')
+async def input(sid,data):
+    print("input ->")
+    await sio.emit('input start', namespace="/cv",room=data['webclient_sid'])
+
+
+
 @sio.on('audio', namespace='/cv')
-async def audio(sid, data):
+async def audio_(sid, data):
     print("audio")
     await sio.emit('audio log', data , namespace="/cv")
+
+@sio.on('get_state', namespace='/cv')
+async def input(sid,data):
+    print("get_state ->")
+    await sio.emit('state log', {'speech_available':not audio.SPEECHREC, 'tts_avialable': True if audio.TTS is None else True }, namespace="/cv",room=sid)
 
 @sio.on('disconnect', namespace='/cv')
 def disconnect(sid):
@@ -87,16 +102,22 @@ async def index(request):
     table_conversation=TABLE_CONVERSATION.format("".join(rows))
 
     page=INDEX.replace('TABLE',table_conversation)
+    page=page.replace('TOTAL_CONVERSATIONS',str(len(options)))
     return web.Response(text=page, content_type='text/html')
 
 async def conversation(request):
     conv=request.match_info['conversation']
     conversations_dir=config.get('conversations_path','conversations')
     conv_file=os.path.join(conversations_dir,conv,'main.yaml')
+    extra_config={}
+    if request.query.get('asr',False):
+        extra_config['speech_recognition']=True
+    if request.query.get('tts',False):
+        extra_config['tts']=request.query['tts']
 
     client = socketio.Client()
     idd=str(uuid.uuid4())
-    CLIENTS[idd]=(client,conv_file)
+    CLIENTS[idd]=(client,conv_file,extra_config)
     page=CONVERSATION.replace("IDD",idd)
     return web.Response(text=page, content_type='text/html')
 

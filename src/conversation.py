@@ -52,8 +52,8 @@ class Conversation:
         self.history = []
         self.name = name
         self.pause = False
-        self.language_google=config.get("tts_google_languege","es-us")
-        self.voice_local=config.get("tts_local_voice","es-us")
+        self.language_google=config.get("tts_google_language","es-us")
+        self.voice_local=config.get("tts_local_voice","spanish-latin-am")
         self.channels = config.get('channels',2)
         self.tts = config.get('tts',None)
         self.host = config.get('host','0.0.0.0')
@@ -94,7 +94,7 @@ class Conversation:
             self.audios_tts_db = None
         self.client=client
         self.webclient_sid=None
-    
+ 
     def set_thread(self,thread):
         self.thread = thread
 
@@ -301,7 +301,8 @@ class Conversation:
 
         if m:
             print("USER: ",end='')
-            if self.client:
+            if self.client and not self.speech_recognition:
+                print("ONE")
                 data={'webclient_sid':self.webclient_sid}
                 self.client.emit('input',data,namespace="/cv")
                 while not self.input:
@@ -309,13 +310,17 @@ class Conversation:
                 result=self.input
 
             elif self.speech_recognition:
-                staraudios_tts_dbt_listening()
+                print("DOS")
+                start_listening()
                 filename=None
                 while not filename:
                     time.sleep(0.1)
                     filename=pull_latest()
 
                 result=sr_google(filename)
+                if self.client:
+                    data={'spk':self.name, "msg": result, 'webclient_sid':self.webclient_sid}
+                    self.client.emit('input log',data,namespace="/cv")
                 print("{} [{}]".format(result,filename))
             else:
                 result=input()
@@ -352,6 +357,7 @@ class Conversation:
     def while_(self,line):
         """ while execution """
         m=re_while.match(line)
+        last=None
         if m:
             conditional=m.group('conditional')
             cmd=m.group('cmd')
