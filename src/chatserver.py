@@ -34,7 +34,7 @@ if __name__ == '__main__':
             help="Run webinterface [%(default)s]")
     g13 = p.add_argument_group('Webinterface', 'Webinterface settings')
     g13.add_argument("--host",
-            default=config.get(CONFIG,'host',fallback='0.0.0.0'),
+            default=config.get(CONFIG,'host',fallback='127.0.0.1'),
             action="store",
             help="Host [%(default)s]")
     g13.add_argument("--port",

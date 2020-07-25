@@ -56,7 +56,7 @@ class Conversation:
         self.voice_local=config.get("tts_local_voice","spanish-latin-am")
         self.channels = config.get('channels',2)
         self.tts = config.get('tts',None)
-        self.host = config.get('host','0.0.0.0')
+        self.host = config.get('host','127.0.0.1')
         self.port = config.get('port',5000)
         self.IS={}
         self.speech_recognition = config.get('speech_recognition',None)

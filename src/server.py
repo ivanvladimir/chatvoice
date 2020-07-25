@@ -68,13 +68,10 @@ async def input(sid,data):
 @sio.on('input log', namespace='/cv')
 async def input(sid,data):
     print("input ->")
-    await sio.emit('input start', namespace="/cv",room=data['webclient_sid'])
-
-
+    await sio.emit('input log', data, namespace="/cv",room=data['webclient_sid'])
 
 @sio.on('audio', namespace='/cv')
 async def audio_(sid, data):
-    print("audio")
     await sio.emit('audio log', data , namespace="/cv")
 
 @sio.on('get_state', namespace='/cv')
