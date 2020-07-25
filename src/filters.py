@@ -7,13 +7,13 @@ import re
 
 re_number=re.compile(r'[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?')
 
-def yesno(msg,*args):
+def yesno(self,msg,*args):
     if msg in ['si','sí']:
         return True
     else:
         return False
 
-def number(msg,*args):
+def number(self,msg,*args):
     m=re_number.search(msg)
     if m:
         print('N',m.group(0))
@@ -21,13 +21,31 @@ def number(msg,*args):
     else: 
         return 'UNK'
 
-def reexp(msg,*args):
-    print(msg,*args)
+def regex(self,msg,*args):
+    if len(args)==0:
+        return msg
+    if len(args)>0:
+        exps=self.regex[args[0]]
+    for exp in exps:
+        m=re.search(exp,msg)
+        if m:
+            if len(args)==1:
+                return m.group(0)
+            if len(args)==2:
+                selector=args[1]
+                if selector=='ALL':
+                    return m.groupdict()
+                try:
+                    num=int(args[1])
+                    return m.group(num)
+                except ValueError:
+                    return m.group(args[1])
+    return 'UNK'
 
-def list(msg,*args):
+def list(self,msg,*args):
     return msg.split()
 
-def asign(msg,*args):
+def asign(self,msg,*args):
     for k_a in args:
         k,a = k_a.split(':',1)
         if msg.find(k)>=0:

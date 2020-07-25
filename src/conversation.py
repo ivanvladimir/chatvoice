@@ -224,7 +224,7 @@ class Conversation:
             self._load_settings(definition['settings'])
         except KeyError:
             pass
-
+        self.regex=definition.get('regex',{})
         self.script=definition['script']
 
     def verbose(self,*args):
@@ -330,8 +330,14 @@ class Conversation:
                 args=m.group('args').split()
                 slots_ = dict(self.slots)
                 slots_['args']=args
-                result=eval('{}("{}",*args)'.format(fil,result),globals(),slots_)
-            self.slots[idd]=result
+                slots_['self']=self
+                result=eval('{}(self,"{}",*args)'.format(fil,result),globals(),slots_)
+            if not idd == '_': 
+                self.slots[idd]=result
+            else:
+                print('RES',result)
+                if isinstance(result,dict):
+                    self.slots.update(result)
 
     def loop_slots_(self):
         """ Loop slots until fill """

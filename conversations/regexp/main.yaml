@@ -1,0 +1,28 @@
+settings:
+    name: CHATVOICE
+
+regex:
+    name:
+        - '(mi nombre es|me llamo) (.*)'
+    from:
+        - 'de (?P<ori>.*)'
+    status:
+        - '.*'
+    dest_day:
+        - '(a (?P<dest>.*)) (el (?P<day>.*))'
+
+strategies:
+    name:
+        - say "mi nombre is CHATVOICE"
+
+script:
+    - solve name
+    - say '¿cómo estás hoy?'
+    - input status | regex status
+    - say '¿cual es tu nombre?'
+    - input name | regex name 2
+    - say '¿de dónde quieres viajar?'
+    - input origin | regex from ori
+    - say '¿a dónde quieres volar y qué día?'
+    - input _ | regex dest_day ALL
+    - say f'{name} dejame buscar un vuelo de {origin} a {dest} para el {day}'
