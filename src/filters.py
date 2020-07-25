@@ -3,6 +3,9 @@
 #
 # Ivan Vladimir Meza Ruiz 2018
 # GPL 3.0
+import re
+
+re_number=re.compile(r'[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?')
 
 def yesno(msg,*args):
     if msg in ['si','sí']:
@@ -11,7 +14,15 @@ def yesno(msg,*args):
         return False
 
 def number(msg,*args):
-    return float(msg)
+    m=re_number.search(msg)
+    if m:
+        print('N',m.group(0))
+        return float(m.group(0))
+    else: 
+        return 'UNK'
+
+def reexp(msg,*args):
+    print(msg,*args)
 
 def list(msg,*args):
     return msg.split()

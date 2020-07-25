@@ -302,7 +302,6 @@ class Conversation:
         if m:
             print("USER: ",end='')
             if self.client and not self.speech_recognition:
-                print("ONE")
                 data={'webclient_sid':self.webclient_sid}
                 self.client.emit('input',data,namespace="/cv")
                 while not self.input:
@@ -310,7 +309,6 @@ class Conversation:
                 result=self.input
 
             elif self.speech_recognition:
-                print("DOS")
                 start_listening()
                 filename=None
                 while not filename:
