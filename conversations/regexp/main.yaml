@@ -26,3 +26,7 @@ script:
     - say '¿a dónde quieres volar y qué día?'
     - input _ | regex dest_day ALL
     - say f'{name} dejame buscar un vuelo de {origin} a {dest} para el {day}'
+    - say 'Una prueba más'
+    - say 'dame una operación'
+    - input operacion | model operations
+    - say f'la operación es {operacion}'

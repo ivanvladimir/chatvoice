@@ -4,6 +4,7 @@
 # Ivan Vladimir Meza Ruiz 2018
 # GPL 3.0
 import re
+import os.path
 
 re_number=re.compile(r'[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?')
 
@@ -51,3 +52,20 @@ def asign(self,msg,*args):
         if msg.find(k)>=0:
             return a
     return 'None'
+
+nlps={}
+def model(self,msg,*args):
+    if len(args)==0:
+        return msg
+    if len(args)==1:
+        if not args[0] in nlps.keys():
+            from transformers import pipeline
+            nlps[args[0]] = pipeline('ner',os.path.join('models',args[0]))
+        res=[ (lab['word'],lab['entity']) for lab in nlps[args[0]](msg.lower()) if not lab['word'] == "[CLS]"]
+        res_=[]
+        for w,l in res:
+            if l.startswith('I'):
+                res_[-1]=f"{res_[-1]} {w}"
+            else:
+                res_.append(w)
+    return res_
