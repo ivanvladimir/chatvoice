@@ -89,8 +89,10 @@ async def index(request):
     conversations_dir=config.get('conversations_path','conversations')
     options=[]
     for directory in os.listdir(os.path.join(conversations_dir)):
+        print(directory)
         main_path=os.path.join(conversations_dir,directory,'main.yaml')
         if os.path.isdir(os.path.join(conversations_dir,directory)) and os.path.exists(main_path):
+            print(main_path)
             options.append((directory,main_path))
 
     rows=[]

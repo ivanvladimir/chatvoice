@@ -12,7 +12,7 @@
             var msgCount = 1;
             var idd='IDD';
             var spk='USER';
-            var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
+            var socket = io.connect(location.protocol +'//' + document.domain + ':' + location.port + namespace);
 			$('#send').click(function(e) {
                 var msg = $('#msg').val();
                 socket.emit('input finish',{'idd':idd,'message':msg});
