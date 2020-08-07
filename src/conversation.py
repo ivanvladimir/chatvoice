@@ -319,7 +319,6 @@ class Conversation:
                 if self.client:
                     data={'spk':self.name, "msg": result, 'webclient_sid':self.webclient_sid}
                     self.client.emit('input log',data,namespace="/cv")
-                print("{} [{}]".format(result,filename))
             else:
                 result=input()
 

@@ -47,7 +47,7 @@ async def finished(sid,vals):
     client,_,_=CLIENTS[vals['idd']]
     await sio.emit('finished log',{}, namespace="/cv",room=vals['webclient_sid'])
     client.disconnect()
-    print("start")
+    print("finished")
 
 @sio.on('say', namespace='/cv')
 async def say(sid, data):
@@ -62,13 +62,14 @@ async def input_finish(sid, data):
 
 @sio.on('input', namespace='/cv')
 async def input(sid,data):
-    print("input ->")
     await sio.emit('input start', namespace="/cv",room=data['webclient_sid'])
+    print("input")
 
 @sio.on('input log', namespace='/cv')
 async def input(sid,data):
-    print("input ->")
     await sio.emit('input log', data, namespace="/cv",room=data['webclient_sid'])
+    print("input log")
+
 
 @sio.on('audio', namespace='/cv')
 async def audio_(sid, data):
@@ -76,8 +77,8 @@ async def audio_(sid, data):
 
 @sio.on('get_state', namespace='/cv')
 async def input(sid,data):
-    print("get_state ->")
     await sio.emit('state log', {'speech_available':not audio.SPEECHREC, 'tts_avialable': True if audio.TTS is None else True }, namespace="/cv",room=sid)
+    print("get_state ->")
 
 @sio.on('disconnect', namespace='/cv')
 def disconnect(sid):

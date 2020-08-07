@@ -1,0 +1,12 @@
+[submodule "conversations/GourmetBot"]
+	path = conversations/GourmetBot
+	url = git@github.com:Nerfepazzi/GourmetBot.git
+[submodule "conversations/Fibot"]
+	path = conversations/Fibot
+	url = git@github.com:AngelRodriguez319/Fibot
+[submodule "conversations/Teacherbot"]
+	path = conversations/Teacherbot
+	url = git@github.com:Joaquin4562/Teacherbot
+[submodule "conversations/Teckybot"]
+	path = conversations/Teckybot
+	url = git@github.com:ciro482/Teckybot
