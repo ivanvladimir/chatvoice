@@ -12,4 +12,4 @@ A language for chatbots, uses ASR and TTS technology.
 
 Using pipenv
 
-    conda env create -f enviroment.yml
+    conda env create -f environment.yml
