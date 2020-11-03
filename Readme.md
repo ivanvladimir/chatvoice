@@ -1,49 +1,93 @@
- Modificado por Alejandro
-# chatvoice
 
-A language for chatbots, uses ASR and TTS technology.
+# Chatvoice
 
+A language for chatbots, uses Text-To-Speech (TTS) y Automatic Speech Recognition (ASR)  technology.
+
+## Requierements systems
+
+[Anaconda or Miniconda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/download.html#hash-verification)
 
 ## Installation
 
-### Requierements systems
+Once the repository is cloned, open Anaconda Prompt and go to the cloned repository path.
 
-The system uses pyaudio which needs: portaudio, libsound and mpg321, to install do the following:
+Open the environment.yml file and delete the lines:
 
-    sudo apt-get install libasound-dev portaudio19-dev libportaudio2
-    sudo apt install mpg321
+- cpuonly=1.0
+- pytorch=1.6.0
+- torchvision=0.7.0
 
-### Instalation
+we will create the environment
 
-Using pipenv
+    $ conda env create -f environment.yml
 
-    pipenv install --ignore-pipfile
+If everything goes well in the creation of the environment, a message like this should appear:
+
+```
+To activate this environment, use
+
+     $ conda activate cv
+
+To deactivate an active environment, use
+
+     $ conda deactivate
+```
+
+To verify that the environment was created, verify the list of conda environments with the command:
+
+     $ conda info --envs
+
+Should show:
+
+```
+conda environments:
+
+base */home/user/anaconda3
+cv /home/user/anaconda3/envs/cv
+```
+
+Where can we locate the created cv environment which we are going to activate
+
+    $ conda activate cv
+
+let's update the environment 
+
+    $ conda env update -f environment.yml
 
 ## Usage
 
-Activate the shell
+- **Without audio**
 
-    pipenv shell
+```
+python src/chatvoice.py conversations hello_name/main.yaml
+```
 
+- **With google synthesis**
 
-### Only terminal 
+You have to install mpg321
 
-    python chatvoice.py conversations/hello_name.yaml
+```
+sudo apt install mpg321
+```
 
-### Using ASR and TTS
+Run
 
-    python  chatvoice.py conversations/hello_name.yaml --rec_voice --google_tts
+```
+python src/chatvoice.py conversations/hello_name/main.yaml --google_tts
+```
 
 Resulting in this:
 
-    HAL: buen día
-    HAL: ¿cúal es tu nombre?
-    USER: Jesús
-    HAL: mucho gusto en conocerte
-    HAL: adios Jesús
-    Summary values:
-    name Jesús
+    ROBOT: hola
+    ROBOT: ¿cúal es tu nombre?
+    USER: Jorge
+    ROBOT: mucho gusto en conocerte
+    ROBOT: ¿como estás hoy Jorge?
+    USER: Bien!
+    ROBOT: Hay algunas cosas que se
+    ROBOT: hecho benito juarez nacio en un 21 marzo
+    ROBOT: adios Jorge
 
 ### Obtaining help
 
-    python chatvoice.py conversations/hello_name.yaml --help
+    python src/chatvoice.py conversations/hello_name.yaml --help
