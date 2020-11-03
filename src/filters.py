@@ -27,21 +27,50 @@ def regex(self,msg,*args):
         return msg
     if len(args)>0:
         exps=self.regex[args[0]]
+    res={}
     for exp in exps:
         m=re.search(exp,msg)
         if m:
             if len(args)==1:
-                return m.group(0)
+                if len(exps)==1:
+                    res=m.group(0)
+                    break
+                else:
+                    try:
+                        res['values'].append(m.group(0))
+                    except:
+                        res['values']=[m.group(0)]
             if len(args)==2:
                 selector=args[1]
                 if selector=='ALL':
-                    return m.groupdict()
+                    res.update(m.groupdict())
+                    continue
                 try:
                     num=int(args[1])
-                    return m.group(num)
+                    if len(exps)==1:
+                        res=m.group(num)
+                        break
+                    else:
+                        try:
+                            res['values'].append(m.group(num))
+                        except KeyError:
+                            res['values']=[m.group(num)]
                 except ValueError:
-                    return m.group(args[1])
-    return 'UNK'
+                    if len(exps)==1:
+                        print(args[1])
+                        res= m.group(args[1])
+                        break
+                    else:
+                        try:
+                            res['values'].append(m.group(args[1]))
+                        except KeyError:
+                            res['values']=[m.group(args[1])]
+
+    if not res:
+        return 'UNK'
+    if len(res)== 0:
+        return 'UNk'
+    return res
 
 def list(self,msg,*args):
     return msg.split()

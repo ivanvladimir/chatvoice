@@ -18,7 +18,10 @@ strategies:
 script:
     - solve name
     - say '¿cómo estás hoy?'
-    - input status | regex status
+    - input status 
+    - set_slot status_intention status | asign bien:good mal:bad
+    - set_slot status_info status | regex status
+    - say f"Entiendo que estás {status_intention} porque me dijiste {status_info}"
     - say '¿cual es tu nombre?'
     - input name | regex name 2
     - say '¿de dónde quieres viajar?'

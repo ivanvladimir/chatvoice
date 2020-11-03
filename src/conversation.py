@@ -30,6 +30,7 @@ from filters import *
 re_conditional = re.compile(r"if (?P<conditional>.*) then (?P<cmd>(solve|say|input|loop_slots|stop|exit).*)")
 re_while = re.compile(r"while (?P<conditional>.*) then (?P<cmd>(solve|say|input|loop_slots|stop|exit).*)")
 re_input = re.compile(r"input (?P<id>[^ ]+)(?: *\| *(?P<filter>\w+)(?P<args>.*)?$)?")
+re_slot = re.compile(r"set_slot (?P<id>[^ ]+) +(?P<val>[^|]*)(?: *\| *(?P<filter>\w+)(?P<args>.*)?$)?")
 re_set = re.compile(r"set_slot (?P<id>[^ ]+) +(?P<val>.*)$")
 
 CONVERSATIONS={}
@@ -378,10 +379,27 @@ class Conversation:
         self.slots[arg]=None
 
     def set_slot_(self,line):
-        m=re_set.match(line)
+        m=re_slot.match(line)
         if m:
-            cmd="self.slots['{}']={}".format(m.group('id'),m.group('val'))
-            exec(cmd)
+            idd=m.group('id')
+            cmd="{}".format(m.group('val'))
+            result=eval(cmd,globals(),self.slots)
+            raw=result
+            if m.group('filter'):
+                fil=m.group('filter')
+                args=m.group('args').split()
+                slots_ = dict(self.slots)
+                slots_['args']=args
+                slots_['self']=self
+                result=eval('{}(self,"{}",*args)'.format(fil,result),globals(),slots_)
+            if not idd == '_': 
+                self.slots[idd]=result
+            else:
+                print('RES',result)
+                if isinstance(result,dict):
+                    self.slots.update(result)
+
+
 
     def del_slot_(self,arg):
         del self.slots[arg]
