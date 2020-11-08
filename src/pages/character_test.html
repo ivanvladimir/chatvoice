@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="css/base.css">
+    <!-- Imporant meta information to make the page as rigid as possible on mobiles, to avoid unintentional zooming on the page itself  -->
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Character Tutorial</title>
+    
+</head>
+<body>
+  
+  <!-- The loading element overlays all else until the model is loaded, at which point we remove this element from the DOM -->  
+<div class="loading" id="js-loader"><div class="loader"></div></div>
+  
+<div class="wrapper">
+    <!-- The canvas element is used to draw the 3D scene -->
+<canvas id="c"></canvas>
+</div>
+<!-- The main Three.js file -->
+<script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r122/three.min.js'></script>
+
+<script src="https://unpkg.com/three@0.120.1/examples/js/controls/OrbitControls.js"></script>
+
+<script src="js/GLTFLoader.js"></script>
+
+<script src="js/three-vrm.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.slim.js"></script>
+
+<script src="js/script.js"></script>
+
+
+
+</body>
+</html>
+
