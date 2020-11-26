@@ -128,6 +128,7 @@ def start_server(config_):
     sio.attach(app)
     app.router.add_get('/', index)
     app.router.add_get('/execute/{conversation}', conversation)
+    app.add_routes([web.static('/static', 'src/pages/static/', show_index=True)])
     return web, app
 
 

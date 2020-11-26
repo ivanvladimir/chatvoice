@@ -4,9 +4,22 @@
     <meta charset="utf-8">
     <meta name="Chatbot" content="Test">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mini.css/3.0.1/mini-dark.min.css">
+    <link rel="stylesheet" type="text/css" href="../static/css/base.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.slim.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.slim.js"></script>
-	<script type="text/javascript" charset="utf-8">
+    <!-- The main Three.js file -->
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r122/three.min.js'></script>
+
+    <script src="https://unpkg.com/three@0.120.1/examples/js/controls/OrbitControls.js"></script>
+
+    <script src="../static/js/GLTFLoader.js"></script>
+
+    <script src="../static/js/three-vrm.js"></script>
+
+
+
+    
+    <script type="text/javascript" charset="utf-8">
         $(document).ready(function(){
             namespace = '/cv';
             var msgCount = 1;
@@ -69,20 +82,36 @@
 
   </head>
   <body>
+
+    <div class="loading" id="js-loader"><div class="loader"></div></div>
 	<header class="sticky">
 	  <a href="#" class="logo">🤖</a>
 	</header>
 
-	<div class="container">
-	<center>
-    <button id="start" class="primary">Start</button>
-	</center>
-	</div>
 
-    <div class="container">
+    <div class = "wrapper">
+
+    <div class="chat-box" id="cbo">
+        <h3>EASTER EGG</h3>
+
+        <div class="container">
+            <center>
+            <button id="start" class="primary">Start</button>
+            </center>
+         </div>
 
     <h3>Audio status</h3>
     <p><div id='audio'></div></p>
+
+    <div class="row">
+        <div class="card large">
+        <h3>Messages received</h3>
+        <div class="section dark">
+        <div id='log'>
+        </div>
+        </div>
+        </div>
+    </div>
 
     <form action="">
         <div class="row">
@@ -99,21 +128,14 @@
                 </div>
                 </div>
     </form>
-    <div class="row">
-        <div class="card large">
-        <h3>Messages received</h3>
-        <div class="section dark">
-        <div id='log'>
-        </div>
-        </div>
-        </div>
-    </div>
+   
     </div>
 
-    <footer class="sticky">
-    <p>Ivan Meza, 2018</p>
-    </footer>
+    <div class = "avatar-box" >
+        <canvas id="c"></canvas>
+      </div>
+      <script src="../static/js/script.js"></script>
+</div>
 
   </body>
 </html>
-

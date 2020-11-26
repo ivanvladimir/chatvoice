@@ -19,14 +19,33 @@ body {
 }
 .wrapper {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   justify-content: center;
   align-items: center;
 }
+
+.wrapper .chat-box{
+  flex: 1;
+}
+
+.wrapper .avatar-box{
+  flex: 2;
+}
+
 #c {
   position: absolute;
   top: 0;
-  width: 100%;
+  left: 50%;
+  width: 50%;
+  height: 100%;
+  display: block;
+}
+
+#cbo {
+  position: absolute;
+  top: 0;
+  left: 0%;
+  width: 50%;
   height: 100%;
   display: block;
 }

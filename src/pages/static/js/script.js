@@ -1,3 +1,4 @@
+
 (function main() {
     // Set our main variables
     let scene,  
@@ -16,12 +17,12 @@
       
     
 
-
+      init();
     
-    init(); 
 
     function init() {
-        const MODEL_PATH = 'model/merus.vrm';
+        const model_url = window.location.protocol + '//' + window.location.hostname +  ":" +window.location.port+ '/static/';
+        const MODEL_PATH = model_url+'model/merus.vrm';
         //const MODEL_PATH = 'model/johndoe.vrm';
         //use in case the models are not being found by the script, just to locate your actual directory
         const canvas = document.getElementById('c');
@@ -31,7 +32,8 @@
         //console.log(directory);
 
         //const backgroundColor = 0x5f899c;
-
+        console.log("test");
+        console.log(canvas);
         scene = new THREE.Scene();
         //scene.background = new THREE.Color(backgroundColor);
         //scene.fog = new THREE.Fog(backgroundColor, 90, 100);
@@ -313,4 +315,3 @@
 
 
     })(); // Don't add anything below this line
-
