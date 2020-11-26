@@ -20,8 +20,10 @@
 
     
     <script type="text/javascript" charset="utf-8">
+        
         $(document).ready(function(){
             namespace = '/cv';
+            var objDiv = document.getElementById("scroller");
             var msgCount = 1;
             var idd='IDD';
             var spk='USER';
@@ -32,7 +34,8 @@
                 $('#log').append('<br>' + $('<div/>').text(msgCount + '. ' + spk + ':' + msg).html());
                 $('#msg').val('');
                 $('#msg').focus();
-				console.log('input finish');
+                console.log('input finish');
+                objDiv.scrollTop = objDiv.scrollHeight;
       			return false;
     		});
             $('#start').click(function(e) {
@@ -46,11 +49,12 @@
                 $('#log').append('<br>' + $('<div/>').text(msgCount + '. '+ data.spk + ':' + data.msg).html());
 				console.log('say');
                 msgCount += 1;
+                objDiv.scrollTop = objDiv.scrollHeight;
             });
 
             socket.on('input log', function(data) {
                 $('#log').append('<br>' + $('<div/>').text(msgCount + '. '+ data.spk + ':' + data.msg).html());
-				console.log('input log');
+                console.log('input log');
                 msgCount += 1;
             });
 
@@ -104,10 +108,12 @@
     <p><div id='audio'></div></p>
 
     <div class="row">
-        <div class="card large">
+        <div class="card large" id="botanswers" >
         <h3>Messages received</h3>
+        <div class="scrollable" id="scroller">
         <div class="section dark">
         <div id='log'>
+        </div>
         </div>
         </div>
         </div>

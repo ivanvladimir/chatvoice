@@ -32,6 +32,15 @@ body {
   flex: 2;
 }
 
+.scrollable{
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+#botanswers{
+  max-height: 55vh;
+}
+
 #c {
   position: absolute;
   top: 0;
