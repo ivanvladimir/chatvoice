@@ -20,14 +20,14 @@
 
     
     <script type="text/javascript" charset="utf-8">
-        
-        $(document).ready(function(){
+        var socket;
+         $(document).ready(function(){
             namespace = '/cv';
             var objDiv = document.getElementById("scroller");
             var msgCount = 1;
             var idd='IDD';
             var spk='USER';
-            var socket = io.connect(location.protocol +'//' + document.domain + ':' + location.port + namespace);
+            socket = io.connect(location.protocol +'//' + document.domain + ':' + location.port + namespace);
 			$('#send').click(function(e) {
                 var msg = $('#msg').val();
                 socket.emit('input finish',{'idd':idd,'message':msg});
@@ -81,7 +81,12 @@
                 	$('#audio').text("Hablando");
 				}
             });
+
+            window.getSocket = function getSocket() {return socket;} 
         });
+
+        
+
     </script>
 
   </head>
