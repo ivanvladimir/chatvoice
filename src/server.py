@@ -54,6 +54,11 @@ async def say(sid, data):
     print("say", data)
     await sio.emit('say log', data , namespace="/cv",room=data['webclient_sid'])
 
+@sio.on('emotion', namespace='/cv')
+async def emotion(sid, data):
+    print("emotion", data)
+    await sio.emit('emotion log', data , namespace="/cv",room=data['webclient_sid'])
+
 @sio.on('input finish', namespace='/cv')
 async def input_finish(sid, data):
     conversation=CONVERSATIONS[data['idd']]

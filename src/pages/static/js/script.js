@@ -7,7 +7,8 @@
       camera,
       possibleAnims,
       availableAnimations,
-      currentMixer,                              
+      currentMixer,
+      currentAnimation,                              
       currentVrm,                               
       blinky,                                                     
       animAvailable,                               // Idle, the default state our character returns to
@@ -230,16 +231,17 @@
 					[ 0.0, 1.0, 0.0, 0.0 ] // values
         );
         var clip = new THREE.AnimationClip( 'blink', -1.0, [  breathTrack, blinkTrack ] );
-        blinky = currentMixer.clipAction(clip);
-        blinky.setLoop();
-        blinky.play();
+        currentAnimation = currentMixer.clipAction(clip);
+        currentAnimation.setLoop();
+        currentAnimation.play();
         animAvailable = true;
+        availableAnimations['idle'] = currentMixer.clipAction(clip);
         //possibleAnims.push(blinky);
         
         const angryTrack = new THREE.NumberKeyframeTrack(
 					vrm.blendShapeProxy.getBlendShapeTrackName( THREE.VRMSchema.BlendShapePresetName.Angry ), // name
-					[ 0.0, 0.5, 3.0, 3.5 ], // times
-					[ 0.0, 1.0, 1.0, 0.0 ] // values
+					[ 0.0, 0.5], // times
+					[ 1.0, 1.0] // values
         );
         clip = new THREE.AnimationClip( 'angry', 5.0, [breathTrack, angryTrack ] );
         possibleAnims.push(currentMixer.clipAction(clip));
@@ -248,8 +250,8 @@
         
         const funTrack = new THREE.NumberKeyframeTrack(
 					vrm.blendShapeProxy.getBlendShapeTrackName( THREE.VRMSchema.BlendShapePresetName.Fun ), // name
-					[ 0.0, 0.5, 3.0, 3.5 ], // times
-					[ 0.0, 1.0, 1.0, 0.0 ] // values
+					[ 0.0, 0.5], // times
+					[ 0.8, 0.8] // values
         );
         clip = new THREE.AnimationClip( 'fun', 5.0, [ breathTrack,funTrack ] );
         possibleAnims.push(currentMixer.clipAction(clip));
@@ -258,8 +260,8 @@
         
         const joyTrack = new THREE.NumberKeyframeTrack(
 					vrm.blendShapeProxy.getBlendShapeTrackName( THREE.VRMSchema.BlendShapePresetName.Joy ), // name
-					[ 0.0, 0.5, 3.0, 3.5 ], // times
-					[ 0.0, 1.0, 1.0, 0.0 ] // values
+					[ 0.0, 0.5], // times
+					[ 0.8, 0.8] // values
         );
         clip = new THREE.AnimationClip( 'joy', 5.0, [ breathTrack,joyTrack ] );
         possibleAnims.push(currentMixer.clipAction(clip));
@@ -268,8 +270,8 @@
         
         const sorrowTrack = new THREE.NumberKeyframeTrack(
 					vrm.blendShapeProxy.getBlendShapeTrackName( THREE.VRMSchema.BlendShapePresetName.Sorrow ), // name
-					[ 0.0, 0.5, 3.0, 3.5 ], // times
-					[ 0.0, 1.0, 1.0, 0.0 ] // valuess
+					[ 0.0, 0.5], // times
+					[ 0.6, 0.6] // values
 				);
         clip = new THREE.AnimationClip( 'sorrow', 5.0, [breathTrack, sorrowTrack ] );
         possibleAnims.push(currentMixer.clipAction(clip));
@@ -300,12 +302,13 @@
       $('#start').click(function(e) {
         socket = window.getSocket();
         console.log(socket);
-        socket.on('say log', function(data) {
-          //playAnimation(data.msg);
-          playAnimation();
-          console.log('Animation recieved: ' + data.msg);
+        
+        socket.on('emotion log', function(data) {
+          console.log('Animation recieved: ' + data.emotion);
+          playAnimation(data.emotion);
         }); 
       });
+
 
 
       //window.addEventListener('click', e => playAnimation('angry'));
@@ -313,37 +316,38 @@
        
 
 
-      function playAnimation() {
+/*       function playAnimation() {
         let anim = Math.floor(Math.random() * possibleAnims.length) + 0;
         if (animAvailable)
         {
           playModifierAnimation(blinky, 0.25, possibleAnims[anim], 0.25);
         }
-      }
-
- /*      function playAnimation(animationName) {
-        if (animAvailable)
-        {
-          console.log(availableAnimations[animationName]);
-          console.log(possibleAnims[0]);
-          playModifierAnimation(blinky, 0.25, availableAnimations[animationName], 0.25);
-          
-        }
       } */
 
+     function playAnimation(animationName) {
+        if (animAvailable)
+        {
+          playModifierAnimation(currentAnimation, 0.25, availableAnimations[animationName], 0.25);
+          
+        }
+      }
+
       function playModifierAnimation(from, fSpeed, to, tSpeed) {
-        console.log(to);
-        animAvailable = false;
-        to.setLoop(THREE.LoopOnce);
-        to.reset();
-        to.play();
-        from.crossFadeTo(to, fSpeed, true);
-        setTimeout(function() {
-          from.enabled = true;
-          to.crossFadeTo(from, tSpeed, true);
+        if (currentAnimation != to){
+          animAvailable = false;
+          currentAnimation = to;
+          to.setLoop(THREE.LoopRepeat);
+          to.reset();
+          to.play();
+          from.crossFadeTo(to, fSpeed, true);
+          /* setTimeout(function() {
+            from.enabled = true;
+            to.crossFadeTo(from, tSpeed, true);
+            animAvailable = true;
+          }, to._clip.duration * 1000 - ((tSpeed + fSpeed) * 1000)); */
           animAvailable = true;
-        }, to._clip.duration * 1000 - ((tSpeed + fSpeed) * 1000));
-        
+          from.enabled = true; 
+        }
       }
 
 

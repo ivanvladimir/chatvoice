@@ -27,8 +27,8 @@ from audio import pull_latest, sr_google, audio_state, start_listening, stop_lis
 # TODO make a better system for filters
 from filters import *
 
-re_conditional = re.compile(r"if (?P<conditional>.*) then (?P<cmd>(solve|say|input|loop_slots|stop|exit).*)")
-re_while = re.compile(r"while (?P<conditional>.*) then (?P<cmd>(solve|say|input|loop_slots|stop|exit).*)")
+re_conditional = re.compile(r"if (?P<conditional>.*) then (?P<cmd>(solve|say|emotion|input|loop_slots|stop|exit).*)")
+re_while = re.compile(r"while (?P<conditional>.*) then (?P<cmd>(solve|say|emotion|input|loop_slots|stop|exit).*)")
 re_input = re.compile(r"input (?P<id>[^ ]+)(?: *\| *(?P<filter>\w+)(?P<args>.*)?$)?")
 re_slot = re.compile(r"set_slot (?P<id>[^ ]+) +(?P<val>[^|]*)(?: *\| *(?P<filter>\w+)(?P<args>.*)?$)?")
 re_set = re.compile(r"set_slot (?P<id>[^ ]+) +(?P<val>.*)$")
@@ -294,6 +294,16 @@ class Conversation:
             start_listening()
         else:
             pass
+    
+    def emotion_(self,cmd):
+        """ Send emotion """
+        result=eval(cmd,globals(),self.slots)
+        MSG="{}: {}".format(self.name, result)
+        print(MSG)
+        if self.client:
+            data={'emotion':result,'spk':self.name,'webclient_sid':self.webclient_sid}
+            self.client.emit('emotion',data,namespace="/cv")
+
 
     def input_(self,line):
         """ Input command """
@@ -433,6 +443,9 @@ class Conversation:
         elif line.startswith('say '):
             cmd,args=line.split(maxsplit=1)
             self.say_(args)
+        elif line.startswith('emotion '):
+            cmd,args=line.split(maxsplit=1)
+            self.emotion_(args)
         elif line.startswith('input '):
             self.input_(line)
         elif line.startswith('loop_slots'):
