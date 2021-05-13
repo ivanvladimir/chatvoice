@@ -172,8 +172,8 @@ def enable_audio_listening(device=None,samplerate=16000,block_duration=10,paddin
     STATE['main']="1"
     SPEECHREC=True
 
-voiced_buffer=np.array([],dtype='Int16')
-ring_buffer=np.array([],dtype='Int16')
+voiced_buffer=np.array([],dtype='int16')
+ring_buffer=np.array([],dtype='int16')
 wave_file=None
 filename_wav="tmp.wav"
 # Audio capturing
@@ -183,11 +183,11 @@ def callback(in_data, frame_count, time_info, status):
         client.emit('audio',STATE,namespace='/cv')
     if STATE['main']==1 or STATE['main']==4:
         ring_buffer_index=0
-        voiced_buffer=np.array([],dtype='Int16')
-        ring_buffer=np.array([],dtype='Int16')
+        voiced_buffer=np.array([],dtype='int16')
+        ring_buffer=np.array([],dtype='int16')
         return (in_data,pyaudio.paContinue)
     is_speech = vad.is_speech(in_data, 16000)
-    in_data_ = np.fromstring(in_data, dtype='Int16')
+    in_data_ = np.fromstring(in_data, dtype='int16')
     in_data_ = in_data_/32767.0
     ring_buffer_flags[ring_buffer_index] = 1 if is_speech else 0
     ring_buffer_index += 1
@@ -203,7 +203,7 @@ def callback(in_data, frame_count, time_info, status):
             wave_file.setsampwidth(2)
             wave_file.setframerate(SAMPLERATE)
             voiced_buffer=np.array(ring_buffer)
-            ring_buffer=np.array([],dtype="Int16")
+            ring_buffer=np.array([],dtype="int16")
     else:
         voiced_buffer=np.concatenate((voiced_buffer,in_data_))
         num_unvoiced = NUM_WINDOW_CHUNKS - sum(ring_buffer_flags)
@@ -214,7 +214,7 @@ def callback(in_data, frame_count, time_info, status):
                 wave_file.writeframes(in_data_.tostring())
                 wave_file.close()
                 AUDIOS.append((datetime.now(),filename_wav))
-            voiced_buffer=np.array([],dtype="Int16")
+            voiced_buffer=np.array([],dtype="int16")
     return (in_data,pyaudio.paContinue)
 
 def pull_latest():
