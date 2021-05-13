@@ -52,6 +52,7 @@ class Conversation:
         self.slots = OrderedDict()
         self.history = []
         self.name = name
+        self.nlps = {}
         self.pause = False
         self.language_google=config.get("tts_google_language","es-us")
         self.voice_local=config.get("tts_local_voice","spanish-latin-am")
@@ -147,6 +148,23 @@ class Conversation:
             self.verbose(bcolors.OKBLUE,"Setting strategy",strategy,bcolors.ENDC)
             self.strategies[strategy]=script
 
+    def _load_models(self,models,path="models"):
+        for model_name,params in models.items():
+            self.verbose(bcolors.OKBLUE,"Load model",model_name,bcolors.ENDC)
+            if not model_name in nlps.keys():
+                if params['type'] == 'classifier':
+                    import torch
+                    from transformers import AutoModel, AutoTokenizer, BertModel
+                    self.nlps[model_name]={}
+                    self.nlps[model_name]['classes']=params['classes']
+                    self.nlps[model_name]['tokenizer'] = AutoTokenizer.from_pretrained(os.path.join(path,model_name))
+                    self.verbose(bcolors.OKGREEN,"Loading tokenizer from",os.path.join(path,model_name),bcolors.ENDC)
+                    self.nlps[model_name]['model'] = torch.load(os.path.join(path,model_name,'pytorch_model.bin'),map_location=torch.device('cpu'))
+                    self.nlps[model_name]['model'].to('cpu')
+                    self.nlps[model_name]['model'].eval()
+                    self.verbose(bcolors.OKGREEN,"Loading",os.path.join(path,model_name,'pytorch_model.bin'),bcolors.ENDC)
+
+
     def _load_dbs(self,dbs,path="."):
         for dbname,loading_script in dbs.items():
             loading_script=loading_script.strip()
@@ -209,6 +227,10 @@ class Conversation:
         # TODO: a better pluggin system
         try:
             self._load_plugings(definition['plugins'])
+        except KeyError:
+            pass
+        try:
+            self._load_models(definition['models'])
         except KeyError:
             pass
         try:

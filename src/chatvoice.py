@@ -15,6 +15,33 @@ import yaml
 import conversation
 from audio import audio_close, audio_devices, list_voices
 
+import torch
+class Classifier(torch.nn.Module):
+                        def __init__(self, MODEL_NAME):
+                            super(Classifier, self).__init__()
+                            # Store the model we want to use
+                            # We need to create the model and tokenizer
+                            self.l1 =BertModel.from_pretrained(MODEL_NAME)
+                            if MODEL_NAME=="skimai/electra-small-spanish":
+                              self.pre_classifier = torch.nn.Linear(256, 256)
+                              self.classifier = torch.nn.Linear(256, 2)
+                            else:
+                              self.pre_classifier = torch.nn.Linear(768, 768) # bert full
+                              self.classifier = torch.nn.Linear(768, 2) # bert full
+                            self.dropout = torch.nn.Dropout(0.3)
+
+                        def forward(self, input_ids, attention_mask):
+                            output_1 = self.l1(input_ids=input_ids, attention_mask=attention_mask)
+                            hidden_state = output_1[0]
+                            pooler = hidden_state[:, 0]
+                            pooler = self.pre_classifier(pooler)
+                            pooler = torch.nn.ReLU()(pooler)
+                            pooler = self.dropout(pooler)
+                            output = self.classifier(pooler)
+                            return output
+
+
+
 # load config
 config = configparser.ConfigParser()
 if os.path.exists("config.ini"):

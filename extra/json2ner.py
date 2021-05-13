@@ -25,6 +25,7 @@ def sntcsntc2colums(sntc,default_label="O"):
         if len(segment)==0:
             continue
         for i,w in enumerate(segment.split()):
+            w=w.replace("\\\\n","")
             if label==default_label:
                 lines.append((f'{w}',f'{label}'))
             else:
@@ -37,14 +38,14 @@ def sntcsntc2colums(sntc,default_label="O"):
 
 
 if __name__ == '__main__':
-    p = argparse.ArgumentParser("chatvoice")
+    p = argparse.ArgumentParser("json2ner")
     p.add_argument("JSON",
             help="Json file")
     p.add_argument("-odir",default='data',
-            help="Outpur directory")
+            help="output directory")
     p.add_argument("-v", "--verbose",
             action="store_true",
-            help="Verbose mode [%(default)s]")
+            help="verbose mode [%(default)s]")
 
     args = p.parse_args()
 

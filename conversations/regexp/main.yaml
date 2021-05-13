@@ -3,7 +3,7 @@ settings:
 
 regex:
     name:
-        - '(mi nombre es|me llamo) (.*)'
+        - '((mi nombre es|me llamo|soy) )?(?P<nombre>.*)'
     from:
         - 'de (?P<ori>.*)'
     status:
@@ -20,10 +20,10 @@ script:
     - say '¿cómo estás hoy?'
     - input status 
     - set_slot status_intention status | asign bien:good mal:bad
-    - set_slot status_info status | regex status
+    - set_slot status_info status | regex status # Filtra respuestas validas
     - say f"Entiendo que estás {status_intention} porque me dijiste {status_info}"
     - say '¿cual es tu nombre?'
-    - input name | regex name 2
+    - input name | regex name nombre
     - say '¿de dónde quieres viajar?'
     - input origin | regex from ori
     - say '¿a dónde quieres volar y qué día?'
