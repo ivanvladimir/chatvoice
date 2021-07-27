@@ -10,3 +10,6 @@
 [submodule "conversations/Teckybot"]
 	path = conversations/Teckybot
 	url = git@github.com:ciro482/Teckybot
+[submodule "conversations/financeBot"]
+	path = conversations/financeBot
+	url = https://github.com/krmirandas/financeBot
