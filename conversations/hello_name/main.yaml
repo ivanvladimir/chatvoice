@@ -1,7 +1,8 @@
 # Conversation example for simple hello and ask a name
 
 settings:
-    name: ROBOT
+    system_name: "[blue]ROBOT[/blue]"
+    user_name: "[aquamarine1]USER[/aquamarine1]"
 
 conversations:
     - 'hello.yaml'

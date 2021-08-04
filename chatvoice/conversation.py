@@ -6,6 +6,7 @@
 
 # imports
 import yaml
+from rich.console import Console
 import os.path
 import sys
 import re
@@ -18,7 +19,6 @@ import json
 
 
 #local imports
-#from colors import bcolors
 #from audio import pull_latest, sr_google, audio_state, start_listening, stop_listening, enable_tts, enable_audio_listening, tts
 
 # Import plugins
@@ -35,12 +35,14 @@ re_set = re.compile(r"set_slot (?P<id>[^ ]+) +(?P<val>.*)$")
 
 CONVERSATIONS={}
 
-
 class Conversation:
-    def __init__(self, filename, name="SYSTEM", client=None, verbose=False, **config):
+    def __init__(self, filename,
+            client=None,
+            **config):
         """ Creates a conversation from a file"""
         #Variables
-        self.verbose_=verbose
+        self.verbose_=config.get("verbose",False)
+        self.console=Console()
         self.path = os.path.dirname(filename)
         self.basename = os.path.basename(filename)
         self.modulename = os.path.splitext(self.basename)[0]
@@ -51,7 +53,8 @@ class Conversation:
         self.script = []
         self.slots = OrderedDict()
         self.history = []
-        self.name = name
+        self.system_name = config.get('system_name',"SYS")
+        self.user_name = config.get('user_name',"USR")
         self.nlps = {}
         self.pause = False
         self.language_google=config.get("tts_google_language","es-us")
@@ -90,7 +93,7 @@ class Conversation:
                 config.get('tts_dir','tts'))
         os.makedirs(self.tts_dir, exist_ok=True)
         if self.tts:
-            self.verbose(bcolors.OKBLUE,"Loading audios tts db",self.audios_tts_db_name,bcolors.ENDC)
+            self.verbose("Loading audios tts db",self.audios_tts_db_name)
             self.audios_tts_db = TinyDB(self.audios_tts_db_name)
         else:
             self.audios_tts_db = None
@@ -123,34 +126,35 @@ class Conversation:
     def update_(self,conversation):
         self.contexts[conversation.modulename]=conversation
         self.strategies.update(conversation.strategies)
-        self.verbose(bcolors.OKBLUE,"Setting conversation",conversation.modulename,bcolors.ENDC)
+        self.verbose(f"[green]Setting conversation[/green] [bold]{conversation.modulename}[/bold]")
 
     def _load_conversations(self,conversations,path="./"):
         for conversation in conversations:
             conversation=os.path.join(path,conversation)
-            self.verbose(bcolors.OKGREEN,"Loading conversation",conversation,bcolors.ENDC)
             conversation_=Conversation(filename=conversation,
                     **{
                         'plugins':self.plugins,
                         'tts':self.tts,
                     }
                     )
+            self.verbose(f"[green]Conversation file loaded:[/green] [bold]{conversation}[/bold]")
             self.update_(conversation_)
+            self.verbose(f"[green]Conversation file loaded:[/green] [bold]{conversation}[/bold]")
 
     def _load_plugings(self,plugins_):
         for plugin in plugins_:
-            self.verbose(bcolors.OKGREEN,"Importing plugin",plugin,bcolors.ENDC)
+            self.verbose("Importing plugin",plugin)
             thisplug = importlib.import_module(plugin)
             self.plugins[plugin]=thisplug
 
     def _load_strategies(self,strategies):
         for strategy,script in strategies.items():
-            self.verbose(bcolors.OKBLUE,"Setting strategy",strategy,bcolors.ENDC)
+            self.verbose("Setting strategy",strategy)
             self.strategies[strategy]=script
 
     def _load_models(self,models,path="models"):
         for model_name,params in models.items():
-            self.verbose(bcolors.OKBLUE,"Load model",model_name,bcolors.ENDC)
+            self.verbose("Load model",model_name)
             if not model_name in nlps.keys():
                 if params['type'] == 'classifier':
                     import torch
@@ -158,30 +162,30 @@ class Conversation:
                     self.nlps[model_name]={}
                     self.nlps[model_name]['classes']=params['classes']
                     self.nlps[model_name]['tokenizer'] = AutoTokenizer.from_pretrained(os.path.join(path,model_name))
-                    self.verbose(bcolors.OKGREEN,"Loading tokenizer from",os.path.join(path,model_name),bcolors.ENDC)
+                    self.verbose("Loading tokenizer from",os.path.join(path,model_name))
                     self.nlps[model_name]['model'] = torch.load(os.path.join(path,model_name,'pytorch_model.bin'),map_location=torch.device('cpu'))
                     self.nlps[model_name]['model'].to('cpu')
                     self.nlps[model_name]['model'].eval()
-                    self.verbose(bcolors.OKGREEN,"Loading",os.path.join(path,model_name,'pytorch_model.bin'),bcolors.ENDC)
+                    self.verbose("Loading",os.path.join(path,model_name,'pytorch_model.bin'))
 
 
     def _load_dbs(self,dbs,path="."):
         for dbname,loading_script in dbs.items():
             loading_script=loading_script.strip()
-            self.verbose(bcolors.OKBLUE,"Creating db",dbname,bcolors.ENDC)
+            self.verbose("Creating db",dbname)
             if loading_script.startswith("import"):
                 bits=loading_script.split()
                 db=[]
                 if bits[0] == 'import_csv':
                     import csv
                     dbfile=os.path.join(path,bits[1])
-                    self.verbose(bcolors.OKBLUE,"Loading csv",dbfile,bcolors.ENDC)
+                    self.verbose("Loading csv",dbfile)
                     with open(dbfile, encoding="utf-8") as csv_file:
                         csv_reader = csv.reader(csv_file, delimiter=',')
                         line_count = 0
                         for row in csv_reader:
                             if line_count == 0:
-                                self.verbose(bcolors.OKBLUE,"Column names are "," ".join(row),dbname,bcolors.ENDC)
+                                self.verbose("Column names are "," ".join(row),dbname)
                                 line_count += 1
                             else:
                                 line_count += 1
@@ -194,7 +198,7 @@ class Conversation:
 
 
     def _load_is(self,isname):
-        self.verbose(bcolors.OKBLUE,"Loading IS",isname,bcolors.ENDC)
+        self.verbose("Loading IS",isname)
         try:
             with open(isname, encoding="utf-8") as json_file:
                 self.IS = json.load(json_file)
@@ -207,22 +211,21 @@ class Conversation:
             self.slots[slot]=None
 
     def _load_settings(self,settings):
-        try:
-            self.name=settings['name']
-        except KeyError:
-            pass
-
+        if 'name' in settings:
+            self.system_name=settings['name'] # Deprecated, print an error
+        if 'system_name' in settings:
+            self.system_name=settings['system_name']
+        if 'user_name' in settings:
+            self.user_name=settings['user_name']
+        if 'console_style' in settings:
+            self.console=Console(style=settings['console_style'])
 
     def load_conversation(self,definition):
         """ Loads a full conversation"""
-        try:
+        if 'conversations' in definition:
             self._load_conversations(definition['conversations'],path=self.path)
-        except KeyError:
-            pass
-        try:
+        if 'slots' in definition:
             self._load_slots(definition['slots'])
-        except KeyError:
-            pass
 
         # TODO: a better pluggin system
         try:
@@ -250,10 +253,10 @@ class Conversation:
         self.regex=definition.get('regex',{})
         self.script=definition['script']
 
-    def verbose(self,*args):
+    def verbose(self,*args,**kargs):
         """ Prints message in verbose mode """
         if self.verbose_:
-            print(*args)
+            self.console.print(*args,**kargs)
 
     def add_turn(self,user,cmds):
         self.history.append((user,cmds))
@@ -262,7 +265,7 @@ class Conversation:
         """ Command solve to look for an specific strategy """
         if len(args)!=1:
             raise ArgumentError('Expected an argument but given more or less')
-        self.verbose(bcolors.WARNING,"Trying to solve",args[0])
+        self.verbose("Trying to solve")
         try:
             if args[0] in self.contexts:
                 self.current_context=self.contexts[args[0]]
@@ -305,8 +308,8 @@ class Conversation:
     def say_(self,cmd):
         """ Say command """
         result=eval(cmd,globals(),self.slots)
-        MSG="{}: {}".format(self.name, result)
-        print(MSG)
+        MSG=f"{self.system_name}: [bold]{result}[/bold]"
+        self.console.print(MSG)
         if self.client:
             data={'msg':result,'spk':self.name,'webclient_sid':self.webclient_sid}
             self.client.emit('say',data,namespace="/cv")
@@ -323,7 +326,7 @@ class Conversation:
         m=re_input.match(line)
 
         if m:
-            print("USER: ",end='')
+            self.console.print(f"{self.user_name}: [bold]",end="")
             if self.client and not self.speech_recognition:
                 data={'webclient_sid':self.webclient_sid}
                 self.client.emit('input',data,namespace="/cv")
@@ -375,7 +378,7 @@ class Conversation:
             try:
                 result=eval(conditional,globals(),self.slots)
             except NameError:
-                print(bcolors.WARNING, "False because variable not defined",bcolors.ENDC)
+                print("False because variable not defined")
                 result=True
             if result:
                 return self.execute_line_(cmd)
@@ -390,7 +393,7 @@ class Conversation:
             try:
                 result=eval(conditional,globals(),self.slots)
             except NameError:
-                print(bcolors.WARNING, "False because variable not defined",bcolors.ENDC)
+                print("False because variable not defined")
                 result=True
             if result:
                 last=self.execute_line_(cmd)
@@ -442,10 +445,10 @@ class Conversation:
 
     def execute_line_(self,line):
         line=line.strip()
-        self.verbose(bcolors.WARNING,"Command",line,bcolors.ENDC)
+        self.verbose("Command",line)
         if self.slots:
-            self.verbose(bcolors.OKGREEN, "SLOTS:", ", ".join(["{}:{}".format(x,y)
-                                                                for x,y in self.slots.items()]), bcolors.ENDC)
+            self.verbose("SLOTS:", ", ".join(["{}:{}".format(x,y)
+                                                                for x,y in self.slots.items()]))
         if line.startswith('solve '):
             cmd,args=line.split(maxsplit=1)
             return self.solve_(*args.split())

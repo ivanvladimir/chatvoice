@@ -43,7 +43,7 @@ from .conversation import Conversation
 CONFIG='DEFAULT'
 config = configparser.ConfigParser()
 @click.group()
-@click.argument("conversation-file",required=False)
+@click.argument("conversation-file")
 @click.option('--config-filename', type=click.Path(), default="config.ini")
 @click.option("-v", "--verbose",
         is_flag=True,
@@ -60,40 +60,10 @@ def chatvoice(ctx,conversation_file=None,config_filename="config.ini",verbose=Fa
         if extra_settings in config:
             CONFIG=extra_settings
     ctx.obj['config']=config
+    ctx.obj['conversation_file']=conversation_file
     ctx.obj['config_section']=CONFIG
     ctx.obj['verbose']=verbose
 
-@chatvoice.command()
-@click.option("--print-config", type=str,
-        is_flag=True,
-        help="Print values of config")
-@click.option(
-        "--devices",
-        is_flag=True,
-        help="List audio devices")
-@click.option(
-        "--local-tts-voices",
-        is_flag=True,
-        help="List voices from local TTS")
-@click.option("--google-tts-languages",
-        is_flag=True,
-        help="List languages for google languages")
-@click.pass_context
-def info(ctx,devices,print_config,local_tts_voices,google_tts_languages):
-    """Print information fo the system"""
-    if devices:
-        for info in audio_devices():
-            print(info)
-    if print_config:
-        for sec in config:
-            print(f'[{sec}]')
-            for key,val in config[sec].items():
-                print(f'{key}={val}')
-            print()
-    if local_tts_voices:
-        list_voices(engine='local')
-    if google_tts_languages:
-        list_voices(engine='google')
 
 @chatvoice.command()
 @optgroup.group('Paths', help='Paths to auxiliary files')
@@ -132,16 +102,16 @@ def info(ctx,devices,print_config,local_tts_voices,google_tts_languages):
         is_flag=True,
         help="Activate speech recognition [%(default)s]")
 @optgroup.option("--tts",
-        default=config.getboolean(CONFIG,'tts',fallback="none"),
-        type=click.Choice(["none",'local', 'google'], case_sensitive=False),
+        default=config.getboolean(CONFIG,'tts',fallback=None),
+        type=click.Choice([None,'local', 'google'], case_sensitive=False),
         help="Select the tts to use [%(default)s]")
 @optgroup.option("--local-tts-voice",
         default=config.get(CONFIG,'local_tts_voice',fallback='spanish-latin-am'),
-        is_flag=True,
+        type=str,
         help="Use espeak local tts [%(default)s]")
 @optgroup.option("--google-tts-language",
         default=config.get(CONFIG,'google_tts_langage',fallback='es-us'),
-        is_flag=True,
+        type=str,
         help="Use espeak local tts [%(default)s]")
 @optgroup.group('Audio', help='Options to control audio')
 @optgroup.option("--samplerate",type=int,
@@ -161,35 +131,18 @@ def info(ctx,devices,print_config,local_tts_voices,google_tts_languages):
         is_flag=True,
         help="VAD aggressiveness [%(default)s]")
 @click.pass_context
-def console(ctx,CONV,
-        audios_dir,
-        speech_recognition_dir,
-        tts_dir,
-        is_filename,
-        audio_tts_db,
-        generate_all_tts,
-        remember_all,
-        speech_recognition,
-        tts,
-        local_tts_voice,
-        google_tts_language,
-        samplerate,
-        num_channels,
-        device,
-        aggressiveness
+def console(ctx,
+        **args
         ):
     """Lauches a chatvoice for console
     """
-    CONFIG=vars(args)
-    CONFIG['main_path']=os.path.dirname(kargs.CONV)
-
-    # Setting TTS
-    if tts is None:
-        CONFIG['tts']=None
+    CONFIG=dict(args)
+    CONFIG['main_path']=os.path.dirname(ctx.obj["conversation_file"])
+    CONFIG['verbose']=ctx.obj["verbose"]
 
     # Main conversation
     conversation = Conversation(
-            filename=CONV,
+            filename=ctx.obj["conversation_file"],
             **CONFIG)
 
     conversation.execute()
