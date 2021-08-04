@@ -13,19 +13,19 @@ import time
 import importlib
 from tinydb import TinyDB, Query
 from collections import OrderedDict
-import socketio
+#import socketio
 import json
 
 
 #local imports
-from colors import bcolors
-from audio import pull_latest, sr_google, audio_state, start_listening, stop_listening, enable_tts, enable_audio_listening, tts
+#from colors import bcolors
+#from audio import pull_latest, sr_google, audio_state, start_listening, stop_listening, enable_tts, enable_audio_listening, tts
 
 # Import plugins
 # TODO make a better system for plugins
 # from plugins import random_greeting
 # TODO make a better system for filters
-from filters import *
+from .filters import *
 
 re_conditional = re.compile(r"if (?P<conditional>.*) then (?P<cmd>(solve|say|input|loop_slots|stop|exit).*)")
 re_while = re.compile(r"while (?P<conditional>.*) then (?P<cmd>(solve|say|input|loop_slots|stop|exit).*)")

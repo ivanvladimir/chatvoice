@@ -5,7 +5,6 @@
 # GPL 3.0
 import re
 import os.path
-import torch
 
 re_number=re.compile(r'[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?')
 
@@ -85,6 +84,7 @@ def asign(self,msg,*args):
 
 nlps={}
 def model(self,msg,*args):
+    import torch
     if len(args)==0:
         return msg
     if len(args)==1:
