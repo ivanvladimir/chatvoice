@@ -26,12 +26,16 @@ import json
 # from plugins import random_greeting
 # TODO make a better system for filters
 from .filters import *
+from .escaped_commands import *
 
-re_conditional = re.compile(r"if (?P<conditional>.*) then (?P<cmd>(solve|say|input|loop_slots|stop|exit).*)")
+re_conditional_else = re.compile(r"if (?P<conditional>.*) then (?P<cmd>(?:solve|say|input|loop_slots|stop|exit).*) else (?P<else_cmd>(?:solve|say|input|loop_slots|stop|exit).*)")
+re_conditional = re.compile(r"if (?P<conditional>.*) then (?P<cmd>(?:solve|say|input|loop_slots|stop|exit).*)")
 re_while = re.compile(r"while (?P<conditional>.*) then (?P<cmd>(solve|say|input|loop_slots|stop|exit).*)")
 re_input = re.compile(r"input (?P<id>[^ ]+)(?: *\| *(?P<filter>\w+)(?P<args>.*)?$)?")
 re_slot = re.compile(r"set_slot (?P<id>[^ ]+) +(?P<val>[^|]*)(?: *\| *(?P<filter>\w+)(?P<args>.*)?$)?")
 re_set = re.compile(r"set_slot (?P<id>[^ ]+) +(?P<val>.*)$")
+re_escaped_command = re.compile(r"\\(?P<command>[^ ]+)(?P<args>.*)?$")
+
 
 CONVERSATIONS={}
 
@@ -55,6 +59,7 @@ class Conversation:
         self.history = []
         self.system_name = config.get('system_name',"SYS")
         self.user_name = config.get('user_name',"USR")
+        self.erase_memory = config.get('erase_memory',False)
         self.nlps = {}
         self.pause = False
         self.language_google=config.get("tts_google_language","es-us")
@@ -99,7 +104,7 @@ class Conversation:
             self.audios_tts_db = None
         self.client=client
         self.webclient_sid=None
- 
+
     def set_thread(self,thread):
         self.thread = thread
 
@@ -199,11 +204,14 @@ class Conversation:
 
     def _load_is(self,isname):
         self.verbose("Loading IS",isname)
-        try:
-            with open(isname, encoding="utf-8") as json_file:
-                self.IS = json.load(json_file)
-        except FileNotFoundError:
+        if self.erase_memory:
             self.IS={}
+        else:
+            try:
+                with open(isname,encoding="utf-8") as json_file:
+                    self.IS = json.load(json_file)
+            except FileNotFoundError:
+                self.IS={}
         self.slots.update(self.IS)
 
     def _load_slots(self,slots):
@@ -347,6 +355,17 @@ class Conversation:
                     self.client.emit('input log',data,namespace="/cv")
             else:
                 result=input()
+                m_=re_escaped_command.match(result)
+                while m_:
+                    ## If a escaped command was introduced
+                    if m_.group("command") == "slot":
+                        ec_slot(self,m_.group("args").strip().split())
+                    if m_.group("command") == "slots":
+                        ec_slots(self)
+
+                    self.console.print(f"{self.user_name}: [bold]",end="")
+                    result=input()
+                    m_=re_escaped_command.match(result)
 
             idd=m.group('id')
             raw=result
@@ -371,17 +390,26 @@ class Conversation:
 
     def conditional_(self,line):
         """ conditional execution """
-        m=re_conditional.match(line)
+        if " else " in line:
+            m=re_conditional_else.match(line)
+            else_=True
+        else:
+            m=re_conditional.match(line)
+            else_=False
         if m:
             conditional=m.group('conditional')
-            cmd=m.group('cmd')
             try:
                 result=eval(conditional,globals(),self.slots)
             except NameError:
                 print("False because variable not defined")
                 result=True
-            if result:
+            if not result and else_:
+                cmd=m.group('else_cmd')
                 return self.execute_line_(cmd)
+            elif result:
+                cmd=m.group('cmd')
+                return self.execute_line_(cmd)
+
 
     def while_(self,line):
         """ while execution """

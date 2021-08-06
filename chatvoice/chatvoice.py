@@ -96,6 +96,10 @@ def chatvoice(ctx,conversation_file=None,config_filename="config.ini",verbose=Fa
         default=config.get(CONFIG,'remember_all',fallback=False),
         is_flag=True,
         help="Remember all slots from conversation [%(default)s]")
+@optgroup.option("--erase_memory",
+        default=config.get(CONFIG,'erase_memory',fallback=False),
+        is_flag=True,
+        help="Erase memory [%(default)s]")
 @optgroup.group('Speech', help='Options to control speech processing [%(default)s]')
 @optgroup.option("--speech-recognition",
         default=config.getboolean(CONFIG,'speech_recognition',fallback=False),

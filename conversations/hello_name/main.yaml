@@ -23,6 +23,8 @@ strategies:
         - say "me da mucho gusto que estés bien"
     sorry:
         - say "siento que no te encuentre bien"
+    something_else:
+        - say "creo que me dijiste algo que no entiendo bien"
 
 script:
     - solve hello
@@ -31,7 +33,7 @@ script:
     - say "¿como estás hoy {}?".format(name)
     - input status | asign bien:good mal:bad
     - if status == "good" then solve excelent
-    - if status == "bad" then solve sorry
+    - if status == "bad" then solve sorry else solve something_else
     - say "Hay algunas cosas que se"
     - say "hecho {} {}".format(*db['main'][0])
     - say "adios {}".format(name)
