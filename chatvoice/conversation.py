@@ -78,7 +78,7 @@ class Conversation:
             try:
                 definition=yaml.safe_load(stream)
             except yaml.YAMLError as exc:
-                print(exc)
+                self.console.print(exc)
         self.load_conversation(definition)
         self.thread = None
         self.samplerate = int(config.get('samplerate',48000))
@@ -401,7 +401,7 @@ class Conversation:
             try:
                 result=eval(conditional,globals(),self.slots)
             except NameError:
-                print("False because variable not defined")
+                self.console.print("[red]False because variable not defined[\red]")
                 result=True
             if not result and else_:
                 cmd=m.group('else_cmd')
@@ -421,7 +421,7 @@ class Conversation:
             try:
                 result=eval(conditional,globals(),self.slots)
             except NameError:
-                print("False because variable not defined")
+                self.console.print("[red]False because variable not defined[\red]")
                 result=True
             if result:
                 last=self.execute_line_(cmd)
@@ -448,7 +448,6 @@ class Conversation:
             if not idd == '_': 
                 self.slots[idd]=result
             else:
-                print('RES',result)
                 if isinstance(result,dict):
                     self.slots.update(result)
 
