@@ -12,7 +12,7 @@ import os.path
 
 # local imports
 from .conversation import Conversation
-#from audio import audio_close, audio_devices, list_voices
+from .audio import audio_close, audio_devices, list_voices
 
 # Main service
 CONFIG='DEFAULT'
@@ -58,8 +58,7 @@ def cli(ctx,conversation_file=None,config_filename="config.ini",verbose=False):
 def info(ctx,conversation_file,devices,print_config,local_tts_voices,google_tts_languages):
     """Print information fo the system"""
     if devices:
-        for info in audio_devices():
-            print(info)
+        print(audio_devices())
     if print_config:
         for sec in config:
             print(f'[{sec}]')

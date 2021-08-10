@@ -6,20 +6,22 @@
 
 import os
 import hashlib
-import pyaudio
 from datetime import datetime, timedelta
 import time
-import gtts
-import pyttsx3
-import webrtcvad
-import wave
+# Loading audio libraries
+import sounddevice as sd # Listening
+import gtts # TTS google
+import pyttsx3 # TTS local
+import webrtcvad # VAD
+import speech_recognition as sr # Speech recognition
+from playsound import playsound # reproducing mp3
+#import wave 
 import tinydb
 import numpy as np
 from array import array
 from struct import pack
 from subprocess import DEVNULL, Popen, PIPE, STDOUT
 from collections import deque
-import speech_recognition as sr
 import socketio
 
 stream= None
@@ -58,6 +60,7 @@ STATE={
 }
 
 def clear_audios():
+    """Removes audios from history"""
     AUDIOS=[]
 
 def tts(msg,lang="es-us"):
@@ -73,6 +76,7 @@ def tts_local(msg,lang='es-us'):
     ENGINE_LOCAL.runAndWait() ;
 
 def tts_google(msg,lang=None):
+    """ TTS from google, ask for mp3 and reproduces it; if in database recovers it and play it"""
     global DB
     hashing = hashlib.md5(msg.encode('utf-8')).hexdigest()
     if DB:
@@ -85,24 +89,17 @@ def tts_google(msg,lang=None):
         mp3_filename=os.path.join(TTSDIR,f'{hashing}_google.mp3')
         tts = gtts.gTTS(msg,lang=lang if lang else TTS_LANG )
         tts.save(mp3_filename)
-    p = Popen(['mpg321',mp3_filename], stdout=DEVNULL, stderr=STDOUT)
-    p.communicate()
-    assert p.returncode == 0
+    playsound(mp3_filename)
     if not DB is None:
         DB.insert({'hash':hashing,'type':'google','mp3':mp3_filename})
 
 def vad_aggressiveness(a):
+    """Sets the aggressiveness of the VAD"""
     vad.set_mode(a)
 
 # Monitoring
 def audio_devices():
-    audio = pyaudio.PyAudio()
-    devices=[]
-    for i in range(audio.get_device_count()):
-        info=audio.get_device_info_by_index(i)
-        devices.append('{0} -> {1}'.format(i,"\n".join(["   {0}:{1}".format(x, y) for x,y in info.items()])))
-
-    return devices
+    return sd.query_devices()
 
 def list_voices(engine=None):
     if engine=='local':
@@ -129,7 +126,7 @@ def enable_tts(engine=None,tts_dir=tts,db=None,voice='es',language='es-us'):
         DB=db
     if engine=='local':
         TTS=0
-        ENGINE_LOCAL = pyttsx3.init() 
+        ENGINE_LOCAL = pyttsx3.init()
         ENGINE_LOCAL.setProperty('voice', voice)
     elif engine=='google':
         TTS=1

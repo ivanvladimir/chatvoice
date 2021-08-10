@@ -24,7 +24,15 @@ setuptools.setup(
         'tinydb',
         'rich',
         'click',
-        'click-option-group'
+        'click-option-group',
+        'sounddevice',
+        'pyttsx3',
+        'webrtcvad',
+        'playsound',
+        'gTTS',
+        'SpeechRecognition',
+        'numpy',
+        'socketio'
         ],                  # list all packages that your package uses
     keywords=["chatbot"], #descriptive meta-data
     classifiers=[                                   # https://pypi.org/classifiers

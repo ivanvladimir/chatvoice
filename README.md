@@ -5,6 +5,14 @@ A language for chatbots, uses Text-To-Speech (TTS) y Automatic Speech Recognitio
 
 ## Requierements systems
 
+
+For pyttsx3:
+
+    sudo apt update && sudo apt install espeak ffmpeg libespeak1
+
+
+
+
 [Anaconda or Miniconda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/download.html#hash-verification)
 
 ## Installation
