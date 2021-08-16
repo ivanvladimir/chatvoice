@@ -3,6 +3,18 @@
 
 A language for chatbots, uses Text-To-Speech (TTS) y Automatic Speech Recognition (ASR)  technology.
 
+
+## Update pip and setup utils
+
+    pip install --upgrade pip
+    pip install --upgrade setuptools
+
+## Install cairo
+
+    sudo apt install libcairo2-dev
+    sudo apt install libgirepository1.0-dev
+
+
 ## Requierements systems
 
 

@@ -2,7 +2,7 @@
 
 settings:
     system_name: "[blue]ROBOT[/blue]"
-    user_name: "[aquamarine1]USER[/aquamarine1]"
+    user_name: "[aquamarine1]IVAN[/aquamarine1]"
 
 conversations:
     - 'hello.yaml'

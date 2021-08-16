@@ -26,13 +26,14 @@ setuptools.setup(
         'click',
         'click-option-group',
         'sounddevice',
+        'soundfile',
         'pyttsx3',
         'webrtcvad',
         'playsound',
         'gTTS',
         'SpeechRecognition',
         'numpy',
-        'socketio'
+        'PyGObject'
         ],                  # list all packages that your package uses
     keywords=["chatbot"], #descriptive meta-data
     classifiers=[                                   # https://pypi.org/classifiers

@@ -19,7 +19,6 @@ import json
 
 
 #local imports
-#from audio import pull_latest, sr_google, audio_state, start_listening, stop_listening, enable_tts, enable_audio_listening, tts
 
 # Import plugins
 # TODO make a better system for plugins
@@ -27,6 +26,7 @@ import json
 # TODO make a better system for filters
 from .filters import *
 from .escaped_commands import *
+from .audio import pull_latest, sr_google, audio_state, start_listening, stop_listening, enable_tts, enable_audio_listening, tts
 
 re_conditional_else = re.compile(r"if (?P<conditional>.*) then (?P<cmd>(?:solve|say|input|loop_slots|stop|exit).*) else (?P<else_cmd>(?:solve|say|input|loop_slots|stop|exit).*)")
 re_conditional = re.compile(r"if (?P<conditional>.*) then (?P<cmd>(?:solve|say|input|loop_slots|stop|exit).*)")
@@ -349,6 +349,7 @@ class Conversation:
                     time.sleep(0.1)
                     filename=pull_latest()
 
+                print(">>>>>",filename)
                 result=sr_google(filename)
                 if self.client:
                     data={'spk':self.name, "msg": result, 'webclient_sid':self.webclient_sid}

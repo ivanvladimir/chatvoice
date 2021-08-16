@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 import time
 # Loading audio libraries
 import sounddevice as sd # Listening
+import soundfile as sf
 import gtts # TTS google
 import pyttsx3 # TTS local
 import webrtcvad # VAD
@@ -22,7 +23,7 @@ from array import array
 from struct import pack
 from subprocess import DEVNULL, Popen, PIPE, STDOUT
 from collections import deque
-import socketio
+#import socketio
 
 stream= None
 client=None
@@ -144,7 +145,6 @@ def enable_audio_listening(device=None,samplerate=16000,block_duration=10,paddin
     global SPEECHRECDIR
     global SAMPLERATE
     global SPEECHREC
-    audio = pyaudio.PyAudio()
     vad = webrtcvad.Vad()
     #vad.aggressiveness(aggressiveness)
 
@@ -156,69 +156,68 @@ def enable_audio_listening(device=None,samplerate=16000,block_duration=10,paddin
     ring_buffer=deque(maxlen=NUM_PADDING_CHUNKS)
     ring_buffer_flags = [0] * NUM_WINDOW_CHUNKS
     ring_buffer_index=0
-    stream = audio.open(
-            format=pyaudio.paInt16,
-            channels=1,
-            rate=samplerate,
-            frames_per_buffer=FRAMES_PER_BUFFER,
-            input=True,
-            start=False,
-            stream_callback=callback
-        )
-    stream.start_stream()
+
+    stream=sd.InputStream(samplerate=SAMPLERATE,
+            blocksize=FRAMES_PER_BUFFER,
+            channels=channels,
+            device=device,
+            callback=callback)
+
+    stream.start()
     STATE['main']="1"
     SPEECHREC=True
 
 voiced_buffer=np.array([],dtype='int16')
 ring_buffer=np.array([],dtype='int16')
-wave_file=None
+sounf_file=None
 filename_wav="tmp.wav"
 # Audio capturing
-def callback(in_data, frame_count, time_info, status):
-    global ring_buffer_index, ring_buffer_flags,triggered, voiced_buffer, ring_buffer, wave_file, SPEECHRECDIR, filename_wav, STATE, client, SAMPLERATE
-    if client:
-        client.emit('audio',STATE,namespace='/cv')
+def callback(indata, frames, time, status):
+    global ring_buffer_index, ring_buffer_flags,triggered, voiced_buffer, ring_buffer, sound_file, SPEECHRECDIR, filename_wav, STATE, client, SAMPLERATE
+    #if client:
+    #    client.emit('audio',STATE,namespace='/cv')
     if STATE['main']==1 or STATE['main']==4:
         ring_buffer_index=0
         voiced_buffer=np.array([],dtype='int16')
         ring_buffer=np.array([],dtype='int16')
-        return (in_data,pyaudio.paContinue)
-    is_speech = vad.is_speech(in_data, 16000)
-    in_data_ = np.fromstring(in_data, dtype='int16')
-    in_data_ = in_data_/32767.0
+        return None
+    audio_data_ = indata[::1, 0] # Only one channel to save
+    audio_data = map(lambda x: (x+1)/2 , audio_data_)
+    audio_data = np.fromiter(audio_data, np.float16)
+    is_speech = vad.is_speech(audio_data.tobytes(), SAMPLERATE)
     ring_buffer_flags[ring_buffer_index] = 1 if is_speech else 0
     ring_buffer_index += 1
     ring_buffer_index %= NUM_WINDOW_CHUNKS
     if STATE['main']==2:
-        ring_buffer=np.concatenate((ring_buffer,in_data_))
+        ring_buffer=np.concatenate((ring_buffer,audio_data_))
         num_voiced = sum(ring_buffer_flags)
         if num_voiced > 0.5 * NUM_WINDOW_CHUNKS:
             STATE['main'] = 3
-            filename_wav = os.path.join(SPEECHRECDIR,datetime.now().strftime("%Y%m%d_%H%M%S"))
-            wave_file = wave.open(filename_wav, 'wb')
-            wave_file.setnchannels(1)
-            wave_file.setsampwidth(2)
-            wave_file.setframerate(SAMPLERATE)
+            filename_wav = os.path.join(SPEECHRECDIR,f'{datetime.now().strftime("%Y%m%d_%H%M%S")}.wav')
             voiced_buffer=np.array(ring_buffer)
+            sound_file=sf.SoundFile(filename_wav,
+                    mode='w',
+                    samplerate=SAMPLERATE,
+                    channels=1)
+            sound_file.write(voiced_buffer)
             ring_buffer=np.array([],dtype="int16")
     else:
-        voiced_buffer=np.concatenate((voiced_buffer,in_data_))
+        voiced_buffer=np.concatenate((voiced_buffer,audio_data_))
         num_unvoiced = NUM_WINDOW_CHUNKS - sum(ring_buffer_flags)
         if len(voiced_buffer)>0 and num_unvoiced > 0.90 * NUM_WINDOW_CHUNKS:
             STATE['main'] = 2
-            if wave_file:
-                in_data_ = np.int16(voiced_buffer*32767)
-                wave_file.writeframes(in_data_.tostring())
-                wave_file.close()
+            if sound_file:
+                sound_file.write(voiced_buffer)
                 AUDIOS.append((datetime.now(),filename_wav))
             voiced_buffer=np.array([],dtype="int16")
-    return (in_data,pyaudio.paContinue)
+    return None
 
 def pull_latest():
     now=datetime.now()
     while len(AUDIOS)==0 or AUDIOS[-1][0]+timedelta(milliseconds=400)<= now:
         return None
     return AUDIOS[-1][1]
+
 
 def audio_state():
     return STATE

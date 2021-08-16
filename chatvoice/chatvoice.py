@@ -107,7 +107,7 @@ def chatvoice(ctx,conversation_file=None,config_filename="config.ini",verbose=Fa
         help="Activate speech recognition [%(default)s]")
 @optgroup.option("--tts",
         default=config.getboolean(CONFIG,'tts',fallback=None),
-        type=click.Choice([None,'local', 'google'], case_sensitive=False),
+        type=click.Choice(['local', 'google'], case_sensitive=False),
         help="Select the tts to use [%(default)s]")
 @optgroup.option("--local-tts-voice",
         default=config.get(CONFIG,'local_tts_voice',fallback='spanish-latin-am'),
@@ -120,7 +120,6 @@ def chatvoice(ctx,conversation_file=None,config_filename="config.ini",verbose=Fa
 @optgroup.group('Audio', help='Options to control audio')
 @optgroup.option("--samplerate",type=int,
         default=config.getint(CONFIG,'samplerate',fallback=48000),
-        is_flag=True,
         help="Samplerate [%(default)s]")
 @optgroup.option("--num-channels",type=int,
         default=config.getint(CONFIG,'num-channels',fallback=2),
