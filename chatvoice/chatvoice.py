@@ -123,11 +123,10 @@ def chatvoice(ctx,conversation_file=None,config_filename="config.ini",verbose=Fa
         help="Samplerate [%(default)s]")
 @optgroup.option("--num-channels",type=int,
         default=config.getint(CONFIG,'num-channels',fallback=2),
-        is_flag=True,
         help="Number of channels microphone [%(default)s]")
 @optgroup.option("--device",
         default=config.getint(CONFIG,'device',fallback=None),
-        is_flag=True,
+        type=int,
         help="Device number to connect audio [%(default)s]")
 @optgroup.option("--aggressiveness",
         default=config.getint(CONFIG,'aggressiveness',fallback=None),

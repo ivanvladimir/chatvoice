@@ -348,8 +348,7 @@ class Conversation:
                 while not filename:
                     time.sleep(0.1)
                     filename=pull_latest()
-
-                print(">>>>>",filename)
+                print(filename)
                 result=sr_google(filename)
                 if self.client:
                     data={'spk':self.name, "msg": result, 'webclient_sid':self.webclient_sid}
