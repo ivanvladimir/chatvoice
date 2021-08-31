@@ -346,9 +346,8 @@ class Conversation:
                 start_listening()
                 filename=None
                 while not filename:
-                    time.sleep(0.1)
+                    time.sleep(1)
                     filename=pull_latest()
-                print(filename)
                 result=sr_google(filename)
                 if self.client:
                     data={'spk':self.name, "msg": result, 'webclient_sid':self.webclient_sid}

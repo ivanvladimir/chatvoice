@@ -5,6 +5,7 @@
 # GPL 3.0
 
 # imports
+import faulthandler; faulthandler.enable(all_threads=True)
 import click
 from click_option_group import optgroup
 import sys
@@ -104,7 +105,7 @@ def chatvoice(ctx,conversation_file=None,config_filename="config.ini",verbose=Fa
 @optgroup.option("--speech-recognition",
         default=config.getboolean(CONFIG,'speech_recognition',fallback=False),
         is_flag=True,
-        help="Activate speech recognition [%(default)s]")
+        help="**DEACTIVATED** Activate speech recognition [%(default)s]")
 @optgroup.option("--tts",
         default=config.getboolean(CONFIG,'tts',fallback=None),
         type=click.Choice(['local', 'google'], case_sensitive=False),
@@ -141,6 +142,8 @@ def console(ctx,
     CONFIG=dict(args)
     CONFIG['main_path']=os.path.dirname(ctx.obj["conversation_file"])
     CONFIG['verbose']=ctx.obj["verbose"]
+    # Temporarily not working
+    CONFIG['speech_recognition']=False
 
     # Main conversation
     conversation = Conversation(
