@@ -23,6 +23,10 @@ For pyttsx3:
     sudo apt update && sudo apt install espeak ffmpeg libespeak1
 
 
+For playsound
+    
+    sudo apt-get install gstreamer-1.0
+
 
 
 [Anaconda or Miniconda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/download.html#hash-verification)

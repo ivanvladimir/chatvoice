@@ -32,7 +32,9 @@ setuptools.setup(
         'SpeechRecognition',
         'numpy',
         'PyGObject',
-        'playsound'
+        'playsound',
+        'uvicorn',
+        'fastapi'
         ],                  # list all packages that your package uses
     keywords=["chatbot"], #descriptive meta-data
     classifiers=[                                   # https://pypi.org/classifiers
