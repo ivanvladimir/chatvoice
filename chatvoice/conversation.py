@@ -11,10 +11,13 @@ import os.path
 import sys
 import re
 import time
+import datetime
 import importlib
 from tinydb import TinyDB, Query
 from collections import OrderedDict
-#import socketio
+import asyncio
+import websockets
+import websocket
 import json
 
 
@@ -41,7 +44,7 @@ CONVERSATIONS={}
 
 class Conversation:
     def __init__(self, filename,
-            client=None,
+            client_id=None,
             **config):
         """ Creates a conversation from a file"""
         #Variables
@@ -102,7 +105,9 @@ class Conversation:
             self.audios_tts_db = TinyDB(self.audios_tts_db_name)
         else:
             self.audios_tts_db = None
-        self.client=client
+        if client_id: # TODO: Clever way for ids
+            self.client_id=client_id
+            self.conversation_id=client_id+1
         self.webclient_sid=None
 
     def set_thread(self,thread):
@@ -121,7 +126,8 @@ class Conversation:
 
     def stop(self):
         if self.client:
-            self.client.emit('finished',{'webclient_sid':self.webclient_sid,'idd':self.idd},namespace="/cv")
+            pass
+            #self.client.emit('finished',{'webclient_sid':self.webclient_sid,'idd':self.idd},namespace="/cv")
         if self.thread:
             sys.exit()
 
@@ -319,8 +325,8 @@ class Conversation:
         MSG=f"{self.system_name}: [bold]{result}[/bold]"
         self.console.print(MSG)
         if self.client:
-            data={'msg':result,'spk':self.name,'webclient_sid':self.webclient_sid}
-            self.client.emit('say',data,namespace="/cv")
+            data={'cmd':'say','msg':result,'spk':self.system_name,'client_id':self.client_id}
+            self.client.send(json.dumps(data))
         if self.tts:
             stop_listening()
             tts(result)
@@ -337,7 +343,7 @@ class Conversation:
             self.console.print(f"{self.user_name}: [bold]",end="")
             if self.client and not self.speech_recognition:
                 data={'webclient_sid':self.webclient_sid}
-                self.client.emit('input',data,namespace="/cv")
+                self.client.send(json.dumps({"cmd":"input","dest":self.client_id}))
                 while not self.input:
                     time.sleep(0.1)
                 result=self.input
@@ -527,8 +533,9 @@ class Conversation:
 
 
     def execute(self):
-        if self.client:
-            self.client.connect(f"http://{self.host}:{self.port}", namespaces=['/cv'])
+        if self.conversation_id:
+            self.client= websocket.WebSocket()
+            self.client.connect(f"ws://{self.host}:{self.port}/cv/{self.conversation_id}")
 
         if self.speech_recognition:
             enable_audio_listening(

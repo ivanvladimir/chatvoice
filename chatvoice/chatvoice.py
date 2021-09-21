@@ -242,6 +242,7 @@ def console(ctx,
         help="VAD aggressiveness [None]")
 @click.pass_context
 def website(ctx,
+        conversations_dir,
         **args
         ):
     """Lauches a chatvoice for console
@@ -254,6 +255,7 @@ def website(ctx,
     CONFIG.update(args)
     CONFIG=dict(args)
     CONFIG['verbose']=ctx.obj["verbose"]
+    CONFIG['conversations_dir']=conversations_dir
     # Temporarily speech recognition not working
     CONFIG['speech_recognition']=False
     set_config(**CONFIG)

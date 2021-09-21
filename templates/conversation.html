@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block script %}
+	<script type="text/javascript" charset="utf-8">
+        $(document).ready(function(){
+            namespace = '/cv/';
+            var msgCount = 1;
+			var client_id = Date.now()
+            var spk='USER';
+            var ws = new WebSocket('ws://localhost:' + location.port + namespace+`${client_id}`);
+			$('#send').click(function(e) {
+                var msg = $('#msg').val();
+                ws.send('input finish',{'idd':idd,'message':msg});
+                $('#log').append('<br>' + $('<div/>').text(msgCount + '. ' + spk + ':' + msg).html());
+                $('#msg').val('');
+                $('#msg').focus();
+				console.log('input finish');
+      			return false;
+    		});
+            $('#start').click(function(e) {
+                ws.send(JSON.stringify({'cmd':'start','conversation':"{{chat_name}}"}));
+				console.log('start');
+                $('#start').prop('disabled',true)
+      			return false;
+    		});
+            ws.onmessage = function(event) {
+				data=JSON.parse(event.data);
+				if(data.cmd=="say"){
+                	$('#last_say').text(data.msg)
+                	$('#log').append('<br>' + $('<div/>').text(msgCount + '. '+ data.spk + ':' +data.msg).html());
+					console.log('say');
+                	msgCount += 1;
+				};
+            };
+
+            /*socket.on('input log', function(data) {
+                $('#log').append('<br>' + $('<div/>').text(msgCount + '. '+ data.spk + ':' + data.msg).html());
+				console.log('input log');
+                msgCount += 1;
+            });
+
+            socket.on('finished log', function(data) {
+                $('#start').prop('disabled',false)
+                msgCount = 0;
+                $('#log').append('<br><hr>');
+				console.log('finished');
+            });
+
+            socket.on('input start', function(data) {
+                $('#send').prop('disabled',false)
+				console.log('input start');
+            });
+
+ 			socket.on('audio log', function(data) {
+				console.log('audio');
+				if(data.main == 2){
+                	$('#audio').text("Esperando que hables");
+				}
+				if(data.main == 3){
+                	$('#audio').text("Escuchandote");
+				}if(data.main == 4){
+                	$('#audio').text("Hablando");
+				}
+            }); */
+        });
+    </script>
+{% endblock %}
+
+{% block content %}
+
+	<div class="container">
+	<center>
+    <button id="start" class="primary">Start</button>
+	</center>
+	</div>
+
+    <div class="container">
+
+    <h3>Audio status</h3>
+    <p><div id='audio'></div></p>
+
+    <form action="">
+        <div class="row">
+              <div class="col-sm-12">
+        <label id="last_say">Mensaje</label>
+            </div>
+            </div>
+        <div class="row">
+              <div class="col-sm-11">
+        <input type="text" id="msg" autocomplete="off"  style="width:90%;"/>
+                </div>
+              <div class="col-sm-1">
+        <button id="send" class="primary" disabled>Enviar</button>
+                </div>
+                </div>
+    </form>
+    <div class="row">
+        <div class="card large">
+        <h3>Messages received</h3>
+        <div class="section dark">
+        <div id='log'>
+        </div>
+        </div>
+        </div>
+    </div>
+    </div>
+{% endblock %}

@@ -36,7 +36,9 @@ setuptools.setup(
         'uvicorn',
         'fastapi',
         'jinja2',
-        'aiofiles'
+        'aiofiles',
+        'websockets',
+        'websocket-client'
         ],                  # list all packages that your package uses
     keywords=["chatbot"], #descriptive meta-data
     classifiers=[                                   # https://pypi.org/classifiers
