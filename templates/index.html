@@ -1,13 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="Chatbot" content="Test">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mini.css/3.0.1/mini-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.slim.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.slim.js"></script>
-  </head>
-  <body>
+{% extends 'base.html' %}
+
+{% block script %}
 	<script type="text/javascript" charset="utf-8">
         var speech_avialable=true;
         var tts_avialable=true;
@@ -66,20 +59,15 @@
         };
 
     </script>
+{% endblock %}
 
+{% block content %}
+    <h3>Conversasiones disponibles</h3>
+    <ul>
+	{% for option in options %}
+	<li><a href="execute/{{option[0]}}">{{option[0]}}</a></li>
+	{% endfor %}
+    </ul>
+</table>
 
-	<header class="sticky">
-	  <a href="#" class="logo">🤖</a>
-	</header>
-
-    <h3>Conversaciones disponibles</h3>
-
-    TABLE
- 
-    <footer class="sticky">
-    <p>Ivan Meza, 2018</p>
-    </footer>
-
-  </body>
-</html>
-
+{% endblock %}

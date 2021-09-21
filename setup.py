@@ -34,7 +34,9 @@ setuptools.setup(
         'PyGObject',
         'playsound',
         'uvicorn',
-        'fastapi'
+        'fastapi',
+        'jinja2',
+        'aiofiles'
         ],                  # list all packages that your package uses
     keywords=["chatbot"], #descriptive meta-data
     classifiers=[                                   # https://pypi.org/classifiers

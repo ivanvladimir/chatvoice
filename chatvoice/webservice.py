@@ -1,33 +1,33 @@
 # Mini fastapi example app.
-from typing import Optional
-from pydantic import BaseModel
 from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 import time
+import os
 
-class Arguments(BaseModel):
-    model: str = "__DEFAULT__"
-    title: str = "las golondrinas"
-    firstlines: Optional[str] = None
-    max_length: int = 150
-    min_length: int = 50
-    num_beams: Optional[int] =None
-    top_k: Optional[int] = None
-    top_p: Optional[float]  = None
-    do_sample: bool = True
-    early_stopping: bool = True
-    no_repeat_ngram_size: Optional[int] = None
-    num_return_sequences: Optional[int] = None
-    temperature: Optional[float] = None
-    seed: Optional[int] = None
+def create_app():
+    from .config import get_config
+    config=dict(get_config())
+    app = FastAPI()
+    app.mount("/static", StaticFiles(directory="static"),  name="static")
+    templates = Jinja2Templates(directory="templates")
+
+    @app.get("/",response_class=HTMLResponse)
+    async def start(request: Request):
+        start_time = time.time()
+        conversations_dir=config.get('conversations_dir','conversations')
+        options=[]
+        for directory in os.listdir(os.path.join(conversations_dir)):
+            main_path=os.path.join(conversations_dir,directory,'main.yaml')
+            if os.path.isdir(os.path.join(conversations_dir,directory)) and os.path.exists(main_path):
+                options.append((directory,main_path))
 
 
-app = FastAPI()
+        elapsed_time = lambda: time.time() - start_time
+        return templates.TemplateResponse(
+                "index.html",
+                {"options": options,
+                    "request": request})
 
-@app.get("/")
-def main():
-    #  Time
-    start_time = time.time()
-    elapsed_time = lambda: time.time() - start_time
-    # Recovering parameters from ULR
-    return {'elapsed_time': f'{elapsed_time():2.3f}'}
-
+    return app

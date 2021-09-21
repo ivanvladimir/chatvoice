@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="Chatvoice" content="Test">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mini.css/3.0.1/mini-dark.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.slim.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.slim.js"></script>
+    {% block title %}{% endblock %}
+  </head>
+  <body>
+    {% block script %}{% endblock %}
+
+	<header class="row">
+	  <a href="#" class="logo">🤖</a>
+	</header>
+
+	{% block content %}{% endblock %}
+
+    <footer>
+    <p>Ivan Meza, 2021</p>
+    </footer>
+
+  </body>
+</html>
+
