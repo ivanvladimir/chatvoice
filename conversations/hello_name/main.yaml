@@ -2,7 +2,9 @@
 
 settings:
     system_name: "[blue]ROBOT[/blue]"
+    system_name_html: "<span style='color:blue'>ROBOT</span>"
     user_name: "[aquamarine1]IVAN[/aquamarine1]"
+    user_name_html: "<span style='color:blue'>IVAN</span>"
 
 conversations:
     - 'hello.yaml'

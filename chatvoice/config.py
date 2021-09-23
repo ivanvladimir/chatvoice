@@ -1,11 +1,10 @@
-CONFIG={}
+import json
 
 def set_config(**args):
-    global CONFIG
-    CONFIG=args
-    print("SET",CONFIG)
+    with open("/tmp/chatvoice_config.txt",'w') as cc:
+        json.dump(args, cc)
 
 def get_config():
-    global CONFIG
-    print("GET",CONFIG)
+    with open("/tmp/chatvoice_config.txt",'r') as cc:
+        CONFIG=json.load(cc)
     return CONFIG

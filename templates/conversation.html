@@ -11,7 +11,7 @@
 			$('#send').click(function(e) {
                 var msg = $('#msg').val();
                 ws.send('input finish',{'idd':idd,'message':msg});
-                $('#log').append('<br>' + $('<div/>').text(msgCount + '. ' + spk + ':' + msg).html());
+                $('#log').append('<br>' + $('<pre/>').text(msgCount + '. ' + spk + ':' + msg).html());
                 $('#msg').val('');
                 $('#msg').focus();
 				console.log('input finish');
@@ -26,8 +26,8 @@
             ws.onmessage = function(event) {
 				data=JSON.parse(event.data);
 				if(data.cmd=="say"){
-                	$('#last_say').text(data.msg)
-                	$('#log').append('<br>' + $('<div/>').text(msgCount + '. '+ data.spk + ':' +data.msg).html());
+                	$('#last_say').html(data.msg)
+                    $('#log').append('<br>' +msgCount + '. '+ data.spk+':'+data.msg);
 					console.log('say');
                 	msgCount += 1;
 				};

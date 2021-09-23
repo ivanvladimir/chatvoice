@@ -7,6 +7,7 @@
 # imports
 import yaml
 from rich.console import Console
+from rich.jupyter import print as rich_print
 import os.path
 import sys
 import re
@@ -49,7 +50,7 @@ class Conversation:
         """ Creates a conversation from a file"""
         #Variables
         self.verbose_=config.get("verbose",False)
-        self.console=Console()
+        self.console=Console(record=True)
         self.path = os.path.dirname(filename)
         self.basename = os.path.basename(filename)
         self.modulename = os.path.splitext(self.basename)[0]
@@ -105,6 +106,8 @@ class Conversation:
             self.audios_tts_db = TinyDB(self.audios_tts_db_name)
         else:
             self.audios_tts_db = None
+        self.conversation_id=None
+        self.client=None
         if client_id: # TODO: Clever way for ids
             self.client_id=client_id
             self.conversation_id=client_id+1
@@ -231,6 +234,10 @@ class Conversation:
             self.system_name=settings['system_name']
         if 'user_name' in settings:
             self.user_name=settings['user_name']
+        if 'system_name_html' in settings:
+            self.system_name_html=settings['system_name_html']
+        if 'user_name_html' in settings:
+            self.user_name_html=settings['user_name_html']
         if 'console_style' in settings:
             self.console=Console(style=settings['console_style'])
 
@@ -325,7 +332,8 @@ class Conversation:
         MSG=f"{self.system_name}: [bold]{result}[/bold]"
         self.console.print(MSG)
         if self.client:
-            data={'cmd':'say','msg':result,'spk':self.system_name,'client_id':self.client_id}
+            spk=getattr(self,'system_name_html',self.system_name)
+            data={'cmd':'say','spk':spk,'msg':f'<b>{result}</b>','client_id':self.client_id}
             self.client.send(json.dumps(data))
         if self.tts:
             stop_listening()
