@@ -29,7 +29,6 @@ def create_app():
         t = threading.Thread(target=conversation.execute)
         conversation.set_thread(t)
         conversation.set_idd(client_id)
-        CONVERSATIONS[client_id]=conversation
         #audio.enable_server(client)
         return conversation
 
@@ -88,17 +87,26 @@ def create_app():
         while True:
             data_ = await websocket.receive_text()
             data = json.loads(data_)
+            print(data)
             if data['cmd']=="start":
                 conversation=CONVERSATIONS.get(client_id,None)
                 if conversation is None:
                     conversation=create_new_conversation(data["conversation"],client_id)
                     conversation.set_webclient_sid(client_id)
+                    CONVERSATIONS[client_id]=conversation
                     conversation.start()
             if data['cmd']=="say":
                 client_id=data['client_id']
                 w2=CLIENTS[client_id]
                 await w2.send_text(data_)
-                
+            if data['cmd']=="activate input":
+                client_id=data['client_id']
+                w2=CLIENTS[client_id]
+                await w2.send_text(data_)
+            if data['cmd']=="input completed":
+                conversation=CONVERSATIONS.get(client_id,None)
+                conversation.input=data["msg"]
+
 
 
 

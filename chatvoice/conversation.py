@@ -325,7 +325,6 @@ class Conversation:
         print("CMD",cmd)
         exec(cmd)
 
-
     def say_(self,cmd):
         """ Say command """
         result=eval(cmd,globals(),self.slots)
@@ -348,13 +347,14 @@ class Conversation:
         m=re_input.match(line)
 
         if m:
-            self.console.print(f"{self.user_name}: [bold]",end="")
+            self.console.print(f"{self.user_name}:",end="")
             if self.client and not self.speech_recognition:
-                data={'webclient_sid':self.webclient_sid}
-                self.client.send(json.dumps({"cmd":"input","dest":self.client_id}))
+                spk=getattr(self,'user_name_html',self.user_name)
+                self.client.send(json.dumps({"cmd":"activate input",'spk':spk,"client_id":self.client_id}))
                 while not self.input:
                     time.sleep(0.1)
                 result=self.input
+                self.console.print(f"[bold]{result}[/bold]",end="")
 
             elif self.speech_recognition:
                 start_listening()
@@ -392,7 +392,6 @@ class Conversation:
             if not idd == '_': 
                 self.slots[idd]=result
             else:
-                print('RES',result)
                 if isinstance(result,dict):
                     self.slots.update(result)
 

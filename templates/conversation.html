@@ -10,27 +10,35 @@
             var ws = new WebSocket('ws://localhost:' + location.port + namespace+`${client_id}`);
 			$('#send').click(function(e) {
                 var msg = $('#msg').val();
-                ws.send('input finish',{'idd':idd,'message':msg});
-                $('#log').append('<br>' + $('<pre/>').text(msgCount + '. ' + spk + ':' + msg).html());
+                ws.send(JSON.stringify({'cmd':'input completed','msg':msg}));
+                $('#log').append('<br>' +msgCount + '. '+ spk+':'+msg);
                 $('#msg').val('');
                 $('#msg').focus();
-				console.log('input finish');
+                $('#send').prop('disabled',true)
+                msgCount += 1;
       			return false;
     		});
             $('#start').click(function(e) {
                 ws.send(JSON.stringify({'cmd':'start','conversation':"{{chat_name}}"}));
 				console.log('start');
                 $('#start').prop('disabled',true)
+                $('#msg').focus();
       			return false;
     		});
             ws.onmessage = function(event) {
 				data=JSON.parse(event.data);
+                // SAY
 				if(data.cmd=="say"){
                 	$('#last_say').html(data.msg)
                     $('#log').append('<br>' +msgCount + '. '+ data.spk+':'+data.msg);
 					console.log('say');
                 	msgCount += 1;
 				};
+			    if(data.cmd=="activate input"){
+                    $('#send').prop('disabled',false);
+                    spk=data.spk;
+				    console.log('activate input');
+                };
             };
 
             /*socket.on('input log', function(data) {
@@ -44,11 +52,6 @@
                 msgCount = 0;
                 $('#log').append('<br><hr>');
 				console.log('finished');
-            });
-
-            socket.on('input start', function(data) {
-                $('#send').prop('disabled',false)
-				console.log('input start');
             });
 
  			socket.on('audio log', function(data) {
