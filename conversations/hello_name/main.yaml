@@ -15,6 +15,9 @@ slots:
 dbs:
     main: import_csv data.csv
 
+url_apis:
+  demo: "http://127.0.0.1:5431/"
+
 strategies:
     name:
         - say "¿cúal es tu nombre?"
@@ -35,7 +38,10 @@ script:
     - say "¿como estás hoy {}?".format(name)
     - input status | asign bien:good mal:bad
     - if status == "good" then solve excelent
-    - if status == "bad" then solve sorry else solve something_else
+    - if status == "bad" then solve sorry
+    - if not status == "good" or not status == "bad" then solve something_else
+    - post demo echo "msg":"esto es un mensaje que fue a una api" echo_response
+    - say echo_response['msg']
     - say "Hay algunas cosas que se"
     - say "hecho {} {}".format(*db['main'][0])
     - say "adios {}".format(name)

@@ -20,6 +20,7 @@ import asyncio
 import websockets
 import websocket
 import json
+import requests
 
 
 #local imports
@@ -32,14 +33,14 @@ from .filters import *
 from .escaped_commands import *
 from .audio import pull_latest, sr_google, audio_state, start_listening, stop_listening, enable_tts, enable_audio_listening, tts
 
-re_conditional_else = re.compile(r"if (?P<conditional>.*) then (?P<cmd>(?:solve|say|input|loop_slots|stop|exit).*) else (?P<else_cmd>(?:solve|say|input|loop_slots|stop|exit).*)")
-re_conditional = re.compile(r"if (?P<conditional>.*) then (?P<cmd>(?:solve|say|input|loop_slots|stop|exit).*)")
-re_while = re.compile(r"while (?P<conditional>.*) then (?P<cmd>(solve|say|input|loop_slots|stop|exit).*)")
+re_conditional_else = re.compile(r"if (?P<conditional>.*) then (?P<cmd>(?:solve|say|input|loop_slots|stop|exit|post|get|put).*) else (?P<else_cmd>(?:solve|say|input|loop_slots|stop|exit|post|get|put).*)")
+re_conditional = re.compile(r"if (?P<conditional>.*) then (?P<cmd>(?:solve|say|input|loop_slots|stop|exit|post|get|put).*)")
+re_while = re.compile(r"while (?P<conditional>.*) then (?P<cmd>(solve|say|input|loop_slots|stop|exit|post|get|put).*)")
 re_input = re.compile(r"input (?P<id>[^ ]+)(?: *\| *(?P<filter>\w+)(?P<args>.*)?$)?")
 re_slot = re.compile(r"set_slot (?P<id>[^ ]+) +(?P<val>[^|]*)(?: *\| *(?P<filter>\w+)(?P<args>.*)?$)?")
 re_set = re.compile(r"set_slot (?P<id>[^ ]+) +(?P<val>.*)$")
+re_request = re.compile(r"(?P<type>put|get|post) (?P<api_name>[^ ]+) +(?P<extra_url>[^ ]+) +(?P<json>.+)? +(?P<slot_name>[^ ]+)$")
 re_escaped_command = re.compile(r"\\(?P<command>[^ ]+)(?P<args>.*)?$")
-
 
 CONVERSATIONS={}
 
@@ -73,6 +74,7 @@ class Conversation:
         self.host = config.get('host','127.0.0.1')
         self.port = config.get('port',5000)
         self.IS={}
+        self.url_apis={}
         self.speech_recognition = config.get('speech_recognition',None)
         self.dirplugins = config.get('dirplugins','plugins')
         self.isfilename = os.path.join(self.path,config.get('isfilenama','is.json'))
@@ -166,22 +168,10 @@ class Conversation:
             self.verbose("Setting strategy",strategy)
             self.strategies[strategy]=script
 
-    def _load_models(self,models,path="models"):
-        for model_name,params in models.items():
-            self.verbose("Load model",model_name)
-            if not model_name in nlps.keys():
-                if params['type'] == 'classifier':
-                    import torch
-                    from transformers import AutoModel, AutoTokenizer, BertModel
-                    self.nlps[model_name]={}
-                    self.nlps[model_name]['classes']=params['classes']
-                    self.nlps[model_name]['tokenizer'] = AutoTokenizer.from_pretrained(os.path.join(path,model_name))
-                    self.verbose("Loading tokenizer from",os.path.join(path,model_name))
-                    self.nlps[model_name]['model'] = torch.load(os.path.join(path,model_name,'pytorch_model.bin'),map_location=torch.device('cpu'))
-                    self.nlps[model_name]['model'].to('cpu')
-                    self.nlps[model_name]['model'].eval()
-                    self.verbose("Loading",os.path.join(path,model_name,'pytorch_model.bin'))
-
+    def _load_url_apis(self,url_apis):
+        for api_name,url in url_apis.items():
+            self.verbose("Load APIs",api_name)
+            self.url_apis[api_name]=url
 
     def _load_dbs(self,dbs,path="."):
         for dbname,loading_script in dbs.items():
@@ -254,7 +244,7 @@ class Conversation:
         except KeyError:
             pass
         try:
-            self._load_models(definition['models'])
+            self._load_url_apis(definition['url_apis'])
         except KeyError:
             pass
         try:
@@ -422,6 +412,17 @@ class Conversation:
                 cmd=m.group('cmd')
                 return self.execute_line_(cmd)
 
+    def request_(self,line):
+        """ request execution """
+        m=re_request.match(line)
+        if m:
+            api_url=self.url_apis[m.group("api_name")]
+            url=f'{api_url}{m.group("extra_url")}'
+            json_=dict(eval("{{{}}}".format(m.group("json")),globals(),self.slots))
+            request_type=m.group('type')
+            if request_type=="post":
+                response=requests.post(url,json=json_)
+                self.slots[m.group("slot_name")]=response.json()
 
     def while_(self,line):
         """ while execution """
@@ -501,6 +502,8 @@ class Conversation:
             self.input_(line)
         elif line.startswith('loop_slots'):
             self.loop_slots_()
+        elif line.startswith('post ') or line.startswith('put ') or line.startswith('get ') :
+            return self.request_(line)
         elif line.startswith('if '):
             return self.conditional_(line)
         elif line.startswith('while '):
