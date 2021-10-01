@@ -39,7 +39,7 @@ re_while = re.compile(r"while (?P<conditional>.*) then (?P<cmd>(solve|say|input|
 re_input = re.compile(r"input (?P<id>[^ ]+)(?: *\| *(?P<filter>\w+)(?P<args>.*)?$)?")
 re_slot = re.compile(r"set_slot (?P<id>[^ ]+) +(?P<val>[^|]*)(?: *\| *(?P<filter>\w+)(?P<args>.*)?$)?")
 re_set = re.compile(r"set_slot (?P<id>[^ ]+) +(?P<val>.*)$")
-re_request = re.compile(r"(?P<type>put|get|post) (?P<api_name>[^ ]+) +(?P<extra_url>[^ ]+) +(?P<json>.+)? +(?P<slot_name>[^ ]+)$")
+re_request = re.compile(r"(?P<type>put|get|post) (?P<api_name>[^ ]+) +(?P<extra_url>[^ ]+) +(?P<json>.+ )? *(?P<slot_name>[^ ]+)$")
 re_escaped_command = re.compile(r"\\(?P<command>[^ ]+)(?P<args>.*)?$")
 
 CONVERSATIONS={}
@@ -418,11 +418,16 @@ class Conversation:
         if m:
             api_url=self.url_apis[m.group("api_name")]
             url=f'{api_url}{m.group("extra_url")}'
-            json_=dict(eval("{{{}}}".format(m.group("json")),globals(),self.slots))
+            if m.group('json'):
+                json_=dict(eval("{{{}}}".format(m.group("json")),globals(),self.slots))
             request_type=m.group('type')
             if request_type=="post":
                 response=requests.post(url,json=json_)
                 self.slots[m.group("slot_name")]=response.json()
+            if request_type=="get":
+                response=requests.get(url)
+                self.slots[m.group("slot_name")]=response.json()
+
 
     def while_(self,line):
         """ while execution """
