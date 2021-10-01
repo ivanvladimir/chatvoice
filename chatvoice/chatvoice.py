@@ -15,31 +15,7 @@ import os.path
 # local imports
 from .conversation import Conversation
 from .config import set_config, get_config
-#from audio import audio_close, audio_devices, list_voices
-#import torch
-#  class Classifier(torch.nn.Module):
-                        #  def __init__(self, MODEL_NAME):
-                        #      super(Classifier, self).__init__()
-                        #      # Store the model we want to use
-                        #      # We need to create the model and tokenizer
-                        #      self.l1 =BertModel.from_pretrained(MODEL_NAME)
-                        #      if MODEL_NAME=="skimai/electra-small-spanish":
-                        #        self.pre_classifier = torch.nn.Linear(256, 256)
-                        #        self.classifier = torch.nn.Linear(256, 2)
-                        #      else:
-                        #        self.pre_classifier = torch.nn.Linear(768, 768) # bert full
-                        #        self.classifier = torch.nn.Linear(768, 2) # bert full
-                        #      self.dropout = torch.nn.Dropout(0.3)
-
-                        #  def forward(self, input_ids, attention_mask):
-                        #      output_1 = self.l1(input_ids=input_ids, attention_mask=attention_mask)
-                        #      hidden_state = output_1[0]
-                        #      pooler = hidden_state[:, 0]
-                        #      pooler = self.pre_classifier(pooler)
-                        #      pooler = torch.nn.ReLU()(pooler)
-                        #      pooler = self.dropout(pooler)
-                        #      output = self.classifier(pooler)
-                        #      return output
+from .audio import audio_close, audio_devices, list_voices
 
 # Main service
 config = configparser.ConfigParser()
@@ -64,6 +40,39 @@ def chatvoice(ctx,config_filename="config.ini",config_section="DEFAULT",verbose=
     ctx.obj['config']=config
     ctx.obj['config_section']=section
     ctx.obj['verbose']=verbose
+
+@chatvoice.command()
+@click.option("--conversation-file", type=click.Path(exists=True))
+@click.option("--print-config", type=str,
+        is_flag=True,
+        help="Print values of config")
+@click.option(
+        "--devices",
+        is_flag=True,
+        help="List audio devices")
+@click.option(
+        "--local-tts-voices",
+        is_flag=True,
+        help="List voices from local TTS")
+@click.option("--google-tts-languages",
+        is_flag=True,
+        help="List languages for google languages")
+@click.pass_context
+def info(ctx,conversation_file,devices,print_config,local_tts_voices,google_tts_languages):
+    """Print information fo the system"""
+    if devices:
+        print(audio_devices())
+    if print_config:
+        for sec in config:
+            print(f'[{sec}]')
+            for key,val in config[sec].items():
+                print(f'{key}={val}')
+            print()
+    if local_tts_voices:
+        list_voices(engine='local')
+    if google_tts_languages:
+        list_voices(engine='google')
+
 
 @chatvoice.command()
 @click.argument("conversation-file", type=click.Path(exists=True))
