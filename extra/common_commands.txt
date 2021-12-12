@@ -1,5 +1,0 @@
-INICIALIZATION
-python extra/train_test.py --model_name_or_path skimai/electra-small-spanish --data_dir data --do_train --do_eval --output_dir output --labels data/labels.txt --num_train_epochs 1 --overwrite_output_dir
-
-CONTINUATION
-python extra/train_test.py --model_name_or_path output --data_dir data --do_train --do_eval --output_dir output --labels data/labels.txt --num_train_epochs 6 --overwrite_output_dir
