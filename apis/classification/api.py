@@ -8,7 +8,7 @@ import arrow
 import os
 
 __VERSION__ = "0.0.1"
-__API_NAME__ = "Sentiment classification API"
+__API_NAME__ = "Classification Text API"
 
 app = FastAPI()
 
@@ -46,6 +46,7 @@ def create_app(test_config=None):
         return config.Settings()
 
     def elapsed_time(start_time):
+        '''Calculates the elapsed time'''
         return (arrow.utcnow() - start_time).total_seconds()
 
     settings = get_settings()

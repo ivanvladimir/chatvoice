@@ -2,8 +2,8 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    API_URL_PREFIX = "sentiment"
-    API_MODEL_NAME = "pysentimiento/robertuito-sentiment-analysis"
+    API_CLASIFICATION_URL_PREFIX = "classify"
+    API_CLASIFICATION_MODEL_NAME = "pysentimiento/robertuito-sentiment-analysis"
 
     class Config:
         env_file = ".env"

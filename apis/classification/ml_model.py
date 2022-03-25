@@ -2,7 +2,6 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipe
 
 model = None
 
-
 def init_transformer(model_name, tokenizer=None):
     global model
 
