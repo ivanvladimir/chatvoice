@@ -51,7 +51,7 @@ def create_app(test_config=None):
 
     settings = get_settings()
 
-    model_ = init_transformer(settings.API_MODEL_NAME)
+    model_ = init_transformer(settings.API_CLASSIFICATION_MODEL_NAME)
 
     app = FastAPI()
     api_ = FastAPI()
@@ -66,7 +66,7 @@ def create_app(test_config=None):
         return {
             "name": __API_NAME__,
             "version": __VERSION__,
-            "model": settings.API_MODEL_NAME,
+            "model": settings.API_CLASSIFICATION_MODEL_NAME,
             "model_loaded": True if model_ else False,
             "status": STATUS,
             "uptime": f"Elapsed Time: {days} Days, {hours} Hours, {minutes} Minutes, {seconds} Seconds.",
@@ -84,7 +84,7 @@ def create_app(test_config=None):
             "elapsed_time": f"{elapsed_time(start_time):2.4f} segs",
         }
 
-    app.mount(f"/{settings.API_URL_PREFIX}", api_)
+    app.mount(f"/{settings.API_CLASSIFICATION_URL_PREFIX}", api_)
     return app
 
 
