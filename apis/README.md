@@ -36,10 +36,15 @@ option (replace, ENV.FILE for right file)
 # Available APIs
 
 * **demo**            A demo API that mirrows mesages
-* **classification**  Performs classification from a model of the _transformer_
+* **classification**  Performs classification from a classification model of the _transformer_
  library, check options
 [here](https://huggingface.co/models?pipeline_tag=text-classification&sort=downloads)
 for Spanish ones
 [here](https://huggingface.co/models?language=es&pipeline_tag=text-classification&sort=downloads)
+* **zeroshot**  Performs classification from a zeroshot clasification model of the _transformer_
+ library, check options
+[here](https://huggingface.co/models?pipeline_tag=zero-shot-classification&sort=downloads)
+for Spanish ones
+[here](https://huggingface.co/models?language=es&pipeline_tag=zero-shot-classification&sort=downloads)
 
 
