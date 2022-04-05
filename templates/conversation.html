@@ -10,13 +10,15 @@
             var ws = new WebSocket('ws://localhost:' + location.port + namespace+`${client_id}`);
 			$('#send').click(function(e) {
                 var msg = $('#msg').val();
-                ws.send(JSON.stringify({'cmd':'input completed','msg':msg}));
-                $('#log').append('<br>' +msgCount + '. '+ spk+':'+msg);
-                $('#msg').val('');
-                $('#msg').focus();
-                $('#send').prop('disabled',true)
-                msgCount += 1;
-      			return false;
+                if(msg.trim().length>0){
+                    ws.send(JSON.stringify({'cmd':'input completed','msg':msg}));
+                    $('#log').append('<br>' +msgCount + '. '+ spk+':'+msg);
+                    $('#msg').val('');
+                    $('#msg').focus();
+                    $('#send').prop('disabled',true)
+                    msgCount += 1;
+      			    return false;
+                }
     		});
             $('#start').click(function(e) {
                 ws.send(JSON.stringify({'cmd':'start','conversation':"{{chat_name}}"}));

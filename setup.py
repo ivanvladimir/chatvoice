@@ -52,7 +52,6 @@ setuptools.setup(
     entry_points='''
         [console_scripts]
         chatvoice=chatvoice.chatvoice:chatvoice
-        print=chatvoice.print:cli
     ''',
     download_url="https://github.com/ivanvladimir/chatvoice/archive/refs/tags/0.2.0.tar.gz",
 )
