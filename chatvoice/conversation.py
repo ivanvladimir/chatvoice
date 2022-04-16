@@ -6,6 +6,7 @@
 
 # imports
 import yaml
+import logging
 from rich.console import Console
 from rich.jupyter import print as rich_print
 import os.path
@@ -65,7 +66,7 @@ CONVERSATIONS = {}
 
 
 class Conversation:
-    def __init__(self, filename, client_id=None, **config):
+    def __init__(self, filename, client_id=None, log=None, **config):
         """Creates a conversation from a file"""
         # Variables
         self.verbose_ = config.get("verbose", False)
@@ -73,6 +74,33 @@ class Conversation:
         self.path = os.path.dirname(filename)
         self.basename = os.path.basename(filename)
         self.modulename = os.path.splitext(self.basename)[0]
+        # Setting loggin
+        if log is None:
+            logging_directory_created=False
+            logging_dir=config.get('logging_dir','logs')
+            logging_filename=config.get('logging_filename',
+                    f"{self.modulename}_{str(datetime.datetime.now())}.log")
+            if not os.path.isdir(
+                    os.path.join(self.path,logging_dir)):
+                os.mkdir(os.path.join(self.path,logging_dir))
+                logging_directory_created=True
+            logging_filename=eval(f"f'{logging_filename}'")
+            self.logging_filename=os.path.join(
+                    self.path,logging_dir,logging_filename)
+
+            fh = logging.FileHandler(self.logging_filename)
+            formatter = logging.Formatter('%(asctime)s | %(levelname)-8s | %(lineno)04d | %(message)s')
+            fh.setFormatter(formatter)
+
+            self.log = logging.getLogger('MainLogger')
+            self.log.addHandler(fh)
+            self.log.setLevel(config.get('logging_level',"INFO"))
+
+            if logging_directory_created:
+                self.log.info(f"Directory for loggin created: {os.path.join(self.path,logging_dir)}")
+        else:
+            self.log=log
+
         self.strategies = {}
         self.contexts = {}
         self.plugins = config.get("plugins", {})
@@ -105,6 +133,8 @@ class Conversation:
                 definition = yaml.safe_load(stream)
             except yaml.YAMLError as exc:
                 self.console.print(exc)
+
+
         self.load_conversation(definition)
         self.thread = None
         self.samplerate = int(config.get("samplerate", 48000))
@@ -172,6 +202,7 @@ class Conversation:
             conversation = os.path.join(path, conversation)
             conversation_ = Conversation(
                 filename=conversation,
+                log=self.log,
                 **{
                     "plugins": self.plugins,
                     "tts": self.tts,
@@ -344,15 +375,21 @@ class Conversation:
 
     def say_(self, cmd):
         """Say command"""
-        result = eval(cmd, globals(), self.slots)
+        if isinstance(cmd,tuple):
+            result=[]
+            for c in cmd:
+                result.append(eval(c, globals(), self.slots))
+            result=" ".join(result)
+        else:
+            result = eval(cmd, globals(), self.slots)
         MSG = f"{self.system_name}: [bold]{result}[/bold]"
         self.console.print(MSG)
         if self.client:
             spk = getattr(self, "system_name_html", self.system_name)
             data = {
                 "cmd": "say",
-                "spk": spk,
-                "msg": f"<b>{result}</b>",
+                "spk": str(spk),
+                "msg": f"<b>{str(result)}</b>",
                 "client_id": self.client_id,
             }
             self.client.send(json.dumps(data))
@@ -365,13 +402,15 @@ class Conversation:
 
     def input_(self, line):
         """Input command"""
+        self.log.info("START input")
         self.input = None
         m = re_input.match(line)
 
         if m:
-            self.console.print(f"{self.user_name}:", end="")
+            self.console.print(f"{self.user_name}: ", end="")
             if self.client and not self.speech_recognition:
                 spk = getattr(self, "user_name_html", self.user_name)
+                time.sleep(0.3)
                 self.client.send(
                     json.dumps(
                         {
@@ -384,7 +423,7 @@ class Conversation:
                 while not self.input:
                     time.sleep(0.1)
                 result = self.input
-                self.console.print(f"[bold]{result}[/bold]", end="")
+                self.console.print(f"[bold]{result}[/bold] ", end="")
 
             elif self.speech_recognition:
                 start_listening()
@@ -402,6 +441,7 @@ class Conversation:
                     self.client.emit("input log", data, namespace="/cv")
             else:
                 result = input()
+                result = result.lower()
                 m_ = re_escaped_command.match(result)
                 while m_:
                     ## If a escaped command was introduced
@@ -415,7 +455,8 @@ class Conversation:
                     m_ = re_escaped_command.match(result)
 
             idd = m.group("id")
-            raw = result
+            result = result.lower()
+            raw = result.lower()
             if m.group("filter"):
                 fil = m.group("filter")
                 args = m.group("args").split()
@@ -430,6 +471,7 @@ class Conversation:
             else:
                 if isinstance(result, dict):
                     self.slots.update(result)
+        self.log.info("ENDS input")
 
     def loop_slots_(self):
         """Loop slots until fill"""
@@ -538,6 +580,7 @@ class Conversation:
     def execute_line_(self, line):
         line = line.strip()
         self.verbose("Command", line)
+        self.log.info(f'command: {line}')
         if self.slots:
             self.verbose(
                 "SLOTS:",
@@ -603,7 +646,7 @@ class Conversation:
         if self.conversation_id:
             self.client = websocket.WebSocket()
             self.client.connect(
-                f"ws://{self.host}:{self.port}/cv/{self.conversation_id}"
+                    f"ws://{self.host}:{self.port}/cv/{self.conversation_id}"
             )
 
         if self.speech_recognition:

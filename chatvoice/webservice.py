@@ -94,29 +94,38 @@ def create_app():
     async def websocket_endpoint(websocket: WebSocket, client_id: int):
         await manager.connect(websocket)
         CLIENTS[client_id] = websocket
-        while True:
-            data_ = await websocket.receive_text()
-            data = json.loads(data_)
-            print(data)
-            if data["cmd"] == "start":
-                conversation = CONVERSATIONS.get(client_id, None)
-                if conversation is None:
-                    conversation = create_new_conversation(
-                        data["conversation"], client_id
-                    )
-                    conversation.set_webclient_sid(client_id)
-                    CONVERSATIONS[client_id] = conversation
-                    conversation.start()
-            if data["cmd"] == "say":
-                client_id = data["client_id"]
-                w2 = CLIENTS[client_id]
-                await w2.send_text(data_)
-            if data["cmd"] == "activate input":
-                client_id = data["client_id"]
-                w2 = CLIENTS[client_id]
-                await w2.send_text(data_)
-            if data["cmd"] == "input completed":
-                conversation = CONVERSATIONS.get(client_id, None)
-                conversation.input = data["msg"]
+        try:
+            while True:
+                data_ = await websocket.receive_text()
+                data = json.loads(data_)
+                if data["cmd"] == "start":
+                    conversation = CONVERSATIONS.get(client_id, None)
+                    if conversation is None:
+                        conversation = create_new_conversation(
+                            data["conversation"], client_id
+                        )
+                        conversation.set_webclient_sid(client_id)
+                        CONVERSATIONS[client_id] = conversation
+                        conversation.start()
+                if data["cmd"] == "say":
+                    client_id = data["client_id"]
+                    w2 = CLIENTS[client_id]
+                    await w2.send_text(data_)
+                if data["cmd"] == "activate input":
+                    client_id = data["client_id"]
+                    w2 = CLIENTS[client_id]
+                    await w2.send_text(data_)
+                if data["cmd"] == "input completed":
+                    conversation = CONVERSATIONS.get(client_id, None)
+                    conversation.input = data["msg"]
+        except WebSocketDisconnect:
+            c2 = CONVERSATIONS[client_id]
+            c2.EXIT_()
+            try:
+                del CLIENTS[client_id]
+            except KeyError:
+                pass
+            del CONVERSATIONS[client_id]
+            manager.disconnect(websocket)
 
     return app

@@ -330,7 +330,7 @@ def console(ctx, conversation_file=None, **args):
     help="VAD aggressiveness [None]",
 )
 @click.pass_context
-def website(ctx, conversations_dir, **args):
+def server(ctx, conversations_dir, **args):
     """Lauches a chatvoice for console"""
     global CONFIG
     import threading
