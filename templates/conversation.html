@@ -31,7 +31,13 @@
 				data=JSON.parse(event.data);
                 // SAY
 				if(data.cmd=="say"){
-                	$('#last_say').html(data.msg)
+                	$('#last_say').html(data.msg);
+                    let utter = new SpeechSynthesisUtterance();
+                    utter.lang = 'es-MX';
+                    utter.text = data.msg;
+                    utter.volume = 0.5;
+                    // speak
+                    window.speechSynthesis.speak(utter);
                     $('#log').append('<br>' +msgCount + '. '+ data.spk+':'+data.msg);
 					console.log('say');
                 	msgCount += 1;
