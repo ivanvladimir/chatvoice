@@ -580,7 +580,7 @@ class Conversation:
     def execute_line_(self, line):
         line = line.strip()
         self.verbose("Command", line)
-        self.log.info(f'command: {line}')
+        self.log.debug(f'command: {line}')
         if self.slots:
             self.verbose(
                 "SLOTS:",
@@ -669,4 +669,5 @@ class Conversation:
         self.current_context = self
         self.execute_(self.script)
         if self.client:
+            self.log.debug("Dialogue exited")
             self.stop()

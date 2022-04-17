@@ -8,8 +8,8 @@
 import faulthandler
 
 faulthandler.enable(all_threads=True)
-import click
 from click_option_group import optgroup
+import rich_click as click
 import sys
 import configparser
 import os.path
