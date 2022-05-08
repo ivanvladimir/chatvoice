@@ -118,7 +118,8 @@ class Conversation:
         self.channels = config.get("channels", 2)
         self.tts = config.get("tts", None)
         self.host = config.get("host", "0.0.0.0")
-        self.port = config.get("port", 5000)
+        self.port = config.get("port", "5000")
+        self.port_ws = config.get("port_ws", "5000")
         self.prefix_ws = config.get("prefix_ws", "/ws/")
         self.protocol_ws = config.get("protocol_ws", "ws")
         self.IS = {}
@@ -660,9 +661,15 @@ class Conversation:
     def execute(self):
         if self.conversation_id:
             self.client = websocket.WebSocket()
-            self.client.connect(
+            if len(self.port_ws)>0:
+                self.client.connect(
                     f"{self.protocol_ws}://{self.host}:{self.port}{self.prefix_ws}{self.conversation_id}"
-            )
+                )
+            else:
+                self.client.connect(
+                    f"{self.protocol_ws}://{self.host}{self.prefix_ws}{self.conversation_id}"
+                )
+
 
         if self.speech_recognition:
             enable_audio_listening(
