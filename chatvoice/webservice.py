@@ -18,6 +18,7 @@ def create_app():
     prefix_ws=config.get('prefix_ws','/ws/')
     host=config.get('host','0.0.0.0')
     port=config.get('port','5000')
+    port_ws=config.get('port_ws','5000')
     protocol_ws=config.get('protocol_ws','ws')
     server_ws=config.get('server_ws','0.0.0.0')
     app = FastAPI()
@@ -78,7 +79,7 @@ def create_app():
                 "prefix": prefix_ws,
                 "protocol": protocol_ws,
                 "server":server_ws,
-                "port":port
+                "port":port_ws
             },
         )
 
