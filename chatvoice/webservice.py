@@ -19,6 +19,7 @@ def create_app():
     host=config.get('host','0.0.0.0')
     port=config.get('port','5000')
     protocol_ws=config.get('protocol_ws','ws')
+    server_ws=config.get('server_ws','0.0.0.0')
     app = FastAPI()
     app.mount(prefix_url+"static", StaticFiles(directory="static"), name="static")
     templates = Jinja2Templates(directory="templates")
@@ -76,7 +77,7 @@ def create_app():
                 "elapsed_time": elapsed_time(start_time),
                 "prefix": prefix_ws,
                 "protocol": protocol_ws,
-                "host":host,
+                "server":server_ws,
                 "port":port
             },
         )

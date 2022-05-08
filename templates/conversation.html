@@ -7,7 +7,7 @@
             var msgCount = 1;
 			var client_id = Date.now()
             var spk='USER';
-            var ws = new WebSocket('{{protocol}}://{{host}}:{{port}}' + namespace+`${client_id}`);
+            var ws = new WebSocket('{{protocol}}://{{server}}:{{port}}' + namespace+`${client_id}`);
 			$('#send').click(function(e) {
                 var msg = String($('#msg').val());
                 if(msg.trim().length>0){
