@@ -14,8 +14,13 @@ def create_app():
     from .config import get_config
 
     config = dict(get_config())
+    prefix_url=config.get('prefix_url','/')
+    prefix_ws=config.get('prefix_ws','/ws/')
+    host=config.get('host','0.0.0.0')
+    port=config.get('port','5000')
+    protocol_ws=config.get('protocol_ws','ws')
     app = FastAPI()
-    app.mount("/static", StaticFiles(directory="static"), name="static")
+    app.mount(prefix_url+"static", StaticFiles(directory="static"), name="static")
     templates = Jinja2Templates(directory="templates")
     elapsed_time = lambda s: f"{time.time() - s:0.2}s"
     CONVERSATIONS = {}
@@ -39,7 +44,7 @@ def create_app():
         return conversation
 
     ## Main page
-    @app.get("/", response_class=HTMLResponse)
+    @app.get(prefix_url, response_class=HTMLResponse)
     async def list_conversations(request: Request):
         start_time = time.time()
         conversations_dir = config.get("conversations_dir", "conversations")
@@ -60,7 +65,7 @@ def create_app():
             },
         )
 
-    @app.get("/execute/{name}", response_class=HTMLResponse)
+    @app.get(prefix_url+"execute/{name}", response_class=HTMLResponse)
     async def execute(name: str, request: Request):
         start_time = time.time()
         return templates.TemplateResponse(
@@ -69,6 +74,10 @@ def create_app():
                 "request": request,
                 "chat_name": name,
                 "elapsed_time": elapsed_time(start_time),
+                "prefix": prefix_ws,
+                "protocol": protocol_ws,
+                "host":host,
+                "port":port
             },
         )
 
@@ -93,7 +102,7 @@ def create_app():
 
     manager = ConnectionManager()
 
-    @app.websocket("/cv/{client_id}")
+    @app.websocket(prefix_ws+"{client_id}")
     async def websocket_endpoint(websocket: WebSocket, client_id: int):
         await manager.connect(websocket)
         CLIENTS[client_id] = websocket

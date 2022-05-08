@@ -3,11 +3,11 @@
 {% block script %}
 	<script type="text/javascript" charset="utf-8">
         $(document).ready(function(){
-            namespace = '/cv/';
+            namespace = '{{prefix}}';
             var msgCount = 1;
 			var client_id = Date.now()
             var spk='USER';
-            var ws = new WebSocket('ws://0.0.0.0:5001' + namespace+`${client_id}`);
+            var ws = new WebSocket('{{protocol}}://{{host}}:{{port}}' + namespace+`${client_id}`);
 			$('#send').click(function(e) {
                 var msg = String($('#msg').val());
                 if(msg.trim().length>0){
@@ -32,12 +32,12 @@
                 // SAY
 				if(data.cmd=="say"){
                 	$('#last_say').html(data.msg);
-                    let utter = new SpeechSynthesisUtterance();
-                    utter.lang = 'es-MX';
-                    utter.text = data.msg;
-                    utter.volume = 0.5;
+                    //let utter = new SpeechSynthesisUtterance();
+                    //utter.lang = 'es-MX';
+                    //utter.text = data.msg;
+                    //utter.volume = 0.5;
                     // speak
-                    window.speechSynthesis.speak(utter);
+                    //window.speechSynthesis.speak(utter);
                     $('#log').append('<br>' +msgCount + '. '+ data.spk+':'+data.msg);
 					console.log('say');
                 	msgCount += 1;

@@ -117,8 +117,10 @@ class Conversation:
         self.voice_local = config.get("tts_local_voice", "spanish-latin-am")
         self.channels = config.get("channels", 2)
         self.tts = config.get("tts", None)
-        self.host = config.get("host", "127.0.0.1")
+        self.host = config.get("host", "0.0.0.0")
         self.port = config.get("port", 5000)
+        self.prefix_ws = config.get("prefix_ws", "/ws/")
+        self.protocol_ws = config.get("protocol_ws", "ws")
         self.IS = {}
         self.url_apis = {}
         self.speech_recognition = config.get("speech_recognition", None)
@@ -193,8 +195,8 @@ class Conversation:
     def update_(self, conversation):
         self.contexts[conversation.modulename] = conversation
         self.strategies.update(conversation.strategies)
-        self.verbose(
-            f"[green]Setting conversation[/green] [bold]{conversation.modulename}[/bold]"
+        self.log.info(
+            f"Setting conversation {conversation.modulename}"
         )
 
     def _load_conversations(self, conversations, path="./"):
@@ -208,34 +210,32 @@ class Conversation:
                     "tts": self.tts,
                 },
             )
-            self.verbose(
-                f"[green]Conversation file loaded:[/green] [bold]{conversation}[/bold]"
-            )
+            self.log.info(f"Conversation file loaded: {conversation}")
             self.update_(conversation_)
-            self.verbose(
-                f"[green]Conversation file loaded:[/green] [bold]{conversation}[/bold]"
+            self.log.info(
+                f"Conversation file loaded: {conversation}"
             )
 
     def _load_plugings(self, plugins_):
         for plugin in plugins_:
-            self.verbose("Importing plugin", plugin)
+            self.log.info("Importing plugin", plugin)
             thisplug = importlib.import_module(plugin)
             self.plugins[plugin] = thisplug
 
     def _load_strategies(self, strategies):
         for strategy, script in strategies.items():
-            self.verbose("Setting strategy", strategy)
+            self.log.info("Setting strategy", strategy)
             self.strategies[strategy] = script
 
     def _load_url_apis(self, url_apis):
         for api_name, url in url_apis.items():
-            self.verbose("Load APIs", api_name)
+            self.log.info("Load APIs", api_name)
             self.url_apis[api_name] = url
 
     def _load_dbs(self, dbs, path="."):
         for dbname, loading_script in dbs.items():
             loading_script = loading_script.strip()
-            self.verbose("Creating db", dbname)
+            self.log.info("Creating db", dbname)
             if loading_script.startswith("import"):
                 bits = loading_script.split()
                 db = []
@@ -249,7 +249,7 @@ class Conversation:
                         line_count = 0
                         for row in csv_reader:
                             if line_count == 0:
-                                self.verbose("Column names are ", " ".join(row), dbname)
+                                self.log.info("Column names are ", " ".join(row), dbname)
                                 line_count += 1
                             else:
                                 line_count += 1
@@ -261,7 +261,7 @@ class Conversation:
                 self.slots["db"][dbname] = db
 
     def _load_is(self, isname):
-        self.verbose("Loading IS", isname)
+        self.log.info("Loading IS", isname)
         if self.erase_memory:
             self.IS = {}
         else:
@@ -409,6 +409,7 @@ class Conversation:
         if m:
             self.console.print(f"{self.user_name}: ", end="")
             if self.client and not self.speech_recognition:
+                self.log.info("Waiting from server")
                 spk = getattr(self, "user_name_html", self.user_name)
                 time.sleep(0.3)
                 self.client.send(
@@ -423,9 +424,11 @@ class Conversation:
                 while not self.input:
                     time.sleep(0.1)
                 result = self.input
+                self.log.info(f"{self.user_name}: {result}")
                 self.console.print(f"[bold]{result}[/bold] ", end="")
 
             elif self.speech_recognition:
+                self.log.info("Waiting from asr")
                 start_listening()
                 filename = None
                 while not filename:
@@ -438,8 +441,10 @@ class Conversation:
                         "msg": result,
                         "webclient_sid": self.webclient_sid,
                     }
-                    self.client.emit("input log", data, namespace="/cv")
+                    self.client.emit("input log", data, namespace=self.prefix_ws)
+                self.log.info(f"{self.user_name}: {result}")
             else:
+                self.log.info("Waiting from keyboard")
                 result = input()
                 result = result.lower()
                 m_ = re_escaped_command.match(result)
@@ -453,11 +458,13 @@ class Conversation:
                     self.console.print(f"{self.user_name}: [bold]", end="")
                     result = input()
                     m_ = re_escaped_command.match(result)
+                self.log.info(f"{self.user_name}: {result}")
 
             idd = m.group("id")
             result = result.lower()
             raw = result.lower()
             if m.group("filter"):
+                self.log.info("Filtering..")
                 fil = m.group("filter")
                 args = m.group("args").split()
                 slots_ = dict(self.slots)
@@ -466,7 +473,9 @@ class Conversation:
                 result = eval(
                     '{}(self,"{}",*args)'.format(fil, result), globals(), slots_
                 )
+                self.log.info(f"Final value: {result}")
             if not idd == "_":
+                self.log.info(f"Saving result in: {idd}")
                 self.slots[idd] = result
             else:
                 if isinstance(result, dict):
@@ -475,11 +484,14 @@ class Conversation:
 
     def loop_slots_(self):
         """Loop slots until fill"""
+        self.log.info("STARTS loop_sloots")
         for slot in [name for name, val in self.slots.items() if val is None]:
             self.execute_line_("solve {}".format(slot))
+        self.log.info("ENDS loop_sloots")
 
     def conditional_(self, line):
         """conditional execution"""
+        self.log.info("STARTS conditional")
         if " else " in line:
             m = re_conditional_else.match(line)
             else_ = True
@@ -495,10 +507,14 @@ class Conversation:
                 result = True
             if not result and else_:
                 cmd = m.group("else_cmd")
-                return self.execute_line_(cmd)
+                res = self.execute_line_(cmd)
             elif result:
                 cmd = m.group("cmd")
-                return self.execute_line_(cmd)
+                res = self.execute_line_(cmd)
+            else:
+                res = None
+            self.log.info("ENDS conditional")
+            return res
 
     def request_(self, line):
         """request execution"""
@@ -581,11 +597,10 @@ class Conversation:
         line = line.strip()
         self.verbose("Command", line)
         self.log.debug(f'command: {line}')
-        if self.slots:
-            self.verbose(
-                "SLOTS:",
-                ", ".join(["{}:{}".format(x, y) for x, y in self.slots.items()]),
-            )
+        #if self.slots:
+        #    self.log.info(
+        #        "SLOTS:"+", ".join(["{}:{}".format(x, y) for x, y in self.slots.items()]),
+        #    )
         if line.startswith("solve "):
             cmd, args = line.split(maxsplit=1)
             return self.solve_(*args.split())
@@ -646,7 +661,7 @@ class Conversation:
         if self.conversation_id:
             self.client = websocket.WebSocket()
             self.client.connect(
-                    f"ws://{self.host}:{self.port}/cv/{self.conversation_id}"
+                    f"{self.protocol_ws}://{self.host}:{self.port}{self.prefix_ws}{self.conversation_id}"
             )
 
         if self.speech_recognition:
