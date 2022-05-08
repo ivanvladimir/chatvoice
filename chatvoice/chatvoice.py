@@ -199,14 +199,23 @@ def console(ctx, conversation_file=None, **args):
     help="Port url",
 )
 @optgroup.option(
+    "--use_hypercorn",
+    is_flag=True,
+    default=False,
+    help="User hypercorn instead of uvicorn [False]",
+)
+
+
+@optgroup.option(
     "--reload",
     is_flag=True,
-    help="Reload webservice uvicorn[False]",
+    default=False,
+    help="Reload webservice uvicorn [False]",
 )
 @optgroup.option(
     "--workers",
     type=int,
-    help="Number of workers for uvicorn[4]",
+    help="Number of workers for uvicorn [4]",
 )
 @optgroup.group("Paths", help="Paths to auxiliary files")
 @optgroup.option(
@@ -295,9 +304,8 @@ def console(ctx, conversation_file=None, **args):
 @click.pass_context
 def server(ctx, conversations_dir, **args):
     """Lauches a chatvoice for console"""
-    global CONFIG
+    global config
     import threading
-    import uvicorn
 
     CONFIG = dict(config[ctx.obj["config_section"]])
     CONFIG.update({k:v for k,v in args.items() if v})
@@ -316,15 +324,29 @@ def server(ctx, conversations_dir, **args):
     # t = threading.Thread(target=conversation.execute)
     # conversation.set_thread(t)
 
-    uvicorn.run(
-        "chatvoice.webservice:create_app",
-        host=CONFIG["host"],
-        port=int(CONFIG["port"]),
-        workers=int(CONFIG["workers"]),
-        factory=True,
-        lifespan="off",  # TODO: figure out why it fails when on
-        reload=True,
-    )  # CONFIG['reload'])
+    if not CONFIG['use_hypercorn']:
+        import uvicorn
+        uvicorn.run(
+            "chatvoice.webservice:create_app",
+            host=CONFIG["host"],
+            port=int(CONFIG["port"]),
+            workers=int(CONFIG["workers"]),
+            factory=True,
+            lifespan="off",  # TODO: figure out why it fails when on
+            reload=True,
+        )  # CONFIG['reload'])
+    else:
+        import trio
+        from hypercorn.config import Config
+        from hypercorn.trio import serve
+        from .webservice import create_app
+
+        config = Config()
+        config.bind = [f"{CONFIG['host']}:{CONFIG['port']}"]
+        config.workers = int(CONFIG["workers"])
+        config.websocket_ping_interval = 10
+        trio.run(serve,create_app(), config)
+
 
 
 if __name__ == "__main__":
