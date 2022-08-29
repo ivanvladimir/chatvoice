@@ -324,7 +324,7 @@ def server(ctx, conversations_dir, **args):
     # t = threading.Thread(target=conversation.execute)
     # conversation.set_thread(t)
 
-    if not CONFIG['use_hypercorn']:
+    if not 'use_hypercorn' in CONFIG:
         import uvicorn
         uvicorn.run(
             "chatvoice.webservice:create_app",
