@@ -173,7 +173,7 @@ def info(
 def console(ctx, conversation_file=None, **args):
     """Lauches a chatvoice for console"""
     CONFIG = dict(config[ctx.obj["config_section"]])
-    CONFIG.update(args)
+    CONFIG.update({k:v for k,v in args.items() if v})
     CONFIG["main_path"] = os.path.dirname(conversation_file)
     CONFIG["verbose"] = ctx.obj["verbose"]
     # Temporarily not working
