@@ -32,6 +32,7 @@ setuptools.setup(
         'gTTS',
         'SpeechRecognition',
         'numpy',
+        'hypercorn[trio]',
         'PyGObject',
         'playsound',
         'uvicorn==0.16.0',
