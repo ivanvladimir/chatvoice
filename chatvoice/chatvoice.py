@@ -344,7 +344,7 @@ def server(ctx, conversations_dir, **args):
         config = Config()
         config.bind = [f"{CONFIG['host']}:{CONFIG['port']}"]
         config.workers = int(CONFIG["workers"])
-        config.websocket_ping_interval = 10
+        config.websocket_ping_interval = None
         trio.run(serve,create_app(), config)
 
 

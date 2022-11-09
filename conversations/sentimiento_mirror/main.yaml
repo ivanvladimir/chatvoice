@@ -18,12 +18,16 @@ strategies:
         - input name
         - remember name
         - say "mucho gusto en conocerte {name}".format(name)
+    question:
+      - say "¿me puedes decir algo que refleje como te sientes {}?".format(name)
+      - input feeling
+      - post sentiment /classify 'text':feeling response
+      - say "Creo que te sientes"
+      - if response['result']['label']=='NEG' then say "algo negativo"
+      - if response['result']['label']=='POS' then say "un poco positivo"
+      - if response['result']['label']=='NEU' then say "creo que estás neutral"
 
 script:
-    - say "¿me puedes decir algo que refleje como te sientes {}?".format(name)
-    - input feeling
-    - post sentiment /classify 'text':feeling response
-    - say "Creo que te sientes"
-    - if response['result']['label']=='NEG' then say "algo negativo"
-    - if response['result']['label']=='POS' then say "un poco positivo"
-    - if response['result']['label']=='NEU' then say "creo que estás muy neutral"
+    - loop_slots
+    - while feeling != 'bye' then solve question
+    - say "okay bye"

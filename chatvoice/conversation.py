@@ -217,24 +217,24 @@ class Conversation:
 
     def _load_plugings(self, plugins_):
         for plugin in plugins_:
-            self.log.info("Importing plugin", plugin)
+            self.log.info(f"Importing plugin: {plugin}")
             thisplug = importlib.import_module(plugin)
             self.plugins[plugin] = thisplug
 
     def _load_strategies(self, strategies):
         for strategy, script in strategies.items():
-            self.log.info("Setting strategy", strategy)
+            self.log.info(f"Setting strategy: {strategy}")
             self.strategies[strategy] = script
 
     def _load_url_apis(self, url_apis):
         for api_name, url in url_apis.items():
-            self.log.info("Load APIs", api_name)
+            self.log.info(f"Load APIs: {api_name}")
             self.url_apis[api_name] = url
 
     def _load_dbs(self, dbs, path="."):
         for dbname, loading_script in dbs.items():
             loading_script = loading_script.strip()
-            self.log.info("Creating db", dbname)
+            self.log.info(f"Creating db: {dbname}")
             if loading_script.startswith("import"):
                 bits = loading_script.split()
                 db = []
@@ -242,13 +242,13 @@ class Conversation:
                     import csv
 
                     dbfile = os.path.join(path, bits[1])
-                    self.verbose("Loading csv", dbfile)
+                    self.verbose(f"Loading csv: {dbfile}")
                     with open(dbfile, encoding="utf-8") as csv_file:
                         csv_reader = csv.reader(csv_file, delimiter=",")
                         line_count = 0
                         for row in csv_reader:
                             if line_count == 0:
-                                self.log.info("Column names are ", " ".join(row), dbname)
+                                self.log.info(f'Column names are: {" ".join(row)} in  {dbname}')
                                 line_count += 1
                             else:
                                 line_count += 1
@@ -260,7 +260,7 @@ class Conversation:
                 self.slots["db"][dbname] = db
 
     def _load_is(self, isname):
-        self.log.info("Loading IS", isname)
+        self.log.info(f"Loading IS : {isname}")
         if self.erase_memory:
             self.IS = {}
         else:
