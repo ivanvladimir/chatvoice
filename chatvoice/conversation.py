@@ -13,6 +13,7 @@ import os.path
 import sys
 import re
 import time
+import random
 import datetime
 import importlib
 from tinydb import TinyDB, Query
@@ -103,6 +104,7 @@ class Conversation:
 
         self.strategies = {}
         self.contexts = {}
+        self.templates = {}
         self.plugins = config.get("plugins", {})
         self.package = ".".join(["plugins"])
         self.script = []
@@ -134,7 +136,9 @@ class Conversation:
                 definition = yaml.safe_load(stream)
             except yaml.YAMLError as exc:
                 self.console.print(exc)
-
+                self.log.error("Error while reading: {filename}")
+                self.log.error(exec)
+                sys.exit()
 
         self.load_conversation(definition)
         self.thread = None
@@ -199,6 +203,8 @@ class Conversation:
         )
 
     def _load_conversations(self, conversations, path="./"):
+        if not conversations:
+            return
         for conversation in conversations:
             conversation = os.path.join(path, conversation)
             conversation_ = Conversation(
@@ -289,6 +295,24 @@ class Conversation:
         if "console_style" in settings:
             self.console = Console(style=settings["console_style"])
 
+    def _load_templates(self, templates, path="."):
+        for template in templates:
+            template = os.path.join(path, template)
+            with open(template, "r", encoding="utf-8") as stream:
+                try:
+                    template_ = yaml.safe_load(stream)
+                    for k in template_.keys():
+                        if k in self.templates:
+                            self.log.error(f"Template {k} already defined")
+                            self.console.pint(f"[red]Template {k} already defined, being redifined[/]")
+                    self.templates.update(template_)
+                except yaml.YAMLError as exc:
+                    self.console.print(f"Error while reading: {template}, definitions being ignored")
+                    self.console.print(exc)
+                    self.log.error(f"Error while reading: {template}, definitions being ignored")
+                    self.log.error(exec)
+                    sys.exit()
+
     def load_conversation(self, definition):
         """Loads a full conversation"""
         if "conversations" in definition:
@@ -307,6 +331,10 @@ class Conversation:
             pass
         try:
             self._load_strategies(definition["strategies"])
+        except KeyError:
+            pass
+        try:
+            self._load_templates(definition["templates"], path=self.path)
         except KeyError:
             pass
         try:
@@ -372,32 +400,54 @@ class Conversation:
         print("CMD", cmd)
         exec(cmd)
 
+    def resolve_template(self,name):
+        t=self.templates[name]
+        # Check for cased
+        if 'CASES' in t:
+            val=eval(t['SLOT'],self.slots)
+            for case in t['CASES']:
+                if val in case['VALS']:
+                    res=random.choice(case['MSGS'])
+        else:
+            # TODO: change this for a selector that can take weigths
+            res=random.choice(t)
+        res=[f'"{m["TEXT"].strip()}"' for m in res['MSG']]
+        return res
+
     def say_(self, cmd):
         """Say command"""
+        result=[]
         if isinstance(cmd,tuple):
-            result=[]
             for c in cmd:
-                result.append(eval(c, globals(), self.slots))
-            result=" ".join(result)
+                if c in self.templates:
+                    c=self.resolve_template(c)
+                for c_ in c:
+                    result.append(eval(c_, globals(), self.slots))
         else:
-            result = eval(cmd, globals(), self.slots)
-        MSG = f"{self.system_name}: [bold]{result}[/bold]"
-        self.console.print(MSG)
-        if self.client:
-            spk = getattr(self, "system_name_html", self.system_name)
-            data = {
-                "cmd": "say",
-                "spk": str(spk),
-                "msg": f"<b>{str(result)}</b>",
-                "client_id": self.client_id,
-            }
-            self.client.send(json.dumps(data))
-        if self.tts:
-            stop_listening()
-            tts(result)
-            start_listening()
-        else:
-            pass
+            if cmd in self.templates:
+                cmd=self.resolve_template(cmd)
+            else:
+                cmd=[cmd]
+            for cmd_ in cmd:
+                result.append(eval(cmd_, globals(), self.slots))
+        for r in result:
+            MSG = f"{self.system_name}: [bold]{r}[/bold]"
+            self.console.print(MSG)
+            if self.client:
+                spk = getattr(self, "system_name_html", self.system_name)
+                data = {
+                    "cmd": "say",
+                    "spk": str(spk),
+                    "msg": f"<b>{str(r)}</b>",
+                    "client_id": self.client_id,
+                }
+                self.client.send(json.dumps(data))
+            if self.tts:
+                stop_listening()
+                tts(r)
+                start_listening()
+            else:
+                pass
 
     def input_(self, line):
         """Input command"""
