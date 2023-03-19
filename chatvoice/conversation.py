@@ -8,6 +8,7 @@
 import yaml
 import logging
 from rich.console import Console
+from rich.markdown import Markdown
 from rich.jupyter import print as rich_print
 import os.path
 import sys
@@ -411,7 +412,7 @@ class Conversation:
         else:
             # TODO: change this for a selector that can take weigths
             res=random.choice(t)
-        res=[f'"{m["TEXT"].strip()}"' for m in res['MSG']]
+        res=[f'"""{m["TEXT"].strip()}"""' if '\n' in m['TEXT'] else f'"{m["TEXT"].strip()}"' for m in res['MSG']]
         return res
 
     def say_(self, cmd):
@@ -431,8 +432,10 @@ class Conversation:
             for cmd_ in cmd:
                 result.append(eval(cmd_, globals(), self.slots))
         for r in result:
-            MSG = f"{self.system_name}: [bold]{r}[/bold]"
-            self.console.print(MSG)
+            PRE = f"{self.system_name}:"
+            MSG_ = Markdown(r.strip())
+            self.console.print(PRE,end=" ")
+            self.console.print(MSG_)
             if self.client:
                 spk = getattr(self, "system_name_html", self.system_name)
                 data = {
