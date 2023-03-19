@@ -13,3 +13,6 @@
 [submodule "conversations/financeBot"]
 	path = conversations/financeBot
 	url = https://github.com/krmirandas/financeBot
+[submodule "conversations/crisis_ansiedad"]
+	path = conversations/crisis_ansiedad
+	url = git@github.com:nick-kano/crisis_ansiedad.git

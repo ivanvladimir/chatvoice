@@ -23,7 +23,7 @@ def create_app():
     server_ws=config.get('server_ws','0.0.0.0')
     app = FastAPI()
     app.mount(prefix_url+"static", StaticFiles(directory="static"), name="static")
-    templates = Jinja2Templates(directory="templates")
+    templates = Jinja2Templates(directory=config.get("templates","templates"))
     elapsed_time = lambda s: f"{time.time() - s:0.2}s"
     CONVERSATIONS = {}
     CLIENTS = {}
