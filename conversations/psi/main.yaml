@@ -1,0 +1,67 @@
+# Conversation example for simple hello and ask a name
+
+settings:
+    system_name: "[blue]Psi[/blue]"
+    system_name_html: "<span style='color:blue'>Psi</span>"
+    user_name: "[aquamarine1]Usuario[/aquamarine1]"
+    user_name_html: "<span style='color:blue'>Usuario</span>"
+
+slots:
+    - name
+
+url_apis:
+    zs: "http://127.0.0.1:8000/zeroshot/"
+
+templates:
+    - 'resources/messages.yaml'
+
+strategies:
+    greet:
+        - say GREET
+    name:
+        - say NAME
+        - input name
+        - remember name
+        - say 'mucho gusto en conocerte {name}'
+    intro:
+        - say INTRO
+        - input knows_health
+        - post zs classify 'text':knows_health,'labels':['sí','no','no estoy seguro'],'template':'{}' response
+        - set_slot knows_health response['result']['labels'][0]
+        - say KNOWNS_HEALTH
+    cont1:
+        - say 'Te gustaria saber más de la salud mental?'
+        - input res_cont1 | yesno
+    cont2:
+        - say '¿Quieres jugar para conocer algunos datos curiosos de la salud mental?'
+        - input res_cont2 | yesno
+
+    cont_no:
+        - say 'ok, entiendo, aquí estare por si quieres continuar charlando en otro momento'
+        - exit
+
+    q1:
+        - say Q1
+        - input a1
+        - post zs classify 'text':a1,'labels':['cierto','falso'],'template':'{}' response
+        - set_slot a1 response['result']['labels'][0]
+        - say A1
+    q2:
+        - say Q2
+        - input a2
+        - post zs classify 'text':a2,'labels':['cierto','falso'],'template':'{}' response
+        - set_slot a2 response['result']['labels'][0]
+        - say A2
+
+script:
+    - solve greet
+    - loop_slots
+    - solve intro
+    - solve cont1
+    - if res_cont1==False then solve cont_no else say RES_CONT1
+    - solve cont2
+    - if res_cont1==False then solve cont_no else say "Muy bien, veamos qué mitos conoces"
+    - solve q1
+    - solve q2
+
+

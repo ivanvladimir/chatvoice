@@ -441,7 +441,7 @@ class Conversation:
                 data = {
                     "cmd": "say",
                     "spk": str(spk),
-                    "msg": f"<b>{str(r)}</b>",
+                    "msg": r.strip(),
                     "client_id": self.client_id,
                 }
                 self.client.send(json.dumps(data))

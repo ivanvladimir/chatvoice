@@ -1,0 +1,75 @@
+GREET:
+    - MSG:
+        - TEXT: |
+            Hola soy **Psi**,
+            Estoy aquí para
+
+            * guiarte en cuidar tu salud mental,
+            * acompañarte en identificar tus riesgos de a la salud física y mental
+            * brindarte información y algunas habilidades que pueden ayudarte a cuidarte y
+            * saber qué hacer si tu o alguien más está presentando una condición de salud mental
+NAME:
+    - MSG:
+        - TEXT: "¿Cuál es tu nombre?"
+    - MSG:
+        - TEXT: "¿Cómo te llamas?"
+INTRO:
+    - MSG:
+        - TEXT: "Hay varios temas de los que podríamos conversar, pero primero me gustaría saber"
+        - TEXT: "¿Sabes qué es la Salud Mental?"
+KNOWNS_HEALTH:
+    SLOT: knows_health
+    CASES:
+        - VALS:
+            - sí
+          MSGS:
+            - MSG:
+               - TEXT: "La salud mental es un concepto muy amplio y abarca una serie de indicadores que es importante conocer para cuidarse y cuidar a los demás"
+        - VALS:
+            - no
+          MSGS:
+            - MSG: 
+                - TEXT: "No te preocupes, la mayoría de las personas no conoce lo que es la salud mental y esto hace que no nos cuidemos."
+        - VALS:
+            - no estoy seguro
+          MSGS:
+              - MSG:
+                - TEXT: "No te preocupes, en ocasiones podemos tener cierta información respecto, pero es importante conocerla para aprender a cuidarnos"
+Q1:
+    - MSG:
+        - TEXT: "Las personas pueden pasar hasta 14 años con una condición de salud mental sin ser tratada ¿Cierto o Falso?"
+A1:
+    SLOT: a1
+    CASES:
+        - VALS:
+            - cierto
+          MSGS:
+            - MSG:
+               - TEXT: "Correcto, una persona puede pasar hasta 14 años con alguna condición de salud mental sin ser tratada y puede deberse a varios factores"
+        - VALS:
+            - falso
+          MSGS:
+            - MSG: 
+                - TEXT: "En realidad la respuesta es cierta, ya que una persona sí puede pasar hasta 14 años con alguna condición de salud mental sin ser tratada y puede deberse a varios factores"
+Q2:
+    - MSG:
+        - TEXT: "El 25% de las personas de Latinoamérica y el Caribe se verán afectadas directa o indirectamente por los trastornos mentales alguna vez en su vida ¿Cierto o Falso?"
+A2:
+    SLOT: a2
+    CASES:
+        - VALS:
+            - cierto
+          MSGS:
+            - MSG:
+                TEXT: "Correcto, esto se debe a diferentes determinantes sociodemográficos, económicos, medioambientales, sociales y culturales que se relacionan con la salud mental y que pueden incrementar la probabilidad de desarrollar un padecimiento de salud menal "
+        - VALS:
+            - falso
+          MSGS:
+            - MSG: 
+                - TEXT: "La respuesta es Cierto esto se debe a diferentes determinantes sociodemográficos, económicos, medioambientales, sociales y culturales que se relacionan con la salud mental y que pueden incrementar la probabilidad de desarrollar un padecimiento de salud menal "
+RES_CONT1:
+    - MSG: 
+        - TEXT: "De acuerdo a la OMS, la  salud mental no solo es la ausenncia de un trastorno mental, va mucho más allá ya que es la capacidad de poder enfrentar el estrés cotidiano del dia a dia, contribuir a nuestra comunidad y sentirnos capaces de realizar las cosas."
+
+
+

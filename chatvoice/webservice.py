@@ -22,7 +22,7 @@ def create_app():
     protocol_ws=config.get('protocol_ws','ws')
     server_ws=config.get('server_ws','0.0.0.0')
     app = FastAPI()
-    app.mount(prefix_url+"static", StaticFiles(directory="static"), name="static")
+    app.mount(prefix_url+"static", StaticFiles(directory=config.get("static","static")), name="static")
     templates = Jinja2Templates(directory=config.get("templates","templates"))
     elapsed_time = lambda s: f"{time.time() - s:0.2}s"
     CONVERSATIONS = {}
@@ -46,42 +46,60 @@ def create_app():
         return conversation
 
     ## Main page
-    @app.get(prefix_url, response_class=HTMLResponse)
-    async def list_conversations(request: Request):
-        start_time = time.time()
-        conversations_dir = config.get("conversations_dir", "conversations")
-        options = []
-        for directory in os.listdir(os.path.join(conversations_dir)):
-            main_path = os.path.join(conversations_dir, directory, "main.yaml")
-            if os.path.isdir(
-                os.path.join(conversations_dir, directory)
-            ) and os.path.exists(main_path):
-                options.append((directory, main_path))
+    if config.get('index','True')=='True':
+        @app.get(prefix_url, response_class=HTMLResponse)
+        async def list_conversations(request: Request):
+            start_time = time.time()
+            conversations_dir = config.get("conversations_dir", "conversations")
+            options = []
+            for directory in os.listdir(os.path.join(conversations_dir)):
+                main_path = os.path.join(conversations_dir, directory, "main.yaml")
+                if os.path.isdir(
+                    os.path.join(conversations_dir, directory)
+                ) and os.path.exists(main_path):
+                    options.append((directory, main_path))
 
-        return templates.TemplateResponse(
-            "index.html",
-            {
-                "options": options,
-                "request": request,
-                "elapsed_time": elapsed_time(start_time),
-            },
-        )
+            return templates.TemplateResponse(
+                "index.html",
+                {
+                    "options": options,
+                    "request": request,
+                    "elapsed_time": elapsed_time(start_time),
+                },
+            )
 
-    @app.get(prefix_url+"execute/{name}", response_class=HTMLResponse)
-    async def execute(name: str, request: Request):
-        start_time = time.time()
-        return templates.TemplateResponse(
-            "conversation.html",
-            {
-                "request": request,
-                "chat_name": name,
-                "elapsed_time": elapsed_time(start_time),
-                "prefix": prefix_ws,
-                "protocol": protocol_ws,
-                "server":server_ws,
-                "port":port_ws
-            },
-        )
+    if not config.get('entry_point',False):
+        @app.get(prefix_url+"execute/{name}", response_class=HTMLResponse)
+        async def execute(name: str, request: Request):
+            start_time = time.time()
+            return templates.TemplateResponse(
+                "conversation.html",
+                {
+                    "request": request,
+                    "chat_name": name,
+                    "elapsed_time": elapsed_time(start_time),
+                    "prefix": prefix_ws,
+                    "protocol": protocol_ws,
+                    "server":server_ws,
+                    "port":port_ws
+                },
+            )
+    else:
+        @app.get(prefix_url+f"{config.get('entry_point')}", response_class=HTMLResponse)
+        async def execute(request: Request):
+            start_time = time.time()
+            return templates.TemplateResponse(
+                "conversation.html",
+                {
+                    "request": request,
+                    "chat_name": config.get('entry_point'),
+                    "elapsed_time": elapsed_time(start_time),
+                    "prefix": prefix_ws,
+                    "protocol": protocol_ws,
+                    "server":server_ws,
+                    "port":port_ws
+                },
+            )
 
     ## Websocket
     class ConnectionManager:

@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block script %}
+	<script type="text/javascript" charset="utf-8">
+        $(document).ready(function(){
+            namespace = '{{prefix}}';
+            var msgCount = 1;
+			var client_id = Date.now()
+            var spk='USER';
+            var port='{{port}}';
+            var converter = new showdown.Converter();
+            if(port.length>0){
+                var ws = new WebSocket('{{protocol}}://{{server}}:{{port}}' + namespace+`${client_id}`);
+            }else{
+                var ws = new WebSocket('{{protocol}}://{{server}}' + namespace+`${client_id}`);
+            }
+            ws.addEventListener("open", (event) => {
+                ws.send(JSON.stringify({'cmd':'start','conversation':"{{chat_name}}"}));
+            });
+			$('#send').click(function(e) {
+                var msg = String($('#msg_input').val());
+                if(msg.trim().length>0){
+                    ws.send(JSON.stringify({'cmd':'input completed','msg':msg}));
+                    showUserMessage(msg,getCurrentTimestamp());
+                    $('msg_input').val('');
+                    msgCount += 1;
+      			    return false;
+                }
+    		});
+
+            $('#msg_input').focus();
+
+            ws.onmessage = function(event) {
+				data=JSON.parse(event.data);
+                // SAY
+				if(data.cmd=="say"){
+                    html = converter.makeHtml(data.msg);
+                    showBotMessage(html,getCurrentTimestamp());
+                    //let utter = new SpeechSynthesisUtterance();
+                    //utter.lang = 'es-MX';
+                    //utter.text = data.msg;
+                    //utter.volume = 0.5;
+                    // speak
+                    //window.speechSynthesis.speak(utter);
+                	msgCount += 1;
+				};
+            };
+        });
+    </script>
+{% endblock %}
+
+{% block content %}
+	<div class="container">
+
+		<div class="row padded_row">
+
+			<!-- right side content -->
+			<div class="col-md-7">
+
+				<div class="chat_window">
+
+					<div class="top_menu">
+                        <div class="title">{{chat_name}}</div>
+					</div>
+
+					<!-- dynamically rendered -->
+					<ul class="messages"></ul>
+
+					<!-- input -->
+					<div class="bottom_wrapper">
+						<input id="msg_input" placeholder="Escribe aquí" />
+                        <div id="send" class="app_button_1">Enviar</div>
+					</div>
+
+				</div>
+
+			</div>
+		</div>
+
+	</div>
+
+{% endblock %}

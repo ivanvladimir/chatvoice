@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block script %}
+	<script type="text/javascript" charset="utf-8">
+        var speech_avialable=true;
+        var tts_avialable=true;
+        var total_conversations=TOTAL_CONVERSATIONS;
+        $(document).ready(function(){
+            namespace = '/cv';
+            var socket = io.connect('http://' + document.domain + ':' + location.port + namespace);
+            socket.emit('get_state',{'sid':socket.sid});
+            socket.on('state log', function(data) {
+                console.log('state_log',data)
+                for (let num = 0; num < total_conversations; num++) {
+                    if(!data.tts_avialable){
+                        $('#tts'+num)[0].prop('disabled',true);
+                    }
+                };
+                for (let num = 0; num < total_conversations; num++) {
+                    if(!data.speech_avialable){
+                        $('#asr'+num)[0].prop('disabled',true);
+                    }
+                }
+            });
+        });
+
+        function set_asr(num){
+            if($('#asr'+num)[0].checked){
+                var url = $('#href'+num).attr('href');
+                if(url.includes('?')){
+                    $('#href'+num).attr('href',url+'&asr=true');
+                }else{
+                    $('#href'+num).attr('href',url+'?asr=true');
+                }
+            }else{
+                var url = $('#href'+num).attr('href');
+                if(url.includes('?asr=true&')){
+                    $('#href'+num).attr('href',url.replace('?asr=true&','?'));
+                }else if(url.includes('?asr=true')){
+                    $('#href'+num).attr('href',url.replace('?asr=true',''));
+                }else{
+                    $('#href'+num).attr('href',url.replace('&asr=true',''));
+                }
+            }
+        };
+        function set_tts(num){
+            var val = $('input[name=tts'+num+"]:checked").val();
+            var url = $('#href'+num).attr('href');
+            $('#href'+num).attr('href',url.replace('?tts=google&','?').replace('&tts=local&','?').replace('&tts=local','').replace('&tts=google','').replace('?tts=local','').replace('?tts=google',''));
+            if(val!='no'){
+                var url = $('#href'+num).attr('href');
+                $('#href'+num).attr('href',url.replace('&tts=local','').replace('&tts=google','').replace('?tts=google&','?').replace('&tts=local&','?'));
+                if(url.includes('?')){
+                    $('#href'+num).attr('href',url+'&tts='+val);
+                }else{
+                    $('#href'+num).attr('href',url+'?tts='+val);
+                }
+            }
+        };
+
+    </script>
+{% endblock %}
+
+{% block content %}
+
+<h1>I'm here</h1>
+
+{% endblock %}
