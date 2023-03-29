@@ -111,7 +111,10 @@ def create_app():
             self.connections.append(websocket)
 
         def disconnect(self, websocket: WebSocket):
-            self.connections.remove(websocket)
+            try:
+                self.connections.remove(websocket)
+            except ValueError:
+                pass
 
         async def send_personal_message(self, message: str, websocket: WebSocket):
             await websocket.send_text(message)
@@ -154,8 +157,8 @@ def create_app():
             try:
                 c2 = CONVERSATIONS[client_id]
                 c2.EXIT_()
-                del CONVERSATIONS[client_id]
-                manager.disconnect(websocket)
+                CONVERSATIONS.pop(client_id)
+                manager.disconnect(c2)
             except KeyError:
                 pass
             try:

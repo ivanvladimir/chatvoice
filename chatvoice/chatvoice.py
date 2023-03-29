@@ -10,6 +10,7 @@ import faulthandler
 faulthandler.enable(all_threads=True)
 from click_option_group import optgroup
 import rich_click as click
+from rich import print
 import sys
 import configparser
 import os.path
@@ -40,10 +41,12 @@ def chatvoice(
         config.read(config_filename)
     else:
         print(f"[red]Error no config file '{config_file}'[/red]")
+        sys.exit()
     if config_section in config:
         section = config_section
     else:
-        print(f"[red]Error no section '{config_section}' present in '{config_file}'[/red]")
+        print(f"[red]Error no section '{config_section}' present in '{config_filename}'[/red]")
+        sys.exit()
     CONFIG_SECTION = section
     ctx.obj["config"] = config
     ctx.obj["config_section"] = section
