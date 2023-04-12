@@ -22,7 +22,7 @@ strategies:
         - say NAME
         - input name
         - remember name
-        - say 'mucho gusto en conocerte {name}'
+        - say 'mucho gusto en conocerte {}'.format(name)
     intro:
         - say INTRO
         - input knows_health

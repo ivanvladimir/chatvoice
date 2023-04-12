@@ -1,0 +1,32 @@
+# Conversation example for simple hello and ask a name
+# Creado por Karim Acosta, Ivan Meza
+settings:
+    system_name: "[blue]ChatGPT[/blue]"
+    system_name_html: "<span style='color:blue'>ChatGPT</span>"
+    user_name: "[aquamarine1]User[/aquamarine1]"
+    user_name_html: "<span style='color:blue'>User</span>"
+
+slots:
+    - name
+
+url_apis:
+  chatgpt: "http://0.0.0.0:8000/chatgpt/"
+
+strategies:
+    name:
+        - say "¿cúal es tu nombre?"
+        - input name
+        - remember name
+        - say "mucho gusto en conocerte"
+    chatgpt:
+        - say "¿qué quieres preguntar al ChatGPT?"
+        - input msg
+        - if msg=="exit" then stop
+        - post chatgpt answer "prompt":msg response
+        - say "esto me respondio la API"
+        - say response['response']
+
+script:
+    - solve name
+    - set_slot msg "hola"
+    - while msg!="exit" then solve chatgpt
