@@ -21,12 +21,12 @@ KNOWNS_HEALTH:
     SLOT: knows_health
     CASES:
         - VALS:
-            - sí
+            - True
           MSGS:
             - MSG:
                - TEXT: "La salud mental es un concepto muy amplio y abarca una serie de indicadores que es importante conocer para cuidarse y cuidar a los demás"
         - VALS:
-            - no
+            - False
           MSGS:
             - MSG: 
                 - TEXT: "No te preocupes, la mayoría de las personas no conoce lo que es la salud mental y esto hace que no nos cuidemos."
@@ -54,6 +54,7 @@ A1:
 Q2:
     - MSG:
         - TEXT: "El 25% de las personas de Latinoamérica y el Caribe se verán afectadas directa o indirectamente por los trastornos mentales alguna vez en su vida ¿Cierto o Falso?"
+
 A2:
     SLOT: a2
     CASES:
@@ -61,15 +62,143 @@ A2:
             - cierto
           MSGS:
             - MSG:
-                TEXT: "Correcto, esto se debe a diferentes determinantes sociodemográficos, económicos, medioambientales, sociales y culturales que se relacionan con la salud mental y que pueden incrementar la probabilidad de desarrollar un padecimiento de salud menal "
+              - TEXT: "Correcto, esto se debe a diferentes determinantes sociodemográficos, económicos, medioambientales, sociales y culturales que se relacionan con la salud mental y que pueden incrementar la probabilidad de desarrollar un padecimiento de salud menal "
         - VALS:
             - falso
           MSGS:
-            - MSG: 
-                - TEXT: "La respuesta es Cierto esto se debe a diferentes determinantes sociodemográficos, económicos, medioambientales, sociales y culturales que se relacionan con la salud mental y que pueden incrementar la probabilidad de desarrollar un padecimiento de salud menal "
+            - MSG:
+                - TEXT: "La respuesta es Cierto esto se debe a diferentes determinantes sociodemográficos, económicos, medioambientales, sociales y culturales que se relacionan con la salud mental y que pueden incrementar la probabilidad de desarrollar un padecimiento de salud menal"
+
 RES_CONT1:
     - MSG: 
-        - TEXT: "De acuerdo a la OMS, la  salud mental no solo es la ausenncia de un trastorno mental, va mucho más allá ya que es la capacidad de poder enfrentar el estrés cotidiano del dia a dia, contribuir a nuestra comunidad y sentirnos capaces de realizar las cosas."
+        - TEXT: |
+            De acuerdo a la OMS, la  salud mental no solo es la ausenncia de un trastorno mental, va mucho más allá ya que es la capacidad de poder enfrentar el estrés cotidiano del dia a dia, contribuir a nuestra comunidad y sentirnos capaces de realizar las cosas.
+MITOS:
+  - MSG:
+    - TEXT: | 
+        Probablemente hay mucha información que no conocías y es probable que en algún lugar hayas escuchado algún mito relacionado con al salud mental, nos gustaría saber ¿Qué mitos conoces la salud mental?
+    
+        1. Las personas con un problema de salud mental son poco inteligentes
+        2. La salud mental solo se cuida sí tienes una condición de salud mental
+        3. No se puede hacer nada para evitar que las personas desarrollen una condición de salud mental
+        4. Las personas que tienen algua condición de salud mental estan locas
+        5. Las problemas de salud mental son señal de débilidad y sí las personas fueran más fuertes no tendrían ese problema.
+        6. Ninguno
 
+        ¿De qué mito te gustaría saber?
+
+CIERTOFALSO:
+    - MSG:
+      - TEXT: "Muy bien, veamos ¿crees que este mito es cierto o falso?"
+
+MITO1:
+  SLOT: c
+  CASES:
+    - VALS:
+        - cierto
+      MSGS:
+        - MSG:
+            - TEXT: "Así es, al igual que las enfermedades físicas pueden afectar a cualquier persona, independientemente de su inteligencia, condición economica o educativa."
+    - VALS:
+        - falso
+      MSGS:
+        - MSG:
+          - TEXT: "La verdad es que al igual que las enfermedades físicas pueden afectar a cualquier persona, independientemente de su inteligencia, condición economica o educativa."
+
+MITO2:
+  SLOT: c
+  CASES:
+    - VALS:
+        - cierto
+      MSGS:
+        - MSG:
+          - TEXT: "No necesariamente, ya que sí tomamos medidas para cuidar nuestra salud metal, además de beneficiarnos reduce el riesgo de desarrollar una condición de salud mental"
+    - VALS:
+        - falso
+      MSGS:
+        - MSG:
+          - TEXT: "Exacto, sí tomamos medidas para cuidar nuestra salud metal, además de beneficiarnos reduce el riesgo de desarrollar una condición de salud mental"
+
+MITO3:
+  SLOT: c
+  CASES:
+    - VALS:
+        - cierto
+      MSGS:
+        - MSG:
+          - TEXT: "Sí bien, son muchos factores los que inflyen en el desarrollo de una condición de salud mental. Pero, sí fortalecemos ciertas hábilidades puede proveer a las persnas de contar con más factores protectores que factores de riesgos" 
+    - VALS:
+        - falso
+      MSGS:
+        - MSG:
+          - TEXT: "La realidad es que son muchos factores los que inflyen en el desarrollo de una condición de salud mental. Pero, sí fortalecemos ciertas hábilidades puede proveer a las persnas de contar con más factores protectores que factores de riesgo"
+
+MITO4:
+  SLOT: c
+  CASES:
+    - VALS:
+        - cierto
+      MSGS:
+        - MSG:
+          - TEXT: "La verdad es que no, ya que sí una persona presenta alguna condición de salud mental no significa que automaticamente tenga que ser etiquetada, ya que eso contribuye a generar mayor estigma sobre las capacidades que tiene dichas personas. " 
+    - VALS:
+        - falso
+      MSGS:
+        - MSG:
+          - TEXT: "Correcto, sí una persona presenta alguna condición de salud mental no significa que automaticamente tenga que ser etiquetada, ya que eso contribuye a generar mayor estigma sobre las capacidades que tiene dichas personas. "
+
+MITO5:
+  SLOT: c
+  CASES:
+    - VALS:
+        - cierto
+      MSGS:
+        - MSG:
+          - TEXT: "Una condición de salud mental no tiene que ver con ser débil o fuerte, sino con una gran variedad de distintos factores, ya que cualquier pesona puede desarrollar una condición de salud mental. "
+
+    - VALS:
+        - falso
+      MSGS:
+        - MSG:
+          - TEXT: "Exacto, una condición de salud mental no tiene que ver con ser débil o fuerte, sino con una gran variedad de distintos factores, ya que cualquier pesona puede desarrollar una condición de salud mental. "
+
+ESTIGMAINI:
+    - MSG:
+        - TEXT: "Gracias por interacturar conmigo y por la disposición para conocer más sobre la salud mental. Seguro te preguntarás ¿por qué es que existen muchos mitos en relación a este tema? Bueno, la razón de debe a que existe mucho estigma en relación a la slaud mental"
+        - TEXT: "¿Sabes qué es el estigma? "
+
+ESTIGMAQ1:
+  SLOT: eq1
+  CASES:
+    - VALS:
+        - True
+      MSGS:
+        - MSG:
+          - TEXT: 'Esto que comentas es importante. La palabra proviene del latín \"stigma\"y del griego \"στίγμα\" (stigma) que hacen referencia a una marca en la piel que se cortaba o se realizaba mediante una quemadura con fuego a las personas que se querían identificar como personas manchadas o moralmente contaminadas y que debían rechazarse o evitarse.'
+    - VALS:
+        - False
+      MSGS:
+        - MSG:
+          - TEXT: 'Esta palabra proviene del latín \"stigma\"y del griego \"στίγμα\" (stigma) que hacen referencia a una marca en la piel que se cortaba o se realizaba mediante una quemadura con fuego a las personas que se querían identificar como personas manchadas o moralmente contaminadas y que debían rechazarse o evitarse.'
+
+VIDEOSQ:
+    - MSG:
+      - TEXT: "Aquí tengo una serie de testimonios que te pueden ayudar a conocer las afectaciones que genera el estigma en las personas con algun problema de salud mental ¿Te gustaría verlos?"
+
+VIDEOSN:
+    - MSG:
+      - TEXT: "¿Quieres ver el siguiente video?"
+
+ESTIGMAQ2:
+    - MSG:
+      - TEXT: "Me gustaría que me compartieras ¿Qué piesas de lo que acabas de ver?"
+
+ESTIGMAQ3:
+    - MSG:
+      - TEXT: "¿Qué se te ocurre que tu puedes hacer para ayudar a disminuir el estigma que existe en relación a la salud mental?"
+
+ESTIGMAQ4:
+    - MSG:
+      - TEXT: "¿Has sentido alguna vez que te han estigmatizado por una condición en tu salud?"
 
 

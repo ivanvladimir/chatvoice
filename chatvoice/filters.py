@@ -19,7 +19,6 @@ def yesno(self, msg, *args):
 def number(self, msg, *args):
     m = re_number.search(msg)
     if m:
-        print("N", m.group(0))
         return float(m.group(0))
     else:
         return "UNK"
@@ -60,7 +59,6 @@ def regex(self, msg, *args):
                             res["values"] = [m.group(num)]
                 except ValueError:
                     if len(exps) == 1:
-                        print(args[1])
                         res = m.group(args[1])
                         break
                     else:
