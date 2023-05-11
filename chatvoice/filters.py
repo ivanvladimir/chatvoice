@@ -8,6 +8,18 @@ import os.path
 
 re_number = re.compile(r"[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?")
 
+numbers={
+        'uno': 1,
+        'dos': 2,
+        'tres': 3,
+        'cuatro': 4,
+        'cinco': 5,
+        'seis': 6,
+        'siete': 7,
+        'ocho': 8,
+        'nueve': 9,
+        'diez': 10
+        }
 
 def yesno(self, msg, *args):
     if msg in ["si", "sí"]:
@@ -17,12 +29,14 @@ def yesno(self, msg, *args):
 
 
 def number(self, msg, *args):
+    msg=msg.strip()
     m = re_number.search(msg)
     if m:
         return float(m.group(0))
     else:
+        if msg in numbers:
+            return numbers[msg]
         return "UNK"
-
 
 def regex(self, msg, *args):
     if len(args) == 0:
