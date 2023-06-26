@@ -18,7 +18,7 @@ import os.path
 # local imports
 from .conversation import Conversation
 from .config import set_config, get_config
-from .audio import audio_close, audio_devices, list_voices
+#from .audio import audio_close, audio_devices, list_voices
 
 # Main service
 config = configparser.ConfigParser()

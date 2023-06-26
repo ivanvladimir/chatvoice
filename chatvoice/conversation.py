@@ -34,16 +34,16 @@ import requests
 # TODO make a better system for filters
 from .filters import *
 from .escaped_commands import *
-from .audio import (
-    pull_latest,
-    sr_google,
-    audio_state,
-    start_listening,
-    stop_listening,
-    enable_tts,
-    enable_audio_listening,
-    tts,
-)
+#from .audio import (
+#    pull_latest,
+#    sr_google,
+#    audio_state,
+#    start_listening,
+#    stop_listening,
+#    enable_tts,
+#    enable_audio_listening,
+#    tts,
+#)
 
 re_conditional_else = re.compile(
     r"if (?P<conditional>.*) then (?P<cmd>(?:solve|say|input|loop_slots|stop|exit|post|get|put).*) else (?P<else_cmd>(?:solve|say|input|loop_slots|stop|exit|post|get|put).*)"
