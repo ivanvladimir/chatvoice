@@ -11,4 +11,4 @@ services:
         - "/etc/timezone:/etc/timezone:ro"
         - "/etc/localtime:/etc/localtime:ro"
     command:
-        chatvoice --config-section mar server /conversations --port 5000
+        chatvoice --config-section mar server /conversations --port 5000 --use_hypercorn

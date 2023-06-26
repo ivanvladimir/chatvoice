@@ -641,14 +641,15 @@ class Conversation:
 
     def EXIT_(self):
         return 0
+        line = line.strip()
 
     def empty_slot_(self, line):
         self.slots[line] = None
 
     def execute_line_(self, line):
-        line = line.strip()
         self.verbose("Command", line)
         self.log.debug(f'command: {line}')
+        line = line.strip()
         #if self.slots:
         #    self.log.info(
         #        "SLOTS:"+", ".join(["{}:{}".format(x, y) for x, y in self.slots.items()]),
