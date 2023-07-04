@@ -4,6 +4,7 @@ from typing_extensions import Annotated
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.encoders import jsonable_encoder
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from typing import Dict, Any
 import time
@@ -177,8 +178,12 @@ def create_app():
                 )
 
             @app.post(prefix_url+"execute/{name}/{uniqueID}", response_class=HTMLResponse)
-            async def execute(uniqueId: str, username: Annotated[str, Form()], gender: Annotated[str, Form()], db: sqlite3.Connection = Depends(get_db_connection)):
+            async def execute(uniqueId: str, request: Request, db: sqlite3.Connection = Depends(get_db_connection)):
+            #async def execute(uniqueId: str, username: Annotated[str, Form()], gender: Annotated[str, Form()], db: sqlite3.Connection = Depends(get_db_connection)):
                 start_time = time.time()
+                da = await request.form()
+                da = jsonable_encoder(da)
+                print(da)
                 return templates.TemplateResponse(
                     "conversation.html",
                     {
@@ -225,8 +230,12 @@ def create_app():
                 )
 
             @app.post(prefix_url+f"{config.get('entry_point')}"+"/{uniqueId}", response_class=HTMLResponse)
-            async def execute(uniqueId:str, username: Annotated[str, Form()], gender: Annotated[str, Form()], request: Request, db: sqlite3.Connection = Depends(get_db_connection)):
+            async def execute(uniqueId: str, request: Request, db: sqlite3.Connection = Depends(get_db_connection)):
+            #async def execute(uniqueId: str, username: Annotated[str, Form()], gender: Annotated[str, Form()], db: sqlite3.Connection = Depends(get_db_connection)):
                 start_time = time.time()
+                da = await request.form()
+                da = jsonable_encoder(da)
+                print(da)
                 return templates.TemplateResponse(
                     "conversation.html",
                     {
@@ -237,7 +246,7 @@ def create_app():
                         "protocol": protocol_ws,
                         "server":server_ws,
                         "port":port_ws,
-                        "user":username,
+                        "user":da['username'],
                     },
                 )
 
