@@ -412,12 +412,13 @@ class Conversation:
         else:
             # TODO: change this for a selector that can take weigths
             res=random.choice(t)
-        res=[f'"""{m["TEXT"].strip()}"""' if '\n' in m['TEXT'] else f'"{m["TEXT"].strip()}"' for m in res['MSG']]
+        res=[f'f"""{m["TEXT"].strip()}"""' if '\n' in m['TEXT'] else f'f"{m["TEXT"].strip()}"' for m in res['MSG']]
         return res
 
     def say_(self, cmd):
         """Say command"""
         result=[]
+        print(self.slots)
         if isinstance(cmd,tuple):
             for c in cmd:
                 if c in self.templates:

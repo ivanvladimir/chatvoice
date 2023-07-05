@@ -107,7 +107,6 @@ def create_app():
                         "protocol": protocol_ws,
                         "server":server_ws,
                         "port":port_ws,
-                        "user": None
                     },
                 )
         else:
@@ -120,7 +119,6 @@ def create_app():
                         "request": request,
                         "chat_name": name,
                         "elapsed_time": elapsed_time(start_time),
-                        "user": generate_unique_id(),
                     },
                 )
 
@@ -139,7 +137,6 @@ def create_app():
                         "protocol": protocol_ws,
                         "server":server_ws,
                         "port":port_ws,
-                        "user": user
                     },
                 )
 
@@ -158,7 +155,6 @@ def create_app():
                         "protocol": protocol_ws,
                         "server":server_ws,
                         "port":port_ws,
-                        "user":None
                     },
                 )
         else:
@@ -195,9 +191,9 @@ def create_app():
                         "elapsed_time": elapsed_time(start_time),
                         "prefix": prefix_ws,
                         "protocol": protocol_ws,
-                        "server":server_ws,
-                        "port":port_ws,
-                        "user":da['username'],
+                        "server": server_ws,
+                        "port": port_ws,
+                        "data": da
                     },
                 )
 
@@ -234,6 +230,7 @@ def create_app():
                 data_ = await websocket.receive_text()
                 data = json.loads(data_)
                 if data["cmd"] == "start":
+                    preferences=data['data']
                     conversation = CONVERSATIONS.get(client_id, None)
                     if conversation is None:
                         conversation = create_new_conversation(
@@ -242,17 +239,24 @@ def create_app():
                         conversation.set_webclient_sid(client_id)
                         CONVERSATIONS[client_id] = conversation
                         conversation.start()
+                    # Initializating slots for conversation
+                    for k,v in preferences.items():
+                        conversation.slots[k]=v
+                    continue
                 if data["cmd"] == "say":
                     client_id = data["client_id"]
                     w2 = CLIENTS[client_id]
                     await w2.send_text(data_)
+                    continue
                 if data["cmd"] == "activate input":
                     client_id = data["client_id"]
                     w2 = CLIENTS[client_id]
                     await w2.send_text(data_)
+                    continue
                 if data["cmd"] == "input completed":
                     conversation = CONVERSATIONS.get(client_id, None)
                     conversation.input = data["msg"]
+                    continue
         except WebSocketDisconnect:
             try:
                 c2 = CONVERSATIONS[client_id]
