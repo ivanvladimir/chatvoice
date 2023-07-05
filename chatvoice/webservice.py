@@ -7,17 +7,27 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.encoders import jsonable_encoder
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from typing import Dict, Any
+
+from sqlalchemy.orm import Session
+
 import time
+import datetime
 import os
 import json
 from .conversation import Conversation
 import uuid
 import sqlite3
 
+
 def create_app():
     from .config import get_config
+    from . import crud, models, schemas
+    from .database import SessionLocal, engine
+
+    models.Base.metadata.create_all(bind=engine)
 
     config = dict(get_config())
+
     prefix_url=config.get('prefix_url','/')
     prefix_ws=config.get('prefix_ws','/ws/')
     host=config.get('host','0.0.0.0')
@@ -26,7 +36,6 @@ def create_app():
     protocol_ws=config.get('protocol_ws','ws')
     server_ws=config.get('server_ws','0.0.0.0')
     login=config.get('login',False)
-    DB=config.get("db",None)
     app = FastAPI()
     app.mount(prefix_url+"static", StaticFiles(directory=config.get("static","static")), name="static")
     templates = Jinja2Templates(directory=config.get("templates","templates"))
@@ -34,50 +43,14 @@ def create_app():
     CONVERSATIONS = {}
     CLIENTS = {}
 
-    def get_db_connection() -> sqlite3.Connection:
-        # Open the SQLite database connection
-        conn = sqlite3.connect(db_filename)
 
-        # Configure SQLite to enforce foreign key constraints
-        conn.execute("PRAGMA foreign_keys = ON")
-
+    # Dependency
+    def get_db():
+        db = SessionLocal()
         try:
-            # Provide the connection to the dependent functions
-            yield conn
+            yield db
         finally:
-            # Close the connection after the request is complete
-            conn.close()
-
-    if login and (chat := config.get('entry_point',None)):
-        db_filename=os.path.join(
-                config.get("conversations_dir", "conversations"),
-                chat,
-                f"{chat}.db"
-                )
-    else:
-        db_filename=os.path.join(
-                config.get("conversations_dir", "conversations"),
-                chat,
-                f"conversations.db"
-                )
-    if login:
-        # Open the SQLite database connection
-        conn = sqlite3.connect(db_filename)
-
-        # Configure SQLite to enforce foreign key constraints
-        conn.execute("PRAGMA foreign_keys = ON")
-
-        create_table_query = '''CREATE TABLE IF NOT EXISTS identifiers (
-            id INTEGER PRIMARY KEY,
-            identifier TEXT NOT NULL UNIQUE
-            )'''
-        conn.cursor().execute(create_table_query)
-
-    def generate_unique_id():
-        unique_id = uuid.uuid4()
-        id_str = str(unique_id).replace("-", "")  # Remove hyphens
-        truncated_id = id_str[:12]  # Truncate to 12 characters
-        return truncated_id
+            db.close()
 
     def create_new_conversation(chat, client_id):
         import threading
@@ -95,31 +68,6 @@ def create_app():
         conversation.set_idd(client_id)
         # audio.enable_server(client)
         return conversation
-
-    def check_exists_user(conn, identifier):
-        # Create a cursor object to execute SQL queries
-        cursor = conn.cursor()
-
-        # Check if the identifier exists
-        select_query = "SELECT COUNT(*) FROM identifiers WHERE identifier = ?"
-        cursor.execute(select_query, (identifier,))
-        count = cursor.fetchone()[0]
-        return count > 0
-
-    def add_user(conn, identifier):
-        # Create a cursor object to execute SQL queries
-        cursor = conn.cursor()
-
-        try:
-            # Insert the identifier into the table
-            insert_query = "INSERT INTO identifiers (identifier) VALUES (?)"
-            cursor.execute(insert_query, (identifier,))
-
-            # Commit the changes to the database
-            conn.commit()
-        except sqlite3.IntegrityError:
-            print(f"An error occurred while saving the identifier.")
-
 
     ## Main page
     if config.get('index','True')=='True':
@@ -164,8 +112,7 @@ def create_app():
                 )
         else:
             @app.get(prefix_url+"execute/{name}", response_class=HTMLResponse)
-
-            async def login(name: str, request: Request, db: sqlite3.Connection = Depends(get_db_connection) ):
+            async def login(name: str, request: Request, db: Session = Depends(get_db)):
                 start_time = time.time()
                 return templates.TemplateResponse(
                     "login.html",
@@ -178,8 +125,7 @@ def create_app():
                 )
 
             @app.post(prefix_url+"execute/{name}/{uniqueID}", response_class=HTMLResponse)
-            async def execute(uniqueId: str, request: Request, db: sqlite3.Connection = Depends(get_db_connection)):
-            #async def execute(uniqueId: str, username: Annotated[str, Form()], gender: Annotated[str, Form()], db: sqlite3.Connection = Depends(get_db_connection)):
+            async def execute(uniqueId: int, request: Request, db: Session = Depends(get_db)):
                 start_time = time.time()
                 da = await request.form()
                 da = jsonable_encoder(da)
@@ -217,7 +163,7 @@ def create_app():
                 )
         else:
             @app.get(prefix_url+f"{config.get('entry_point')}", response_class=HTMLResponse)
-            async def login( request: Request, db: sqlite3.Connection = Depends(get_db_connection)):
+            async def login( request: Request, db: Session = Depends(get_db)):
                 start_time = time.time()
                 return templates.TemplateResponse(
                     "login.html",
@@ -225,17 +171,22 @@ def create_app():
                         "request": request,
                         "chat_name": config.get('entry_point'),
                         "elapsed_time": elapsed_time(start_time),
-                        "user": generate_unique_id(),
                     },
                 )
 
             @app.post(prefix_url+f"{config.get('entry_point')}"+"/{uniqueId}", response_class=HTMLResponse)
-            async def execute(uniqueId: str, request: Request, db: sqlite3.Connection = Depends(get_db_connection)):
-            #async def execute(uniqueId: str, username: Annotated[str, Form()], gender: Annotated[str, Form()], db: sqlite3.Connection = Depends(get_db_connection)):
+            async def execute(uniqueId: int, request: Request, db: Session = Depends(get_db)):
                 start_time = time.time()
                 da = await request.form()
                 da = jsonable_encoder(da)
-                print(da)
+                user=crud.get_user_by_identifier(db,uniqueId)
+                if not user:
+                    user=schemas.UserCreate(identifier=uniqueId,data=json.dumps(da))
+                    crud.create_user(db,user)
+                else:
+                    user.data=json.dumps(da)
+                    db.commit()
+
                 return templates.TemplateResponse(
                     "conversation.html",
                     {

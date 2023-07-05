@@ -22,6 +22,7 @@ setuptools.setup(
         'requests',
         'pyyaml',
         'tinydb',
+        'sqlalchemy',
         'rich',
         'click',
         'rich-click',
