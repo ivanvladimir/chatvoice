@@ -188,6 +188,10 @@ class Conversation:
 
     def stop(self):
         if self.client:
+            data = {
+                "webclient_sid": self.webclient_sid,
+            }
+            self.client.emit("finish", data, namespace=self.prefix_ws)
             pass
             # self.client.emit('finished',{'webclient_sid':self.webclient_sid,'idd':self.idd},namespace="/cv")
         if self.thread:

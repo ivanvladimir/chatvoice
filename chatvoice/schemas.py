@@ -3,7 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 class UserBase(BaseModel):
-    identifier: str
+    identifier: int
 
 class UserCreate(UserBase):
     data: str
@@ -15,4 +15,4 @@ class User(UserBase):
     time_updated: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
