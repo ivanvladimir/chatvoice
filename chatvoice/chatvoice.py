@@ -350,7 +350,5 @@ def server(ctx, conversations_dir, **args):
         config.websocket_ping_interval = None
         trio.run(serve,create_app(), config)
 
-
-
 if __name__ == "__main__":
     chatvoice(obj={})

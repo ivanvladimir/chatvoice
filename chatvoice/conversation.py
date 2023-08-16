@@ -187,15 +187,16 @@ class Conversation:
             self.thread.start()
 
     def stop(self):
-        if self.client:
+        if self.conversation_id:
             data = {
-                "webclient_sid": self.webclient_sid,
+                    "cmd": "finish",
+                    "client_id": self.client_id,
             }
-            self.client.emit("finish", data, namespace=self.prefix_ws)
-            pass
-            # self.client.emit('finished',{'webclient_sid':self.webclient_sid,'idd':self.idd},namespace="/cv")
+            self.client.send(json.dumps(data))
+            time.sleep(0.8)
+            # self.client.emit('finished',{'idd':self.idd},namespace="/cv")
         if self.thread:
-            sys.exit()
+            pass#sys.exit()
 
     def pause(self):
         self.pause = True
@@ -742,6 +743,8 @@ class Conversation:
             )
         self.current_context = self
         self.execute_(self.script)
-        if self.client:
-            self.log.debug("Dialogue exited")
+        if self.conversation_id:
+            self.log.info("Stoping client")
             self.stop()
+            self.log.info("Client stopped")
+        self.log.info("Dialogue finished")

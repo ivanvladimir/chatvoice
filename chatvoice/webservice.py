@@ -144,7 +144,6 @@ def create_app():
                 start_time = time.time()
                 da = await request.form()
                 da = jsonable_encoder(da)
-                print(da)
                 return templates.TemplateResponse(
                     "conversation.html",
                     {
@@ -261,6 +260,11 @@ def create_app():
                         conversation.slots[k]=v
                     continue
                 if data["cmd"] == "say":
+                    client_id = data["client_id"]
+                    w2 = CLIENTS[client_id]
+                    await w2.send_text(data_)
+                    continue
+                if data["cmd"] == "finish":
                     client_id = data["client_id"]
                     w2 = CLIENTS[client_id]
                     await w2.send_text(data_)
