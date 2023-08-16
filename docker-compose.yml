@@ -18,7 +18,7 @@ services:
     ports:
       - "5100:5000"
     volumes:
-        - "./apis:/apis:ro"
+        - "./apis:/apis"
         - "/etc/timezone:/etc/timezone:ro"
         - "/etc/localtime:/etc/localtime:ro"
     command:

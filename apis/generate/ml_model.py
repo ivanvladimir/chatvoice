@@ -1,4 +1,6 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
+import os
+os.environ['TRANSFORMERS_CACHE'] = '/apis/.cache/models'
 
 model = None
 
@@ -8,8 +10,8 @@ def init_transformer(model_name, tokenizer=None):
     if tokenizer is None:
         tokenizer = model_name
 
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer)
-    model__ = AutoModelForCausalLM.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer, cache_dir="/apis/.cache/models")
+    model__ = AutoModelForCausalLM.from_pretrained(model_name, cache_dir="/apis/.cache/models")
 
     generator = pipeline("text-generation", model=model__, tokenizer=tokenizer)
     model = generator
