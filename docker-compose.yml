@@ -13,7 +13,7 @@ services:
     command:
         chatvoice --config-section mar server /conversations --port 5000 --use_hypercorn
 
-  api_generate:
+  api_zeroshot:
     build: apis/
     ports:
       - "5100:5000"
