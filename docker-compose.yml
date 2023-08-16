@@ -16,10 +16,12 @@ services:
   api_zeroshot:
     build: apis/
     ports:
-      - "5100:5000"
+      - "5100:5100"
     volumes:
         - "./apis:/apis"
         - "/etc/timezone:/etc/timezone:ro"
         - "/etc/localtime:/etc/localtime:ro"
+    working_dir:
+      /apis/zeroshot
     command:
-      uvicorn api:create_app --port 5000
+      uvicorn --env-file /apis/zeroshot/env.selectra_medium_docker api:create_app --port 5100 --host 0.0.0.0

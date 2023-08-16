@@ -1,7 +1,7 @@
 # Main webservice
 from fastapi import FastAPI, Request, Depends, Form
 from typing_extensions import Annotated
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.encoders import jsonable_encoder
@@ -10,6 +10,7 @@ from typing import Dict, Any
 
 from sqlalchemy.orm import Session
 
+import arrow
 import time
 import datetime
 import os
@@ -18,11 +19,13 @@ from .conversation import Conversation
 import uuid
 import sqlite3
 
-
 def create_app():
     from .config import get_config
     from . import crud, models, schemas
     from .database import SessionLocal, engine
+    START_TIME = arrow.utcnow()
+    STATUS = "active"
+    NAME = "chatvoice"
 
     models.Base.metadata.create_all(bind=engine)
 
@@ -42,7 +45,6 @@ def create_app():
     elapsed_time = lambda s: f"{time.time() - s:0.2}s"
     CONVERSATIONS = {}
     CLIENTS = {}
-
 
     # Dependency
     def get_db():
@@ -68,6 +70,21 @@ def create_app():
         conversation.set_idd(client_id)
         # audio.enable_server(client)
         return conversation
+
+    ## Status page
+    @app.get(prefix_url+"status", response_class=JSONResponse)
+    async def status(request: Request):
+        """Prints status of API"""
+        start_time = time.time()
+        diff = arrow.utcnow() - START_TIME
+        days = diff.days
+        hours, remainder = divmod(diff.seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        return JSONResponse(content={
+            "NAME": NAME,
+            "status": STATUS,
+            "uptime": f"Elapsed Time: {days} Days, {hours} Hours, {minutes} Minutes, {seconds} Seconds.",
+        })
 
     ## Main page
     if config.get('index','True')=='True':

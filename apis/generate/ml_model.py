@@ -1,6 +1,4 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
-import os
-os.environ['TRANSFORMERS_CACHE'] = '/apis/.cache/models'
 
 model = None
 

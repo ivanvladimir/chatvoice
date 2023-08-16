@@ -19,4 +19,4 @@ COPY . /apis
 
 RUN pip install -r requirements.txt
 
-WORKDIR /apis/zeroshot
+WORKDIR /apis/

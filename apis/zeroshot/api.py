@@ -63,6 +63,8 @@ def create_app(test_config=None):
 
     settings = get_settings()
 
+    if settings.TRANSFORMERS_CACHE:
+        os.environ['TRANSFORMERS_CACHE'] = settings.TRANSFORMERS_CACHE
     model_ = init_transformer(settings.API_ZEROSHOT_MODEL_NAME)
 
     app = FastAPI()
