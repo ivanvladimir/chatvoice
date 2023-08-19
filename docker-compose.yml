@@ -5,13 +5,13 @@ services:
     ports:
       - "5000:5000"
     volumes:
-        - "./conversations:/conversations:rw"
+        - "./conversations:/chatvoice/conversations:rw"
         - "./config.ini:/chatvoice/config.ini:ro"
         - "./chatvoice:/chatvoice/chatvoice:ro"
         - "/etc/timezone:/etc/timezone:ro"
         - "/etc/localtime:/etc/localtime:ro"
     command:
-        chatvoice --config-section mar server /conversations --port 5000 --use_hypercorn
+        chatvoice --config-section mar2 server conversations/ --port 5000 
 
   api_zeroshot:
     build: apis/

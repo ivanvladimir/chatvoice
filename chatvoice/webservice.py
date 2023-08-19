@@ -4,6 +4,7 @@ from typing_extensions import Annotated
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.encoders import jsonable_encoder
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from typing import Dict, Any
@@ -40,6 +41,8 @@ def create_app():
     server_ws=config.get('server_ws','0.0.0.0')
     login=config.get('login',False)
     app = FastAPI()
+    # To force HTTPS but only in original
+    # app.add_middleware(HTTPSRedirectMiddleware)
     app.mount(prefix_url+"static", StaticFiles(directory=config.get("static","static")), name="static")
     templates = Jinja2Templates(directory=config.get("templates","templates"))
     elapsed_time = lambda s: f"{time.time() - s:0.2}s"
@@ -54,7 +57,7 @@ def create_app():
         finally:
             db.close()
 
-    def create_new_conversation(chat, client_id):
+    def create_new_conversation(chat, client_id, preferences):
         import threading
 
         config = dict(get_config())
@@ -63,8 +66,13 @@ def create_app():
                 config.get("conversations_dir", "conversations"), chat, "main.yaml"
             ),
             client_id=client_id,
+
             **config,
         )
+        # Initializating slots for conversation
+        for k,v in preferences.items():
+            conversation.slots[k]=v
+
         t = threading.Thread(target=conversation.execute)
         conversation.set_thread(t)
         conversation.set_idd(client_id)
@@ -81,8 +89,10 @@ def create_app():
         hours, remainder = divmod(diff.seconds, 3600)
         minutes, seconds = divmod(remainder, 60)
         return JSONResponse(content={
-            "NAME": NAME,
+            "name": NAME,
             "status": STATUS,
+            "num. clients": len(CLIENTS),
+            "num. conversations": len(CONVERSATIONS),
             "uptime": f"Elapsed Time: {days} Days, {hours} Hours, {minutes} Minutes, {seconds} Seconds.",
         })
 
@@ -216,17 +226,21 @@ def create_app():
     ## Websocket
     class ConnectionManager:
         def __init__(self):
-            self.connections: List[WebSocket] = []
+            self.active_connections: list[WebSocket] = []
 
         async def connect(self, websocket: WebSocket):
             await websocket.accept()
-            self.connections.append(websocket)
+            self.active_connections.append(websocket)
 
         def disconnect(self, websocket: WebSocket):
-            try:
-                self.connections.remove(websocket)
-            except ValueError:
-                pass
+            self.active_connections.remove(websocket)
+
+        async def send_personal_message(self, message: str, websocket: WebSocket):
+            await websocket.send_text(message)
+
+        async def broadcast(self, message: str):
+            for connection in self.active_connections:
+                await connection.send_text(message)
 
         async def send_personal_message(self, message: str, websocket: WebSocket):
             await websocket.send_text(message)
@@ -250,14 +264,10 @@ def create_app():
                     conversation = CONVERSATIONS.get(client_id, None)
                     if conversation is None:
                         conversation = create_new_conversation(
-                            data["conversation"], client_id
+                            data["conversation"], client_id,preferences
                         )
-                        conversation.set_webclient_sid(client_id)
                         CONVERSATIONS[client_id] = conversation
                         conversation.start()
-                    # Initializating slots for conversation
-                    for k,v in preferences.items():
-                        conversation.slots[k]=v
                     continue
                 if data["cmd"] == "say":
                     client_id = data["client_id"]
@@ -275,19 +285,23 @@ def create_app():
                     await w2.send_text(data_)
                     continue
                 if data["cmd"] == "input completed":
+                    client_id = data["client_id"]
                     conversation = CONVERSATIONS.get(client_id, None)
                     conversation.input = data["msg"]
                     continue
         except WebSocketDisconnect:
+            with open("/tmp/chat_tmp","a") as f:
+                print("Some disconected",client_id,file=f)
             try:
-                c2 = CONVERSATIONS[client_id]
-                c2.EXIT_()
-                CONVERSATIONS.pop(client_id)
-                manager.disconnect(c2)
+                #c2 = CONVERSATIONS[client_id]
+                #c2.EXIT_()
+                #CONVERSATIONS.pop(client_id)
+                manager.disconnect(websocket)
             except KeyError:
                 pass
             try:
-                del CLIENTS[client_id]
+                #CLIENTS.pop(client_id)
+                pass
             except KeyError:
                 pass
 
