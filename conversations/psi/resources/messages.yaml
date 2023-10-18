@@ -3,8 +3,6 @@ GREET:
         - TEXT: |
             ¡Hola **{username}** 👋! 
 
-            Soy **Psi** 🤝,
-
-            Soy un agente conversacional y hoy podemos hablar sobre los mitos de buscar ayuda psicológica
+            ¡Soy **Psi** 🤝, un agente conversacional 🤖!
 
 

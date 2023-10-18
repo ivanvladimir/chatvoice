@@ -25,9 +25,42 @@ strategies:
 script:
     - solve greet
     - execute self.slots['indaga_profesional']=self.prompts['indaga_profesional']
-    - post chatgpt generate_response 'messages':[{'role':'system','content':indaga_profesional},{'role':'system','content':'Presentate para comenzar a platicar sobre el estigma de pedir apoyo psicológico.'}] response
+    - execute self.slots['dialoga_profesional']=self.prompts['dialoga_profesional']
+    - execute self.slots['recomienda_profesional']=self.prompts['recomienda_profesional']
+    - post chatgpt generate_response 'messages':[{'role':'system','content':indaga_profesional},{'role':'system','content':'Haz una pregunta para comenzar la etapa de indagación.'}] response
     - say response['response']
-    - input a1
-    - post chatgpt generate_response 'messages':[{'role':'system','content':indaga_profesional},{'role':'user','content':a1}] response
+    - input i1
+    - post chatgpt generate_response 'messages':[{'role':'system','content':indaga_profesional},{'role':'user','content':i1},{'role':'system','content':'Haz una pregunta para seguir la indagación.'}] response
     - say response['response']
+    - set_slot ri2 response['response']
+    - input i2
+    - post chatgpt generate_response 'messages':[{'role':'system','content':indaga_profesional},{'role':'user','content':i1},{'role':'system','content':ri2},{'role':'user','content':i2},{'role':'system','content':'Haz una pregunta para seguir la indagación.'}] response
+    - say response['response']
+    - set_slot ri3 response['response']
+    - input i3
+    - post chatgpt generate_response 'messages':[{'role':'system','content':dialoga_profesional},{'role':'user','content':i1},{'role':'system','content':ri2},{'role':'user','content':i2},{'role':'system','content':ri3},{'role':'user','content':i3},{'role':'system','content':'Haz una pregunta para comenzar el diálogo.'}] response
+    - say response['response']
+    - set_slot rd1 response['response']
+    - input d1
+    - post chatgpt generate_response 'messages':[{'role':'system','content':dialoga_profesional},{'role':'user','content':i1},{'role':'system','content':ri2},{'role':'user','content':i2},{'role':'system','content':ri3},{'role':'user','content':i3},{'role':'system','content':rd1},{'role':'user','content':d1},{'role':'system','content':'Haz una pregunta para seguir el diálogo.'}] response
+    - say response['response']
+    - set_slot rd2 response['response']
+    - input d2
+    - post chatgpt generate_response 'messages':[{'role':'system','content':dialoga_profesional},{'role':'user','content':i1},{'role':'user','content':i2},{'role':'user','content':i3},{'role':'system','content':rd1},{'role':'user','content':d1},{'role':'system','content':rd2},{'role':'user','content':d2},{'role':'system','content':'Haz una pregunta para seguir el diálogo.'}] response
+    - say response['response']
+    - set_slot rd3 response['response']
+    - input d3
+    - post chatgpt generate_response 'messages':[{'role':'system','content':recomienda_profesional},{'role':'user','content':i1},{'role':'user','content':i2},{'role':'user','content':i3},{'role':'system','content':rd1},{'role':'user','content':d1},{'role':'system','content':rd2},{'role':'user','content':d2},{'role':'system','content':rd3},{'role':'user','content':d3},{'role':'system','content':'Avisa que vas a dar una recomendación.'}] response
+    - say response['response']
+    - set_slot rr1 response['response']
+    - post chatgpt generate_response 'messages':[{'role':'system','content':recomienda_profesional},{'role':'user','content':i1},{'role':'user','content':i2},{'role':'user','content':i3},{'role':'user','content':d1},{'role':'user','content':d2},{'role':'user','content':d3},{'role':'system','content':'Haz una recomendación.'}] response
+    - say response['response']
+    - set_slot rr2 response['response']
+    - post chatgpt generate_response 'messages':[{'role':'system','content':recomienda_profesional},{'role':'user','content':i1},{'role':'user','content':i2},{'role':'user','content':i3},{'role':'user','content':d1},{'role':'user','content':d2},{'role':'user','content':d3},{'role':'system','content':'Di adios brevemente.'}] response
+
+
+
+
+
+
 
