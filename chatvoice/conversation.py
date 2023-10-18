@@ -106,6 +106,7 @@ class Conversation:
         self.strategies = {}
         self.contexts = {}
         self.templates = {}
+        self.prompts = {}
         self.plugins = config.get("plugins", {})
         self.package = ".".join(["plugins"])
         self.script = []
@@ -319,6 +320,24 @@ class Conversation:
                     self.log.error(exec)
                     sys.exit()
 
+    def _load_prompts(self, prompts, path="."):
+        for prompts_ in prompts:
+            prompts_ = os.path.join(path, prompts_)
+            with open(prompts_, "r", encoding="utf-8") as stream:
+                try:
+                    prompts_ = yaml.safe_load(stream)
+                    for k in prompts_.keys():
+                        if k in self.prompts:
+                            self.log.error(f"Prompt {k} already defined")
+                            self.console.pint(f"[red]Prompt {k} already defined, being redifined[/]")
+                    self.prompts.update(prompts_)
+                except yaml.YAMLError as exc:
+                    self.console.print(f"Error while reading: {prompts}, definitions being ignored")
+                    self.console.print(exc)
+                    self.log.error(f"Error while reading: {prompts}, definitions being ignored")
+                    self.log.error(exec)
+                    sys.exit()
+
     def load_conversation(self, definition):
         """Loads a full conversation"""
         if "conversations" in definition:
@@ -341,6 +360,10 @@ class Conversation:
             pass
         try:
             self._load_templates(definition["templates"], path=self.path)
+        except KeyError:
+            pass
+        try:
+            self._load_prompts(definition["prompts"], path=self.path)
         except KeyError:
             pass
         try:
@@ -420,19 +443,27 @@ class Conversation:
         res=[f'f"""{m["TEXT"].strip()}"""' if '\n' in m['TEXT'] else f'f"{m["TEXT"].strip()}"' for m in res['MSG']]
         return res
 
+    def resolve_prompts(self,name):
+        p=self.prompts[name]
+        res=[f'f"""{p.strip()}"""' if '\n' in p else f'f"{p.strip()}"']
+        return res
+
     def say_(self, cmd):
         """Say command"""
         result=[]
-        print(self.slots)
         if isinstance(cmd,tuple):
             for c in cmd:
                 if c in self.templates:
                     c=self.resolve_template(c)
+                elif c in self.prompts:
+                    c=self.resolve_prompts(c)
                 for c_ in c:
                     result.append(eval(c_, globals(), self.slots))
         else:
             if cmd in self.templates:
                 cmd=self.resolve_template(cmd)
+            elif cmd in self.prompts:
+                cmd=self.resolve_prompts(cmd)
             else:
                 cmd=[cmd]
             for cmd_ in cmd:
