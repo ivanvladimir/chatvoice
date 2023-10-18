@@ -1,0 +1,27 @@
+version: "3"
+services:
+  chatvoice:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+        - "./conversations:/conversations:rw"
+        - "./config.ini:/chatvoice/config.ini:ro"
+        - "./chatvoice:/chatvoice/chatvoice:ro"
+        - "/etc/timezone:/etc/timezone:ro"
+        - "/etc/localtime:/etc/localtime:ro"
+    command:
+        chatvoice --config-section psi server /conversations --port 5000 --use_hypercorn
+
+  api_chatgpt:
+    build: apis/
+    ports:
+      - "5100:5100"
+    volumes:
+        - "./apis:/apis"
+        - "/etc/timezone:/etc/timezone:ro"
+        - "/etc/localtime:/etc/localtime:ro"
+    working_dir:
+      /apis/chatgpt
+    command:
+      uvicorn --env-file /apis/chatgpt/env.chatgpt api:create_app --port 5100 --host 0.0.0.0

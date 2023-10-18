@@ -7,101 +7,27 @@ settings:
     user_name_html: "<span style='color:blue'>Usuario</span>"
 
 slots:
-    - name
+  - phase
 
 url_apis:
-    zs: "http://127.0.0.1:8000/zeroshot/"
+    chatgpt: "http://api_chatgpt:5100/chatgpt/"
 
 templates:
-    - 'resources/messages.yaml'
+  - 'resources/messages.yaml'
+
+prompts:
+  - 'resources/prompts.yaml'
 
 strategies:
     greet:
         - say GREET
-    name:
-        - say NAME
-        - input name
-        - remember name
-        - say 'mucho gusto en conocerte {}'.format(name)
-    intro:
-        - say INTRO
-        - input knows_health | yesno
-        #- post zs classify 'text':knows_health,'labels':['sí','no','no estoy seguro'],'template':'{}' response
-        #- set_slot knows_health response['result']['labels'][0]
-        - say KNOWNS_HEALTH
-    cont1:
-        - say 'Te gustaria saber más de la salud mental?'
-        - input res_cont1 | yesno
-    cont2:
-        - say '¿Quieres jugar para conocer algunos datos curiosos de la salud mental?'
-        - input res_cont2 | yesno
-
-    cont_no:
-        - say 'ok, entiendo, aquí estare por si quieres continuar charlando en otro momento'
-        - exit
-
-    q1:
-        - say Q1
-        - input a1
-        - post zs classify 'text':a1,'labels':['cierto','falso'],'template':'{}' response
-        - set_slot a1 response['result']['labels'][0]
-        - say A1
-    q2:
-        - say Q2
-        - input a2
-        - post zs classify 'text':a2,'labels':['cierto','falso'],'template':'{}' response
-        - set_slot a2 response['result']['labels'][0]
-        - say a2
-        - say A2
-    mitos:
-        - say MITOS
-        - input m | number
-        - say CIERTOFALSO
-        - input c
-        - post zs classify 'text':c,'labels':['cierto','falso'],'template':'{}' response
-        - if m == 1 then say MITO1
-        - if m == 2 then say MITO2
-        - if m == 3 then say MITO3
-        - if m == 4 then say MITO4
-        - if m == 5 then say MITO5
-    estigma:
-        - say ESTIGMAINI
-        - input eq1 | yesno
-        - say ESTIGMAQ1
-        - say VIDEOSQ
-        - input eq2 | yesno
-    videos:
-        - if video == 1 then say "video uno"
-        - if video == 2 then say "video dos"
-        - if video == 3 then say "video tres"
-        - if video == 4 then say "video cuatro"
-        - say VIDEOSN
-        - input eq2 | yesno
-        - execute self.slots['video']+=1
-    preg_abiertas:
-        - say ESTIGMAQ2
-        - input eq3
-        - say ESTIGMAQ3
-        - input eq3
-        - say ESTIGMAQ4
-        - input eq4
 
 script:
     - solve greet
-    - loop_slots
-    - solve intro
-    - solve cont1
-    - if res_cont1==False then solve cont_no else say RES_CONT1
-    - solve cont2
-    - if res_cont1==False then solve cont_no else say "Muy bien, veamos qué mitos conoces"
-    - solve q1
-    - solve q2
-    - solve mitos
-    - solve estigma
-    - set_slot video 1
-    - say VIDEOSQ
-    - input eq2 | yesno
-    - while eq2 == True and video< 5 then solve videos
-    - solve preg_abiertas
-
+    - execute self.slots['indaga_profesional']=self.prompts['indaga_profesional']
+    - post chatgpt generate_response 'messages':[{'role':'system','content':indaga_profesional},{'role':'system','content':'Presentate para comenzar a platicar sobre el estigma de pedir apoyo psicológico.'}] response
+    - say response['response']
+    - input a1
+    - post chatgpt generate_response 'messages':[{'role':'system','content':indaga_profesional},{'role':'user','content':a1}] response
+    - say response['response']
 
