@@ -1,0 +1,35 @@
+slots:
+  - contacto
+  - familiar
+strategies:
+  contacto6:
+    - say "Quisiera preguntarte si **planeas ponerte en contacto con algún ser querido cuando terminemos de platicar o en un tiempo corto** 💙📞."
+    - say "Escribe Si o No"
+    - input contacto | yesno
+
+  familiar6:
+    - say "**¿Con quién te gustaría ponerte en contacto lo más pronto posible?**"
+    - say "Escribe su nombre o apodo 😊❤️📞"
+    - input familiar
+    - say "Me parece una excelente idea que te pongas en contacto con {}. Contar con una red de apoyo en estas situaciones es benéfico para ayudarte a sentir mejor 💙👍.".format(familiar)
+    - solve directorio
+
+  respNo2:
+    - say "Okay, no te preocupes. Pero si me lo permites, cuando te sientas list@ te recomiendo mantener el contacto con seres queridos. Se ha visto que ayuda mucho  el compartir tiempo con seres queridos 💕😊. "
+    - say DIRECTORIO
+
+  querer6:
+    - say "Antes de terminar, me gustaría brindarte algunos consejos e información para los próximos días 😊❤️."
+    - say "**¿Te parece bien?**"
+    - say "Escribe Si o No"
+    - input querer | yesno
+
+  psicoeducacion6:
+    - solve psico_educacion
+
+script:
+  - solve contacto6
+  - if contacto == True then solve familiar6
+  - if contacto == False then solve respNo2
+  - if opcion==1 then solve querer6
+  - if querer==False then say TERMINAR else solve psicoeducacion6

@@ -1,0 +1,27 @@
+slots:
+  - problema
+  - malestar
+
+conversations:
+  - 'ventilacion.yaml'
+
+strategies:
+  problema:
+    - say INI_ESCUCHA_ACTIVA
+    - input problema
+  problemaCont:
+    - post zs labelling 'text':problema,'texts':['vi un choque','choqué','me atropellaron',"me chocaron",'atropellé','me pegaron','le pegué a alguien','vi que atropellaron','tuve un accidente'],'labels':['presenciaste un accidente','tuviste un accidente','tuviste un accidente','tuviste un accidente','tuviste un accidente','tuviste un accidente','tuviste un percance','presenciaste un accidente','tuviste un accidente'] problema_response
+    - say "Gracias por compartir esto conmigo 💙. Entiendo que lo que pasó fue que _{}_. Es comprensible que te sientas alterad@. ".format(problema_response['result'])
+  malestar:
+    - say "Es importante para mi saber **¿qué tan fuerte es tu malestar en una escala del _1_ al _10_?**\n Escribe el número que más te represente, tomando en cuenta que el _1_ es un malestar muy bajo y el _10_ es uno muy alto."
+    - input malestar | number
+    - remember malestar
+  malestarCont:
+    - say "Gracias por compartir esto conmigo ❤️.\nRecuerda que estamos junt@s en esto. Entiendo que tu malestar es un _{}_. Espero poder brindarte herramientas y estrategias que te sean de utilidad 😊.".format(malestar)
+
+script:
+  - solve problema
+  - solve problemaCont
+  - solve malestar
+  - solve malestarCont
+  - solve ventilacion

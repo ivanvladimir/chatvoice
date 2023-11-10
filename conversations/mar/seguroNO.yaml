@@ -1,0 +1,17 @@
+slots:
+  - continuar
+
+regex:
+
+strategies:
+  continuar:
+    - input continuar
+    - say "aaaa"
+    - if continuar == "continuar" then set_slot continuar True
+
+script:
+  - say "Lo más importante para mi es tu seguridad, por lo que te recomiendo que te pongas a salvo antes de comenzar a hablar conmigo."
+  - say "Puedes ir a casa, a casa de un amigo o con algún familiar, a la estación de policía  o donde tu te sientas con seguridad."
+  - say "Aquí te estaré esperando. Cuando estés listo escribe “continuar”."
+  - set_slot continuar False
+  - while continuar == False

@@ -1,0 +1,18 @@
+conversations:
+  - 'derivacion.yaml'
+slots:
+  - terminar
+conversations:
+  - 'derivacion.yaml'
+strategies:
+  terminar:
+    - say "Entiendo 😊. **¿Continuamos con nuestra conversación?**"
+    - say "Escribe Si o No"
+    - input cont4 | yesno
+  despedida:
+    - say "De acuerdo, en mi menú está disponible el ejercicio de re-entrenamiento de la respiración 🫁, información sobre tus posibles síntomas y el directorio con teléfonos 📞 que te podrían ser de utilidad ahora o en los próximos días. Cuídate mucho y regresa cuando gustes {} 😊.".format(username)
+script:
+  - solve terminar
+  - if cont4 == False then solve despedida
+  - if cont4 == True then say "Okay!, sigamos entonces"
+  - if cont4 == True then solve derivacion

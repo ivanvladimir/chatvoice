@@ -1,0 +1,39 @@
+slots:
+  - fecha
+  - lugar
+  - implicados
+  - sensaciones
+  - pasando
+  - emociones
+strategies:
+  fecha:
+    - say "¿Cuando ocurrió esto?"
+    - input fecha
+  lugar:
+    - say "¿Dónde ocurrió esto?"
+    - input lugar
+  implicados:
+    - say "¿Quién o quiénes estuvieron implicados además de ti?"
+    - input implicados
+  sensacion:
+    - say "¿Qué sensaciones tienes en el cuerpo?"
+    - say " (Puede ser frecuencia cardíaca o respiratoria agitada, sudoración, ganas de llorar, ganas de correr, ganas de golpear algo)"
+    - input sensacion
+  pensamiento:
+    - say "¿Qué es lo que estás pensando justo ahora?"
+    - input pensamiento
+  emociones:
+    - say "¿Qué emociones te están generando estos pensamientos?"
+    - say "Trata de describirlas con tus palabras. "
+    - input emociones
+script:
+  - say "De acuerdo. Gracias por querer compartir más cosas conmigo."
+  - say "Te voy a realizar algunas preguntas y trata de responderlas con tus palabras y con la mayor cantidad de detalle posible."
+  - say "Intenta concentrarte en las preguntas y respuestas."
+  - say "Entiendo que el incidente que te hizo sentir de esta manera fue {}".format(origen)
+  - solve fecha
+  - solve lugar
+  - solve implicados
+  - solve sensacion
+  - solve pensamiento
+  - solve emociones
