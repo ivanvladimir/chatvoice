@@ -1,13 +1,33 @@
 # Main webservice
-from fastapi import FastAPI, Request, Depends, Form
+from fastapi import FastAPI, Request, Depends, Form, Response
+from fastapi import status as statuss2
 from typing_extensions import Annotated
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.encoders import jsonable_encoder
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from typing import Dict, Any
+from typing import Dict, Any, List, Tuple
+from pydantic import BaseModel
+from qdrant_client import QdrantClient
+from qdrant_client.http.models import PointStruct
+from qdrant_client.http.models import Filter, FieldCondition, MatchValue
+from starlette.datastructures import FormData
+
+client = QdrantClient("localhost", port=6333)
+
+class Face(BaseModel):
+    vector: List[float]
+    nombre: str
+
+class Lista(BaseModel):
+    mylist: List
+
+class Item(BaseModel):
+    username: str
+
+class Prueba(BaseModel):
+    edad: int = 5
 
 from sqlalchemy.orm import Session
 
@@ -19,6 +39,12 @@ import json
 from .conversation import Conversation
 import uuid
 import sqlite3
+
+def convert_string_to_array(string):
+    array=[]
+    for number in string.split(','):
+        array.append(float(number))
+    return array
 
 def create_app():
     from .config import get_config
@@ -41,8 +67,6 @@ def create_app():
     server_ws=config.get('server_ws','0.0.0.0')
     login=config.get('login',False)
     app = FastAPI()
-    # To force HTTPS but only in original
-    # app.add_middleware(HTTPSRedirectMiddleware)
     app.mount(prefix_url+"static", StaticFiles(directory=config.get("static","static")), name="static")
     templates = Jinja2Templates(directory=config.get("templates","templates"))
     elapsed_time = lambda s: f"{time.time() - s:0.2}s"
@@ -57,7 +81,7 @@ def create_app():
         finally:
             db.close()
 
-    def create_new_conversation(chat, client_id, preferences):
+    def create_new_conversation(chat, client_id):
         import threading
 
         config = dict(get_config())
@@ -66,13 +90,8 @@ def create_app():
                 config.get("conversations_dir", "conversations"), chat, "main.yaml"
             ),
             client_id=client_id,
-
             **config,
         )
-        # Initializating slots for conversation
-        for k,v in preferences.items():
-            conversation.slots[k]=v
-
         t = threading.Thread(target=conversation.execute)
         conversation.set_thread(t)
         conversation.set_idd(client_id)
@@ -89,10 +108,8 @@ def create_app():
         hours, remainder = divmod(diff.seconds, 3600)
         minutes, seconds = divmod(remainder, 60)
         return JSONResponse(content={
-            "name": NAME,
+            "NAME": NAME,
             "status": STATUS,
-            "num. clients": len(CLIENTS),
-            "num. conversations": len(CONVERSATIONS),
             "uptime": f"Elapsed Time: {days} Days, {hours} Hours, {minutes} Minutes, {seconds} Seconds.",
         })
 
@@ -184,63 +201,114 @@ def create_app():
                     },
                 )
         else:
-            @app.get(prefix_url+f"{config.get('entry_point')}", response_class=HTMLResponse)
-            async def login( request: Request, db: Session = Depends(get_db)):
+            
+            @app.get('/')
+            async def redirect():
+                return RedirectResponse(prefix_url+f"{config.get('entry_point')}"+"/inicio")
+
+            @app.get(prefix_url+f"{config.get('entry_point')}"+"/inicio", response_class=HTMLResponse)
+            async def inicio(request: Request, db: Session = Depends(get_db)):
                 start_time = time.time()
                 return templates.TemplateResponse(
                     "login.html",
                     {
                         "request": request,
-                        "chat_name": config.get('entry_point'),
+                        "chat_name": config.get("entry_point"),
                         "elapsed_time": elapsed_time(start_time),
-                    },
+                    }
                 )
 
-            @app.post(prefix_url+f"{config.get('entry_point')}"+"/{uniqueId}", response_class=HTMLResponse)
-            async def execute(uniqueId: int, request: Request, db: Session = Depends(get_db)):
+            @app.post(prefix_url+f"{config.get('entry_point')}"+"/conversation")
+            async def unique(request: Request, username: Annotated[str, Form()], vectorStr: Annotated[str, Form()]):
                 start_time = time.time()
+                print(type(username))
+                print(username)
+                vector = convert_string_to_array(vectorStr)
+                search_result = client.search(
+                    collection_name="face_descriptor",
+                    query_vector=vector,
+                    query_filter=Filter(
+                            must=[
+                                FieldCondition(
+                                    key="username",
+                                    match=MatchValue(value=username)
+                                )
+                            ]
+                        ),                    
+                    limit=1
+                )
+                if search_result and (search_result[0].score <= 0.6):
+                    da = search_result[0].payload
+
+                    #headers ={'Location': f'/cv/mar/{da['idenfier']}'}
+                    del da['identifier']
+
+                    return templates.TemplateResponse(
+                            "conversation.html",
+                            {
+                                "request": request,
+                                "chat_name": config.get('entry_point'),
+                                "elapsed_time": elapsed_time(start_time),
+                                "prefix": prefix_ws,
+                                "protocol": protocol_ws,
+                                "server": server_ws,
+                                "port": port_ws,
+                                "data": da
+                            },
+                        )
+                else:
+                    headers = {'Location': '/cv/mar/inicio'}
+                    return Response(headers=headers, status_code=statuss2.HTTP_303_SEE_OTHER)
+
+            @app.get(prefix_url+f"{config.get('entry_point')}"+"/registro", response_class=HTMLResponse)
+            async def photo(request: Request):
+                start_time = time.time()
+                return templates.TemplateResponse("register.html", {"request": request})
+
+            @app.post(prefix_url+f"{config.get('entry_point')}"+"/conversation/{uniqueId}")
+            async def create_item(request: Request, username: Annotated[str, Form()], 
+                                  vectorStr: Annotated[str, Form()], gender: Annotated[str, Form()], uniqueId: int):
+                start_time = time.time()
+                vector = convert_string_to_array(vectorStr)
+                operation_info = client.upsert(
+                    collection_name="face_descriptor",
+                    wait=True,
+                    points=[
+                        PointStruct(id=int(time.time_ns()/1000), vector=vector, 
+                                    payload={"identifier": uniqueId, "username": username, "gender": gender}),
+                    ]
+                )
                 da = await request.form()
                 da = jsonable_encoder(da)
-                user=crud.get_user_by_identifier(db,uniqueId)
-                if not user:
-                    user=schemas.UserCreate(identifier=uniqueId,data=json.dumps(da))
-                    crud.create_user(db,user)
-                else:
-                    user.data=json.dumps(da)
-                    db.commit()
-
+                del da['vectorStr']     
                 return templates.TemplateResponse(
-                    "conversation.html",
-                    {
-                        "request": request,
-                        "chat_name": config.get('entry_point'),
-                        "elapsed_time": elapsed_time(start_time),
-                        "prefix": prefix_ws,
-                        "protocol": protocol_ws,
-                        "server": server_ws,
-                        "port": port_ws,
-                        "data": da
-                    },
-                )
+                 "conversation.html",
+                 {
+                    "request": request,
+                    "chat_name": config.get('entry_point'),
+                    "elapsed_time": elapsed_time(start_time),
+                    "prefix": prefix_ws,
+                    "protocol": protocol_ws,
+                    "server": server_ws,
+                    "port": port_ws,
+                    "data": da
+                },
+            )          
 
     ## Websocket
     class ConnectionManager:
         def __init__(self):
-            self.active_connections: list[WebSocket] = []
+            self.connections: List[WebSocket] = []
 
         async def connect(self, websocket: WebSocket):
             await websocket.accept()
-            self.active_connections.append(websocket)
+            self.connections.append(websocket)
 
         def disconnect(self, websocket: WebSocket):
-            self.active_connections.remove(websocket)
-
-        async def send_personal_message(self, message: str, websocket: WebSocket):
-            await websocket.send_text(message)
-
-        async def broadcast(self, message: str):
-            for connection in self.active_connections:
-                await connection.send_text(message)
+            try:
+                self.connections.remove(websocket)
+            except ValueError:
+                pass
 
         async def send_personal_message(self, message: str, websocket: WebSocket):
             await websocket.send_text(message)
@@ -264,10 +332,14 @@ def create_app():
                     conversation = CONVERSATIONS.get(client_id, None)
                     if conversation is None:
                         conversation = create_new_conversation(
-                            data["conversation"], client_id,preferences
+                            data["conversation"], client_id
                         )
+                        conversation.set_webclient_sid(client_id)
                         CONVERSATIONS[client_id] = conversation
                         conversation.start()
+                    # Initializating slots for conversation
+                    for k,v in preferences.items():
+                        conversation.slots[k]=v
                     continue
                 if data["cmd"] == "say":
                     client_id = data["client_id"]
@@ -285,23 +357,19 @@ def create_app():
                     await w2.send_text(data_)
                     continue
                 if data["cmd"] == "input completed":
-                    client_id = data["client_id"]
                     conversation = CONVERSATIONS.get(client_id, None)
                     conversation.input = data["msg"]
                     continue
         except WebSocketDisconnect:
-            with open("/tmp/chat_tmp","a") as f:
-                print("Some disconected",client_id,file=f)
             try:
-                #c2 = CONVERSATIONS[client_id]
-                #c2.EXIT_()
-                #CONVERSATIONS.pop(client_id)
-                manager.disconnect(websocket)
+                c2 = CONVERSATIONS[client_id]
+                c2.EXIT_()
+                CONVERSATIONS.pop(client_id)
+                manager.disconnect(c2)
             except KeyError:
                 pass
             try:
-                #CLIENTS.pop(client_id)
-                pass
+                del CLIENTS[client_id]
             except KeyError:
                 pass
 
