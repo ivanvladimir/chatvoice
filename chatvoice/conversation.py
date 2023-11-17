@@ -20,8 +20,7 @@ import importlib
 from tinydb import TinyDB, Query
 from collections import OrderedDict
 import asyncio
-import websockets
-import websocket
+from websocket import create_connection
 import json
 import requests
 
@@ -64,8 +63,6 @@ re_request = re.compile(
 )
 re_escaped_command = re.compile(r"\\(?P<command>[^ ]+)(?P<args>.*)?$")
 
-CONVERSATIONS = {}
-
 
 class Conversation:
     def __init__(self, filename, client_id=None, log=None, **config):
@@ -106,6 +103,7 @@ class Conversation:
         self.strategies = {}
         self.contexts = {}
         self.templates = {}
+        self.prompts = {}
         self.plugins = config.get("plugins", {})
         self.package = ".".join(["plugins"])
         self.script = []
@@ -187,13 +185,16 @@ class Conversation:
             self.thread.start()
 
     def stop(self):
-        if self.conversation_id:
+        if self.client_id:
             data = {
                     "cmd": "finish",
                     "client_id": self.client_id,
             }
-            self.client.send(json.dumps(data))
-            time.sleep(0.8)
+            ws=create_connection(
+                f"{self.url_local_ws}{self.conversation_id}"
+            )
+            ws.send(json.dumps(data))
+            ws.close()
             # self.client.emit('finished',{'idd':self.idd},namespace="/cv")
         if self.thread:
             pass#sys.exit()
@@ -319,6 +320,24 @@ class Conversation:
                     self.log.error(exec)
                     sys.exit()
 
+    def _load_prompts(self, prompts, path="."):
+        for prompts_ in prompts:
+            prompts_ = os.path.join(path, prompts_)
+            with open(prompts_, "r", encoding="utf-8") as stream:
+                try:
+                    prompts_ = yaml.safe_load(stream)
+                    for k in prompts_.keys():
+                        if k in self.prompts:
+                            self.log.error(f"Prompt {k} already defined")
+                            self.console.pint(f"[red]Prompt {k} already defined, being redifined[/]")
+                    self.prompts.update(prompts_)
+                except yaml.YAMLError as exc:
+                    self.console.print(f"Error while reading: {prompts}, definitions being ignored")
+                    self.console.print(exc)
+                    self.log.error(f"Error while reading: {prompts}, definitions being ignored")
+                    self.log.error(exec)
+                    sys.exit()
+
     def load_conversation(self, definition):
         """Loads a full conversation"""
         if "conversations" in definition:
@@ -341,6 +360,10 @@ class Conversation:
             pass
         try:
             self._load_templates(definition["templates"], path=self.path)
+        except KeyError:
+            pass
+        try:
+            self._load_prompts(definition["prompts"], path=self.path)
         except KeyError:
             pass
         try:
@@ -420,19 +443,27 @@ class Conversation:
         res=[f'f"""{m["TEXT"].strip()}"""' if '\n' in m['TEXT'] else f'f"{m["TEXT"].strip()}"' for m in res['MSG']]
         return res
 
+    def resolve_prompts(self,name):
+        p=self.prompts[name]
+        res=[f'f"""{p.strip()}"""' if '\n' in p else f'f"{p.strip()}"']
+        return res
+
     def say_(self, cmd):
         """Say command"""
         result=[]
-        print(self.slots)
         if isinstance(cmd,tuple):
             for c in cmd:
                 if c in self.templates:
                     c=self.resolve_template(c)
+                elif c in self.prompts:
+                    c=self.resolve_prompts(c)
                 for c_ in c:
                     result.append(eval(c_, globals(), self.slots))
         else:
             if cmd in self.templates:
                 cmd=self.resolve_template(cmd)
+            elif cmd in self.prompts:
+                cmd=self.resolve_prompts(cmd)
             else:
                 cmd=[cmd]
             for cmd_ in cmd:
@@ -442,7 +473,7 @@ class Conversation:
             MSG_ = Markdown(r.strip())
             self.console.print(PRE,end=" ")
             self.console.print(MSG_)
-            if self.client:
+            if self.client_id:
                 spk = getattr(self, "system_name_html", self.system_name)
                 data = {
                     "cmd": "say",
@@ -450,7 +481,12 @@ class Conversation:
                     "msg": r.strip(),
                     "client_id": self.client_id,
                 }
-                self.client.send(json.dumps(data))
+
+                ws = create_connection(
+                    f"{self.url_local_ws}{self.conversation_id}"
+                )
+                ws.send(json.dumps(data))
+                ws.close()
             if self.tts:
                 stop_listening()
                 tts(r)
@@ -466,11 +502,15 @@ class Conversation:
 
         if m:
             self.console.print(f"{self.user_name}: ", end="")
-            if self.client and not self.speech_recognition:
-                self.log.info("Waiting from server")
+            if self.client_id and not self.speech_recognition:
+                self.log.info("Waiting for server")
                 spk = getattr(self, "user_name_html", self.user_name)
                 time.sleep(0.3)
-                self.client.send(
+
+                ws=create_connection(
+                    f"{self.url_local_ws}{self.conversation_id}"
+                )
+                ws.send(
                     json.dumps(
                         {
                             "cmd": "activate input",
@@ -479,6 +519,7 @@ class Conversation:
                         }
                     )
                 )
+                ws.close()
                 while not self.input:
                     time.sleep(0.1)
                 result = self.input
@@ -645,7 +686,11 @@ class Conversation:
     def stop_(self):
         return 1
 
-    def EXIT_(self):
+    def EXIT_(self,msg=None):
+        if msg:
+            self.log.debug(f'Disconected, client if {msg}')
+        else:
+            self.log.debug('Disconected')
         return 0
         line = line.strip()
 
@@ -717,13 +762,6 @@ class Conversation:
             return 0
 
     def execute(self):
-        if self.conversation_id:
-            self.client = websocket.WebSocket()
-            self.client.connect(
-                f"{self.url_local_ws}{self.conversation_id}"
-            )
-
-
         if self.speech_recognition:
             enable_audio_listening(
                 samplerate=self.samplerate,
