@@ -34,6 +34,7 @@ setuptools.setup(
         'uvicorn',
         'fastapi',
         'python-multipart',
+        'qdrant-client',
         'pysqlite3',
         'jinja2',
         'aiofiles',

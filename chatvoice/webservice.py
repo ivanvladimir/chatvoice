@@ -1,13 +1,18 @@
 # Main webservice
-from fastapi import FastAPI, Request, Depends, Form
+from fastapi import FastAPI, Request, Depends, Form, Response
+from fastapi import status as statuss2
 from typing_extensions import Annotated
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.encoders import jsonable_encoder
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from typing import Dict, Any
+from typing import Dict, Any, List, Tuple
+from pydantic import BaseModel
+from qdrant_client import QdrantClient
+from qdrant_client.http.models import PointStruct
+from qdrant_client.http.models import Filter, FieldCondition, MatchValue
 
 from sqlalchemy.orm import Session
 
@@ -183,6 +188,111 @@ def create_app():
                         "port":port_ws,
                     },
                 )
+        elif config.get('facial_recognition'):
+
+            def convert_string_to_array(string):
+                array=[]
+                for number in string.split(','):
+                    array.append(float(number))
+                return array
+                
+            client = QdrantClient("localhost", port=6333)
+
+            class Face(BaseModel):
+                vector: List[float]
+                nombre: str
+            @app.get('/')
+            async def redirect():
+                return RedirectResponse(prefix_url+f"{config.get('entry_point')}"+"/inicio")
+
+            @app.get(prefix_url+f"{config.get('entry_point')}"+"/inicio", response_class=HTMLResponse)
+            async def inicio(request: Request, db: Session = Depends(get_db)):
+                start_time = time.time()
+                return templates.TemplateResponse(
+                    "login.html",
+                    {
+                        "request": request,
+                        "chat_name": config.get("entry_point"),
+                        "elapsed_time": elapsed_time(start_time),
+                    }
+                )
+
+            @app.post(prefix_url+f"{config.get('entry_point')}"+"/conversation")
+            async def unique(request: Request, username: Annotated[str, Form()], vectorStr: Annotated[str, Form()]):
+                start_time = time.time()
+                print(type(username))
+                print(username)
+                vector = convert_string_to_array(vectorStr)
+                search_result = client.search(
+                    collection_name="face_descriptor",
+                    query_vector=vector,
+                    query_filter=Filter(
+                            must=[
+                                FieldCondition(
+                                    key="username",
+                                    match=MatchValue(value=username)
+                                )
+                            ]
+                        ),                    
+                    limit=1
+                )
+                if search_result and (search_result[0].score <= 0.6):
+                    da = search_result[0].payload
+
+                    #headers ={'Location': f'/cv/mar/{da['idenfier']}'}
+                    del da['identifier']
+
+                    return templates.TemplateResponse(
+                            "conversation.html",
+                            {
+                                "request": request,
+                                "chat_name": config.get('entry_point'),
+                                "elapsed_time": elapsed_time(start_time),
+                                "prefix": prefix_ws,
+                                "protocol": protocol_ws,
+                                "server": server_ws,
+                                "port": port_ws,
+                                "data": da
+                            },
+                        )
+                else:
+                    headers = {'Location': prefix_url+f"{config.get('entry_point')}"+"/inicio"}
+                    return Response(headers=headers, status_code=statuss2.HTTP_303_SEE_OTHER)
+
+            @app.get(prefix_url+f"{config.get('entry_point')}"+"/registro", response_class=HTMLResponse)
+            async def photo(request: Request):
+                start_time = time.time()
+                return templates.TemplateResponse("register.html", {"request": request})
+
+            @app.post(prefix_url+f"{config.get('entry_point')}"+"/conversation/{uniqueId}")
+            async def create_item(request: Request, username: Annotated[str, Form()], 
+                                  vectorStr: Annotated[str, Form()], gender: Annotated[str, Form()], uniqueId: int):
+                start_time = time.time()
+                vector = convert_string_to_array(vectorStr)
+                operation_info = client.upsert(
+                    collection_name="face_descriptor",
+                    wait=True,
+                    points=[
+                        PointStruct(id=int(time.time_ns()/1000), vector=vector, 
+                                    payload={"identifier": uniqueId, "username": username, "gender": gender}),
+                    ]
+                )
+                da = await request.form()
+                da = jsonable_encoder(da)
+                del da['vectorStr']     
+                return templates.TemplateResponse(
+                 "conversation.html",
+                 {
+                    "request": request,
+                    "chat_name": config.get('entry_point'),
+                    "elapsed_time": elapsed_time(start_time),
+                    "prefix": prefix_ws,
+                    "protocol": protocol_ws,
+                    "server": server_ws,
+                    "port": port_ws,
+                    "data": da
+                },
+            )   
         else:
             @app.get(prefix_url+f"{config.get('entry_point')}", response_class=HTMLResponse)
             async def login( request: Request, db: Session = Depends(get_db)):

@@ -316,6 +316,9 @@ def server(ctx, conversations_dir, **args):
     CONFIG["conversations_dir"] = conversations_dir
     # Temporarily speech recognition not working
     CONFIG["speech_recognition"] = False
+    CONFIG["facial_recognition"] = False
+    if ctx.obj["config_section"] == "mar3":
+        CONFIG["facial_recognition"] = True
     set_config(**CONFIG)
 
     # Main conversation
