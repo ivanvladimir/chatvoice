@@ -1,8 +1,0 @@
-strategies:
-    mensajeFinDir:
-      - say "No dudes en ponerte en contacto con quien necesites. Recuerda que también puedes practicar el reentrenamiento de la respiración conmigo y acceder a información importante sobre los síntomas que podrías experimentar 😊. Toda la información está en mi menú. Cuenta conmigo siempre 🐶❤️."
-
-script:
-  - say "Te voy brindar un directorio con números de emergencia ☎️ que te podrán ser de utilidad para resolver tus necesidades presentes o futuras.  Encontrarás en él líneas telefónicas donde te pueden brindar atención vial, médica y psicológica las 24 horas del día ❤️📞😊. Siéntete en la confianza de guardar el directorio."
-  - say DIRECTORIO
-  - if opcion==3 then solve mensajeFinDir

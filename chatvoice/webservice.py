@@ -256,7 +256,7 @@ def create_app():
                             },
                         )
                 else:
-                    headers = {'Location': '/cv/mar/inicio'}
+                    headers = {'Location': prefix_url+f"{config.get('entry_point')}"+"/inicio"}
                     return Response(headers=headers, status_code=statuss2.HTTP_303_SEE_OTHER)
 
             @app.get(prefix_url+f"{config.get('entry_point')}"+"/registro", response_class=HTMLResponse)
