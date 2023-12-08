@@ -212,6 +212,7 @@ def create_app():
                     "login.html",
                     {
                         "request": request,
+                        "prefix_url": prefix_url,
                         "chat_name": config.get("entry_point"),
                         "elapsed_time": elapsed_time(start_time),
                     }
@@ -220,8 +221,6 @@ def create_app():
             @app.post(prefix_url+f"{config.get('entry_point')}"+"/conversation")
             async def unique(request: Request, username: Annotated[str, Form()], vectorStr: Annotated[str, Form()]):
                 start_time = time.time()
-                print(type(username))
-                print(username)
                 vector = convert_string_to_array(vectorStr)
                 search_result = client.search(
                     collection_name="face_descriptor",
@@ -236,7 +235,7 @@ def create_app():
                         ),                    
                     limit=1
                 )
-                if search_result and (search_result[0].score <= 0.6):
+                if search_result and (search_result[0].score <= 0.57):
                     da = search_result[0].payload
 
                     #headers ={'Location': f'/cv/mar/{da['idenfier']}'}
@@ -262,7 +261,15 @@ def create_app():
             @app.get(prefix_url+f"{config.get('entry_point')}"+"/registro", response_class=HTMLResponse)
             async def photo(request: Request):
                 start_time = time.time()
-                return templates.TemplateResponse("register.html", {"request": request})
+                return templates.TemplateResponse(
+                    "register.html", 
+                    {
+                        "request": request,
+                        "prefix_url": prefix_url,
+                        "chat_name": config.get('entry_point'),
+                        "elapsed_time": elapsed_time(start_time),
+                    },
+                )
 
             @app.post(prefix_url+f"{config.get('entry_point')}"+"/conversation/{uniqueId}")
             async def create_item(request: Request, username: Annotated[str, Form()], 
@@ -273,7 +280,7 @@ def create_app():
                     collection_name="face_descriptor",
                     wait=True,
                     points=[
-                        PointStruct(id=int(time.time_ns()/1000), vector=vector, 
+                        PointStruct(id=str(uuid.uuid4()), vector=vector, 
                                     payload={"identifier": uniqueId, "username": username, "gender": gender}),
                     ]
                 )
