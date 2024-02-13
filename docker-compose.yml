@@ -1,0 +1,27 @@
+version: "3"
+services:
+  chatvoice:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+        - "./conversations:/chatvoice/conversations:rw"
+        - "./config.ini:/chatvoice/config.ini:ro"
+        - "./chatvoice:/chatvoice/chatvoice:ro"
+        - "/etc/timezone:/etc/timezone:ro"
+        - "/etc/localtime:/etc/localtime:ro"
+    command:
+        chatvoice --config-section mar2 server conversations/ --port 5000 
+
+  api_zeroshot:
+    build: apis/
+    ports:
+      - "5100:5100"
+    volumes:
+        - "./apis:/apis"
+        - "/etc/timezone:/etc/timezone:ro"
+        - "/etc/localtime:/etc/localtime:ro"
+    working_dir:
+      /apis/zeroshot
+    command:
+      uvicorn --env-file /apis/zeroshot/env.selectra_medium_docker api:create_app --port 5100 --host 0.0.0.0

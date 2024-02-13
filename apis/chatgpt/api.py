@@ -4,28 +4,30 @@ from typing import (Optional, List)
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from functools import lru_cache
-from ml_model import init_chatgpt, generate
+from ml_model import init_chatgpt, generate_response
 
 import arrow
 import os
 
-__VERSION__ = "0.0.1"
+__VERSION__ = "0.0.2"
 __API_NAME__ = "ChatGPTt API"
 
 app = FastAPI()
 
-
-class TextOptions(BaseModel):
+class GenerateResponseOptions(BaseModel):
     """Prompt to generate from
 
     Aguments:
-        prompt   Text to classify
+        messages   Text with history of prompts
     """
-    prompt: str
+    messages: List[dict]
 
 def create_app(test_config=None):
     START_TIME = arrow.utcnow()
     STATUS = "active"
+    NUM_RESPONSES=0
+    PROMPT_TOKENS=0
+    COMPLETION_TOKENS=0
 
     # Arrange configuration
     import config
@@ -59,14 +61,17 @@ def create_app(test_config=None):
             "uptime": f"Elapsed Time: {days} Days, {hours} Hours, {minutes} Minutes, {seconds} Seconds.",
         }
 
-    @api_.post("/answer")
-    def classify(info: TextOptions):
+    @api_.post("/generate_response")
+    def generate_response_(info: GenerateResponseOptions):
         start_time = arrow.utcnow()
-        completion= generate(info.prompt)
+        completion= generate_response(info.messages)
+        response = completion['choices'][0]['message']['content']
+        #NUM_RESPONSES+=1
+        #PROMPT_TOKENS+=completion['usage']['prompt_tokens']
+        #COMPLETION_TOKENS+=completion['usage']['completion_tokens']
 
-        response = completion.choices[0].text
         return {
-            "prompt": info.prompt,
+            "messages": info.messages,
             "response": response,
             "elapsed_time": f"{elapsed_time(start_time):2.4f} segs",
         }

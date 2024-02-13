@@ -1,5 +1,7 @@
 arrow
 fastapi
 python-dotenv
-transformers
+pydantic-settings
+transformers[torch]
 uvicorn
+openai

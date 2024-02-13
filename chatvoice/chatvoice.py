@@ -18,7 +18,7 @@ import os.path
 # local imports
 from .conversation import Conversation
 from .config import set_config, get_config
-from .audio import audio_close, audio_devices, list_voices
+#from .audio import audio_close, audio_devices, list_voices
 
 # Main service
 config = configparser.ConfigParser()
@@ -316,6 +316,9 @@ def server(ctx, conversations_dir, **args):
     CONFIG["conversations_dir"] = conversations_dir
     # Temporarily speech recognition not working
     CONFIG["speech_recognition"] = False
+    CONFIG["facial_recognition"] = False
+    if ctx.obj["config_section"] == "mar3":
+        CONFIG["facial_recognition"] = True
     set_config(**CONFIG)
 
     # Main conversation
@@ -349,8 +352,6 @@ def server(ctx, conversations_dir, **args):
         config.workers = int(CONFIG["workers"])
         config.websocket_ping_interval = None
         trio.run(serve,create_app(), config)
-
-
 
 if __name__ == "__main__":
     chatvoice(obj={})

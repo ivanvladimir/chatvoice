@@ -2,13 +2,13 @@ from typing import (Optional, List)
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from functools import lru_cache
-from ml_model import init_transformer, classify_transformer, labelling_transformer
+from ml_model import init_transformer, generate_transformer
 
 import arrow
 import os
 
 __VERSION__ = "0.0.1"
-__API_NAME__ = "Zeroshot Text API"
+__API_NAME__ = "Generation API"
 
 app = FastAPI()
 
@@ -25,26 +25,13 @@ class PreprocessTextOptions(BaseModel):
 
 
 class TextOptions(PreprocessTextOptions):
-    """Arguments and options for text classification
+    """Arguments and options for text generation
 
     Aguments:
         text   Text to classify
     """
 
     text: str
-    labels: List[str]
-    template: str = "Es ejemplo de {}"
-
-class TextOptions2(PreprocessTextOptions):
-    """Arguments and options for text labelling
-
-    Aguments:
-        text   Text to classify
-    """
-
-    text: str
-    texts: List[str]
-    labels: List[str]
 
 def create_app(test_config=None):
     START_TIME = arrow.utcnow()
@@ -63,9 +50,7 @@ def create_app(test_config=None):
 
     settings = get_settings()
 
-    if settings.TRANSFORMERS_CACHE:
-        os.environ['TRANSFORMERS_CACHE'] = settings.TRANSFORMERS_CACHE
-    model_ = init_transformer(settings.API_ZEROSHOT_MODEL_NAME)
+    model_ = init_transformer(settings.API_GENERATE_MODEL_NAME)
 
     app = FastAPI()
     api_ = FastAPI()
@@ -80,51 +65,25 @@ def create_app(test_config=None):
         return {
             "name": __API_NAME__,
             "version": __VERSION__,
-            "model": settings.API_ZEROSHOT_MODEL_NAME,
+            "model": settings.API_GENERATE_MODEL_NAME,
             "model_loaded": True if model_ else False,
             "status": STATUS,
             "uptime": f"Elapsed Time: {days} Days, {hours} Hours, {minutes} Minutes, {seconds} Seconds.",
         }
 
-    @api_.post("/classify")
+    @api_.post("/generate")
     def classify(info: TextOptions):
         start_time = arrow.utcnow()
-        res, (text_, labels_, template_) = classify_transformer(info.text, 
-                info.labels,
-                info.template,
-                use_lower=info.use_lower)
+        res, (text_) = generate_transformer(info.text, use_lower=info.use_lower)
 
         return {
             "text": info.text,
             "text_": text_,
-            "labels_": labels_,
-            "template_": template_,
             "result": res,
             "elapsed_time": f"{elapsed_time(start_time):2.4f} segs",
         }
 
-    @api_.post("/labelling")
-    def labelling(info: TextOptions2):
-        start_time = arrow.utcnow()
-        res, (text_, texts_, labels_) = labelling_transformer(info.text, 
-                info.texts,
-                info.labels,
-                use_lower=info.use_lower)
-
-        return {
-            "text": info.text,
-            "text_": text_,
-            "texts_": texts_,
-            "labels_": labels_,
-            "result": res,
-            "elapsed_time": f"{elapsed_time(start_time):2.4f} segs",
-        }
-
-
-
-
-    app.mount(f"/{settings.API_ZEROSHOT_URL_PREFIX}", api_)
+    app.mount(f"/{settings.API_GENERATE_URL_PREFIX}", api_)
     return app
-
 
 app = create_app()

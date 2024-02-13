@@ -1,9 +1,9 @@
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
-    API_ZEROSHOT_URL_PREFIX: str = "zeroshot"
-    API_ZEROSHOT_MODEL_NAME: str = "Recognai/zeroshot_selectra_small"
-    TRANSFORMERS_CACHE: str = None
+    API_GENERATE_URL_PREFIX: str = "generate"
+    API_GENERATE_MODEL_NAME: str = "bigscience/bloom-1b1"
 
     class Config:
         env_file = ".env"

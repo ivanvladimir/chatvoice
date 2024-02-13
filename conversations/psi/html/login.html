@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block title %}
+<title>Psi: asistente para la desmitificación del apoyo psicológico</title>
+{% endblock %}
+
+{% block script %}
+	<script>
+    function getCookie(name) {
+        const value = '; ' + document.cookie;
+        const parts = value.split('; ' + name + '=');
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+
+    async function createOrRetrieveUniqueId() {
+        const existingId = getCookie('uniqueId');
+        if (existingId) {
+            const form = document.getElementById('user-form');
+            form.action =`psi/${existingId}`;
+            return existingId;
+        }
+        const uniqueId = Math.floor(Math.random() * 1000000);
+        document.cookie = `uniqueId=${uniqueId};`;
+        const form = document.getElementById('user-form');
+        form.action =`psi/${uniqueId}`;
+        return uniqueId;
+    }
+
+    function loadValuesFromCookies() {
+        // Fetch all cookies and split into an array
+        const cookieArray = document.cookie.split("; ");
+
+        // Loop over the array and process each cookie
+        cookieArray.forEach(cookie => {
+            // Split each cookie into name and value
+            const [name, value] = cookie.split("=");
+
+            // Try to find an element in the form that has the same name as the cookie
+            const inputElement = document.getElementsByName(name)[0];
+            // If we found an element and it's an input, set its value to the value of the cookie
+            if (inputElement && inputElement.tagName.toLowerCase() === 'input') {
+                inputElement.value = decodeURIComponent(value);
+            }
+            if (inputElement && inputElement.tagName.toLowerCase() === 'select') {
+                for (var option of inputElement.options){
+                    if(option.value == value){
+                        option.selected = true;
+                    }
+                }
+            }
+        });
+    }
+
+    // When the form is submitted
+    $(document).ready(function(){
+        $('#user-form').on('submit', function(event) {
+            event.preventDefault();
+
+            const username = $('#username').val();
+            const gender = $('#genderSelect :selected').text();
+            const personality = $('#personalitySelect :selected').text();
+
+            document.cookie = `username=${username};`;
+            document.cookie = `gender=${gender};`;
+            document.cookie = `personality=${personality};`;
+
+            uniqueId = createOrRetrieveUniqueId(username);
+ 
+            this.submit();
+        });
+    });
+
+    window.onload = function() {
+        loadValuesFromCookies();
+    }
+    </script>
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-6">
+                <p>
+                <form id="user-form" method="POST">
+                    <div class="form-group mb-3">
+                        <label for="username">Usuario</label>
+                        <input type="text" class="form-control" id="username" name="username">
+                        <div class="form-text">Escribe el nombre con el que te gustaría que <strong>Psi</strong> se dirigiera a ti, por ejemplo: María, puma21, julito, etc.</div>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="gender">¿Con qué género te identificas?</label>
+                        <select name="gender" class="form-control" id="genderSelect">
+                                <option name="gender" id="genderMale" value="Male">Hombre</option>
+                                <option id="genderFemale" value="Female">Mujer</option>
+                                <option id="genderOther" value="Other">Otro</option>
+                        </select>
+                        <div class="form-text">Escoge la opción con la que te identifiques.</div>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="gender">¿Con qué tipo de persona te gustaría interactuar?</label>
+                        <select name="personality" class="form-control" id="personalitySelect">
+                                <option name="gender" id="profesional" value="Male">profesional</option>
+                                <option id="compañero" value="Female">compañero</option>
+                        </select>
+                        <div class="form-text">Escoge la opción con quien te gustaría interactuar</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Comenzar a chatear</button>
+                </form>
+                </p>
+            </div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-6">
+                <div class="alert alert-info" role="alert">
+                    <h4 class="alert-heading">Mensaje de límites de la interacción</h4>
+                </div>
+            </div>
+    </div>
+
+{% endblock %}

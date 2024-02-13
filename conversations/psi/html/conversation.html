@@ -15,7 +15,11 @@
                 var ws = new WebSocket('{{protocol}}://{{server}}' + namespace+`${client_id}`);
             }
             ws.addEventListener("open", (event) => {
-                ws.send(JSON.stringify({'cmd':'start','conversation':"{{chat_name}}"}));
+                var preferences={};
+                {% for k,v in data.items() %}
+                preferences["{{k}}"]="{{v}}";
+                {% endfor %}
+                ws.send(JSON.stringify({'cmd':'start','conversation':"{{chat_name}}",'data':preferences }));
             });
 
             $('#send').click(function(e){sendMSG(e)});
@@ -33,7 +37,7 @@
             function sendMSG(e) {
                 var msg = String($('#msg_input').val());
                 if(msg.trim().length>0){
-                    ws.send(JSON.stringify({'cmd':'input completed','msg':msg}));
+                    ws.send(JSON.stringify({'cmd':'input completed','msg':msg,'client_id':client_id}));
                     showUserMessage(msg,getCurrentTimestamp());
                     $('#msg_input').val('');
                     msgCount += 1;
@@ -69,20 +73,38 @@
                     // speak
                     //window.speechSynthesis.speak(utter);
 				};
+                // Finish
+	            if(data.cmd=="finish"){
+                    document.getElementById('msg_input').disabled = true;
+                    document.getElementById('chat_window').disabled = true;
+                    document.getElementById('bye_message').removeAttribute('hidden');
+                    window.scrollTo(0, document.body.scrollHeight);
+				};
             };
+
+            ws.onclose = function(e) {
+                    console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+                        if(port.length>0){
+                                var ws = new WebSocket('{{protocol}}://{{server}}:{{port}}' + namespace+`${client_id}`);
+                            }else{
+                                var ws = new WebSocket('{{protocol}}://{{server}}' + namespace+`${client_id}`);
+                        }
+                  };
+
+            ws.onerror = function(err) {
+                      console.error('Socket encountered error: ', err.message, 'Closing socket');
+                      ws.close();
+                    };
         });
     </script>
 {% endblock %}
 
 {% block content %}
 	<div class="container">
-
 		<div class="row padded_row">
-
-				<div class="chat_window">
-
+				<div id="chat_window" class="chat_window">
 					<div class="top_menu">
-                        <div class="title">Psi</div>
+                        <div class="title">Psi 🙂</div>
 					</div>
 
 					<!-- dynamically rendered -->
@@ -95,7 +117,15 @@
 					</div>
 				</div>
 		</div>
-
-	</div>
+		<div id="bye_message" class="row padded_row" hidden='True'>
+            <div class="col-md-4 mx-auto">
+            <div class="card" style="width: 18rem;">
+                <div class="card-body">
+                <h5 class="card-title">¡Gracias por interactuar!</h5>
+                </div>
+            </div>
+            </div>
+        </div>
+</div>
 
 {% endblock %}
