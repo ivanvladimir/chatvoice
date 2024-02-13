@@ -2,7 +2,7 @@ from typing import (Optional, List)
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from functools import lru_cache
-from ml_model import init_transformer, classify_transformer
+from ml_model import init_transformer, classify_transformer, labelling_transformer
 
 import arrow
 import os
@@ -35,6 +35,16 @@ class TextOptions(PreprocessTextOptions):
     labels: List[str]
     template: str = "Es ejemplo de {}"
 
+class TextOptions2(PreprocessTextOptions):
+    """Arguments and options for text labelling
+
+    Aguments:
+        text   Text to classify
+    """
+
+    text: str
+    texts: List[str]
+    labels: List[str]
 
 def create_app(test_config=None):
     START_TIME = arrow.utcnow()
@@ -90,6 +100,26 @@ def create_app(test_config=None):
             "result": res,
             "elapsed_time": f"{elapsed_time(start_time):2.4f} segs",
         }
+
+    @api_.post("/labelling")
+    def labelling(info: TextOptions2):
+        start_time = arrow.utcnow()
+        res, (text_, texts_, labels_) = labelling_transformer(info.text, 
+                info.texts,
+                info.labels,
+                use_lower=info.use_lower)
+
+        return {
+            "text": info.text,
+            "text_": text_,
+            "texts_": texts_,
+            "labels_": labels_,
+            "result": res,
+            "elapsed_time": f"{elapsed_time(start_time):2.4f} segs",
+        }
+
+
+
 
     app.mount(f"/{settings.API_ZEROSHOT_URL_PREFIX}", api_)
     return app
