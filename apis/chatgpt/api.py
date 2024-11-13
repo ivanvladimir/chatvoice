@@ -4,7 +4,7 @@ from typing import (Optional, List)
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from functools import lru_cache
-from ml_model import init_chatgpt, generate_response
+from ml_model import init_chatgpt, generate_response, moderation, generate_structured
 
 import arrow
 import os
@@ -21,6 +21,16 @@ class GenerateResponseOptions(BaseModel):
         messages   Text with history of prompts
     """
     messages: List[dict]
+
+
+class ModerateText(BaseModel):
+    """Text to moderate
+
+    Aguments:
+        text   Text to moderate
+    """
+    text: str
+
 
 def create_app(test_config=None):
     START_TIME = arrow.utcnow()
@@ -41,8 +51,9 @@ def create_app(test_config=None):
         return (arrow.utcnow() - start_time).total_seconds()
 
     settings = get_settings()
-
-    model_ = init_chatgpt(settings.API_CHATGPT_KEY)
+    client = init_chatgpt(
+            organization=settings.API_CHATGPT_ORGANIZATION,
+            project=settings.API_CHATGPT_PROJECT)
 
     app = FastAPI()
     api_ = FastAPI()
@@ -64,11 +75,16 @@ def create_app(test_config=None):
     @api_.post("/generate_response")
     def generate_response_(info: GenerateResponseOptions):
         start_time = arrow.utcnow()
-        completion= generate_response(info.messages)
-        response = completion['choices'][0]['message']['content']
+        completion= generate_response(
+                client,
+                info.messages
+                )
+        response=completion.choices[0].message.content
         #NUM_RESPONSES+=1
         #PROMPT_TOKENS+=completion['usage']['prompt_tokens']
         #COMPLETION_TOKENS+=completion['usage']['completion_tokens']
+
+        print(response)
 
         return {
             "messages": info.messages,
@@ -76,7 +92,48 @@ def create_app(test_config=None):
             "elapsed_time": f"{elapsed_time(start_time):2.4f} segs",
         }
 
+
+    @api_.post("/generate_structured")
+    def generate_structured_(info: GenerateResponseOptions):
+        start_time = arrow.utcnow()
+        completion= generate_structured(
+                client,
+                info.messages
+                )
+        response=completion.choices[0].message.parsed
+        #NUM_RESPONSES+=1
+        #PROMPT_TOKENS+=completion['usage']['prompt_tokens']
+        #COMPLETION_TOKENS+=completion['usage']['completion_tokens']
+
+        print(response.tag)
+
+        return {
+            "messages": info.messages,
+            "response": response.tag,
+            "elapsed_time": f"{elapsed_time(start_time):2.4f} segs",
+        }
+
+    @api_.post("/moderate")
+    def moderation_(info: ModerateText):
+        start_time = arrow.utcnow()
+        moderation= (
+                client,
+                info.text
+                )
+        categories=[]
+        for k,v in moderation['results']['categories']:
+            if v:
+                categories.append(k)
+        
+        return {
+            "flagged":moderation['results']['flagged'],
+            "categories": categories,
+            "elapsed_time": f"{elapsed_time(start_time):2.4f} segs",
+        }
+
     app.mount(f"/{settings.API_CHATGPT_URL_PREFIX}", api_)
     return app
+
+
 
 app = create_app()

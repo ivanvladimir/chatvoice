@@ -20,9 +20,13 @@ import importlib
 from tinydb import TinyDB, Query
 from collections import OrderedDict
 import asyncio
+import websocket
+from contextlib import closing
 from websocket import create_connection
 import json
 import requests
+
+#websocket.enableTrace(True)
 
 
 # local imports
@@ -169,6 +173,7 @@ class Conversation:
             self.client_id = client_id
             self.conversation_id = client_id + 1
         self.webclient_sid = None
+        self.ws = None
 
     def set_thread(self, thread):
         self.thread = thread
@@ -180,7 +185,7 @@ class Conversation:
         self.webclient_sid = sid
 
     def start(self):
-        time.sleep(0.8)
+        time.sleep(0.3)
         if self.thread:
             self.thread.start()
 
@@ -190,11 +195,9 @@ class Conversation:
                     "cmd": "finish",
                     "client_id": self.client_id,
             }
-            ws=create_connection(
-                f"{self.url_local_ws}{self.conversation_id}"
-            )
-            ws.send(json.dumps(data))
-            ws.close()
+            with closing(create_connection(f"{self.url_local_ws}{self.conversation_id}")) as conn:
+                    conn.send(json.dumps(data))
+            #ws.close()
             # self.client.emit('finished',{'idd':self.idd},namespace="/cv")
         if self.thread:
             pass#sys.exit()
@@ -426,7 +429,7 @@ class Conversation:
 
     def execute__(self, cmd):
         """execute python command"""
-        print("CMD", cmd)
+        self.console.print(f"Executing command {cmd}")
         exec(cmd)
 
     def resolve_template(self,name):
@@ -482,11 +485,8 @@ class Conversation:
                     "client_id": self.client_id,
                 }
 
-                ws = create_connection(
-                    f"{self.url_local_ws}{self.conversation_id}"
-                )
-                ws.send(json.dumps(data))
-                ws.close()
+                with closing(create_connection(f"{self.url_local_ws}{self.conversation_id}")) as conn:
+                    conn.send(json.dumps(data))
             if self.tts:
                 stop_listening()
                 tts(r)
@@ -507,19 +507,16 @@ class Conversation:
                 spk = getattr(self, "user_name_html", self.user_name)
                 time.sleep(0.3)
 
-                ws=create_connection(
-                    f"{self.url_local_ws}{self.conversation_id}"
-                )
-                ws.send(
-                    json.dumps(
+                with closing(create_connection(f"{self.url_local_ws}{self.conversation_id}")) as conn:
+                    conn.send(
+                        json.dumps(
                         {
                             "cmd": "activate input",
                             "spk": spk,
                             "client_id": self.client_id,
                         }
+                        )
                     )
-                )
-                ws.close()
                 while not self.input:
                     time.sleep(0.1)
                 result = self.input

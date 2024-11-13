@@ -10,10 +10,9 @@ from fastapi.encoders import jsonable_encoder
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from typing import Dict, Any, List, Tuple
 from pydantic import BaseModel
-from qdrant_client import QdrantClient
-from qdrant_client.http.models import PointStruct
-from qdrant_client.http.models import Filter, FieldCondition, MatchValue
-
+#from qdrant_client import QdrantClient
+#from qdrant_client.http.models import PointStruct
+#from qdrant_client.http.models import Filter, FieldCondition, MatchValue
 from sqlalchemy.orm import Session
 
 import arrow
@@ -409,10 +408,13 @@ def create_app():
         except WebSocketDisconnect:
             with open("/tmp/chat_tmp","a") as f:
                 print("Some disconected",client_id,file=f)
+                print("Some disconected",client_id)
             try:
                 #c2 = CONVERSATIONS[client_id]
                 #c2.EXIT_()
                 #CONVERSATIONS.pop(client_id)
+                conversation = CONVERSATIONS.get(client_id, None)
+                conversation.ws=None
                 manager.disconnect(websocket)
             except KeyError:
                 pass
