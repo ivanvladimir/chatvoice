@@ -187,7 +187,23 @@ def create_app():
                         "port":port_ws,
                     },
                 )
-        elif config.get('facial_recognition'):
+        elif config.get('facial_recognition', False):
+
+            def verify(descriptor):
+                try:
+                    face_vector = convert_string_to_array(descriptor)
+                    search_result = client.search(
+                        collection_name="face_descriptor",
+                        query_vector=face_vector,                   
+                        limit=1
+                    )
+                    if search_result and (search_result[0].score <= 0.5):
+                        return True
+                    else:
+                        return False                        
+                except ValueError:
+                    return False
+                
 
             def convert_string_to_array(string):
                 array=[]
@@ -195,7 +211,7 @@ def create_app():
                     array.append(float(number))
                 return array
                 
-            client = QdrantClient("localhost", port=6333)
+            client = QdrantClient("database", port=6333)
 
             class Face(BaseModel):
                 vector: List[float]
@@ -234,7 +250,8 @@ def create_app():
                         ),                    
                     limit=1
                 )
-                if search_result and (search_result[0].score <= 0.57):
+                print(search_result[0].score)
+                if search_result and (search_result[0].score <= 0.5):
                     da = search_result[0].payload
 
                     #headers ={'Location': f'/cv/mar/{da['idenfier']}'}
@@ -405,6 +422,19 @@ def create_app():
                     conversation = CONVERSATIONS.get(client_id, None)
                     conversation.input = data["msg"]
                     continue
+                if data["cmd"] == "verify":
+                    client_id = data["client_id"]
+                    w2 = CLIENTS[client_id]
+                    face_descriptor = data["vectorStr"]
+                    result = verify(face_descriptor)
+                    response = {
+                        "cmd": "verify",
+                        "client_id": client_id,
+                        "verification": result,
+                    }
+                    await w2.send_json(response)
+                    continue                
+
         except WebSocketDisconnect:
             with open("/tmp/chat_tmp","a") as f:
                 print("Some disconected",client_id,file=f)
