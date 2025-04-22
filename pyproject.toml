@@ -1,0 +1,31 @@
+[project]
+name = "chatvoice"
+version = "0.2.0"
+description = "Chatserver for directed conversations"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+keywords = ["chatbot", "conversational agent"]
+authors = [
+  { name = "Ivan Vladimir Meza Ruiz", email = "ivanvladimir@gmail.com" }]
+maintainers = [
+  { name = "Ivan Vladimir Meza Ruiz", email = "ivanvladimir@gmail.com" }]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Build Tools",
+  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3 :: Only",
+]
+[project.urls]
+"Homepage" = "https://github.com/ivanvladimir/chatvoice"
+"Bug Reports" = "https://github.com/ivanvladimir/chatvoice/issues"
+"Source" = "https://github.com/ivanvladimir/chatvoice"
+
+[project.scripts]
+chatvoice="chatvoice.chatvoice:chatvoice"
+
+dependencies = []
+
