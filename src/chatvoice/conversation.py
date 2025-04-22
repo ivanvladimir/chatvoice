@@ -77,6 +77,7 @@ class Conversation:
         self.path = os.path.dirname(filename)
         self.basename = os.path.basename(filename)
         self.modulename = os.path.splitext(self.basename)[0]
+        self.client_id = None
         # Setting loggin
         if log is None:
             logging_directory_created=False

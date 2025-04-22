@@ -4,7 +4,7 @@ version = "0.2.0"
 description = "Chatserver for directed conversations"
 readme = "README.md"
 requires-python = ">=3.12"
-license = { file = "LICENSE" }
+license-files = ["LICEN[CS]E"]
 keywords = ["chatbot", "conversational agent"]
 authors = [
   { name = "Ivan Vladimir Meza Ruiz", email = "ivanvladimir@gmail.com" }]
@@ -14,10 +14,22 @@ classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
   "Topic :: Software Development :: Build Tools",
-  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3 :: Only",
+]
+dependencies = [
+    "arrow>=1.3.0",
+    "click-option-group>=0.5.7",
+    "fastapi>=0.115.12",
+    "jinja2>=3.1.6",
+    "pyyaml>=6.0.2",
+    "requests>=2.32.3",
+    "rich-click>=1.8.8",
+    "sqlalchemy>=2.0.40",
+    "tinydb>=4.8.2",
+    "uvicorn>=0.34.2",
+    "websocket-client>=1.8.0",
 ]
 [project.urls]
 "Homepage" = "https://github.com/ivanvladimir/chatvoice"
@@ -25,7 +37,7 @@ classifiers = [
 "Source" = "https://github.com/ivanvladimir/chatvoice"
 
 [project.scripts]
-chatvoice="chatvoice.chatvoice:chatvoice"
+chatvoice = "chatvoice.chatvoice:chatvoice"
 
-dependencies = []
-
+[tool.uv]
+package = true
