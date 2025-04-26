@@ -124,7 +124,7 @@ def create_app():
             )
 
     if not config.get('entry_point',False):
-        if not config.get('login',False):
+        if config.get('login',False):
             @app.get(prefix_url+"execute/{name}", response_class=HTMLResponse)
             async def execute(name: str, request: Request):
                 start_time = time.time()
@@ -138,9 +138,11 @@ def create_app():
                         "protocol": protocol_ws,
                         "server":server_ws,
                         "port":port_ws,
+                        "data": {}
                     },
                 )
         else:
+            print(config.get('login',False))
             @app.get(prefix_url+"execute/{name}", response_class=HTMLResponse)
             async def login(name: str, request: Request, db: Session = Depends(get_db)):
                 start_time = time.time()
@@ -167,6 +169,7 @@ def create_app():
                         "protocol": protocol_ws,
                         "server":server_ws,
                         "port":port_ws,
+                        "data": {}
                     },
                 )
 
@@ -185,6 +188,7 @@ def create_app():
                         "protocol": protocol_ws,
                         "server":server_ws,
                         "port":port_ws,
+                        "data": {}
                     },
                 )
         elif config.get('facial_recognition', False):
@@ -392,8 +396,9 @@ def create_app():
             while True:
                 data_ = await websocket.receive_text()
                 data = json.loads(data_)
+                print(data)
                 if data["cmd"] == "start":
-                    preferences=data['data']
+                    preferences=data.get('data',{})
                     conversation = CONVERSATIONS.get(client_id, None)
                     if conversation is None:
                         conversation = create_new_conversation(

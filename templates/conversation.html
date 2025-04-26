@@ -5,37 +5,55 @@
         $(document).ready(function(){
             namespace = '{{prefix}}';
             var msgCount = 1;
-			var client_id = Date.now()
+            var client_id = Date.now()
             var spk='USER';
             var port='{{port}}';
+            //var converter = new showdown.Converter();
             if(port.length>0){
                 var ws = new WebSocket('{{protocol}}://{{server}}:{{port}}' + namespace+`${client_id}`);
             }else{
                 var ws = new WebSocket('{{protocol}}://{{server}}' + namespace+`${client_id}`);
             }
-			$('#send').click(function(e) {
+            $('#send').click(function(e) {
                 var msg = String($('#msg').val());
                 if(msg.trim().length>0){
-                    ws.send(JSON.stringify({'cmd':'input completed','msg':msg}));
+                    ws.send(JSON.stringify({'cmd':'input completed','msg':msg,'client_id':client_id}));
                     $('#log').append('<br>' +msgCount + '. '+ spk+':'+msg);
                     $('#msg').val('');
                     $('#msg').focus();
                     $('#send').prop('disabled',true)
                     msgCount += 1;
-      			    return false;
+      			        return false;
                 }
-    		});
+    		    });
+
             $('#start').click(function(e) {
-                ws.send(JSON.stringify({'cmd':'start','conversation':"{{chat_name}}"}));
-				console.log('start');
-                $('#start').prop('disabled',true)
-                $('#msg').focus();
-      			return false;
-    		});
-            ws.onmessage = function(event) {
-				data=JSON.parse(event.data);
+                   var preferences={};
+                    {% for k,v in data.items() %}
+                	    preferences["{{k}}"]="{{v}}";
+                    {% endfor %}
+                    ws.send(JSON.stringify({'cmd':'start','conversation':"{{chat_name}}",'data':preferences }));
+                    return false;
+                    $('#start').prop('disabled',true)
+                    $('#msg').focus();
+ 
+            });
+
+            $('#msg_input').focus();
+
+            function sleep(milliseconds) {
+                  const date = Date.now();
+                  let currentDate = null;
+                  do {
+                          currentDate = Date.now();
+                        } while (currentDate - date < milliseconds);
+            };
+
+          ws.onmessage = function(event) {
+				  data=JSON.parse(event.data);
+	        var to_continue=true;
                 // SAY
-				if(data.cmd=="say"){
+				  if(data.cmd=="say"){
                 	$('#last_say').html(data.msg);
                     //let utter = new SpeechSynthesisUtterance();
                     //utter.lang = 'es-MX';
@@ -44,40 +62,63 @@
                     // speak
                     //window.speechSynthesis.speak(utter);
                     $('#log').append('<br>' +msgCount + '. '+ data.spk+':'+data.msg);
-					console.log('say');
-                	msgCount += 1;
-				};
+					          console.log('say');
+                	  msgCount += 1;
+                    sleep(400);
+				  };
 			    if(data.cmd=="activate input"){
-                    $('#send').prop('disabled',false);
-                    spk=data.spk;
+            $('#send').prop('disabled',false);
+            spk=data.spk;
 				    console.log('activate input');
-                };
             };
+          	if(data.cmd=="finish"){
+                    		document.getElementById('msg_input').disabled = true;
+                    		document.getElementById('chat_window').disabled = true;
+                    		document.getElementById('bye_message').removeAttribute('hidden');
+                    		window.scrollTo(0, document.body.scrollHeight);
+				    to_continue=false;
+            };
+          };
 
-            /*socket.on('input log', function(data) {
-                $('#log').append('<br>' + $('<div/>').text(msgCount + '. '+ data.spk + ':' + data.msg).html());
-				console.log('input log');
-                msgCount += 1;
-            });
 
-            socket.on('finished log', function(data) {
-                $('#start').prop('disabled',false)
-                msgCount = 0;
-                $('#log').append('<br><hr>');
-				console.log('finished');
-            });
+            ws.onclose = function(e) {
+                    console.log('Socket is closed.');
+     		    document.getElementById('msg_input').disabled = true;
+                    document.getElementById('chat_window').disabled = true;
+		    if(to_continue){
+			console.log('Not finished normal. Reconnect will be attempted in 1 second.', e.reason);
+                        if(port.length>0){
+                                ws = new WebSocket('{{protocol}}://{{server}}:{{port}}' + namespace+`${client_id}`);
+                            }else{
+                                ws = new WebSocket('{{protocol}}://{{server}}' + namespace+`${client_id}`);
+                            }
+    				document.getElementById('msg_input').disabled = false;
+                    		document.getElementById('chat_window').disabled = false;
+		 
+			}else{
+				document.getElementById('close_message').removeAttribute('hidden');
+                    		window.scrollTo(0, document.body.scrollHeight);
+			}
+                    };
 
- 			socket.on('audio log', function(data) {
-				console.log('audio');
-				if(data.main == 2){
-                	$('#audio').text("Esperando que hables");
-				}
-				if(data.main == 3){
-                	$('#audio').text("Escuchandote");
-				}if(data.main == 4){
-                	$('#audio').text("Hablando");
-				}
-            }); */
+            ws.onerror = function(err) {
+                    console.log('Socket had an error.');
+		    document.getElementById('msg_input').disabled = true;
+                    document.getElementById('chat_window').disabled = true;
+		    if(to_continue){
+			console.log('Not finished normal. Reconnect will be attempted in 1 second.', e.reason);
+                        if(port.length>0){
+                                ws = new WebSocket('{{protocol}}://{{server}}:{{port}}' + namespace+`${client_id}`);
+                            }else{
+                                ws = new WebSocket('{{protocol}}://{{server}}' + namespace+`${client_id}`);
+                        }
+      		    document.getElementById('msg_input').disabled = false;
+                    document.getElementById('chat_window').disabled = false;
+		     	}else{
+				document.getElementById('error_message').removeAttribute('hidden');
+                    		window.scrollTo(0, document.body.scrollHeight);
+			}
+                    };
         });
     </script>
 {% endblock %}
