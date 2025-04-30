@@ -105,7 +105,7 @@ dependencies = [
 requires-dist = [
     { name = "arrow", specifier = ">=1.3.0" },
     { name = "click-option-group", specifier = ">=0.5.7" },
-    { name = "fastapi", specifier = ">=0.115.12" },
+    { name = "fastapi", extras = ["standart"], specifier = ">=0.115.12" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "requests", specifier = ">=2.32.3" },
