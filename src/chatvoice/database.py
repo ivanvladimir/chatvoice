@@ -11,7 +11,6 @@ chat = config.get('entry_point',None)
 if chat:
     db_filename=os.path.join(
             config.get("conversations_dir", "conversations"),
-            chat,
             DB,
         )
 else:
@@ -19,7 +18,6 @@ else:
             config.get("conversations_dir", "conversations"),
             f"conversations.db"
         )
-
 
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{db_filename}"
 # TODO: Addapt to use a formal database
