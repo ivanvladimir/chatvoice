@@ -1,0 +1,18 @@
+[project]
+name = "chatvoice"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.135.2",
+    "pydantic-settings>=2.13.1",
+    "redis>=7.4.0",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.19.1",
+    "pytest>=9.0.2",
+    "ruff>=0.15.8",
+]
