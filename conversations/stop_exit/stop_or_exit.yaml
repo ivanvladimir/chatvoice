@@ -1,6 +1,0 @@
-script:
-    - say "hay tres opciones parar, salir o continuar"
-    - input option | asign parar:stop salir:exit
-    - if option == 'stop' then stop
-    - if option == 'exit' then exit
-    - say 'Todavía no he acabado'

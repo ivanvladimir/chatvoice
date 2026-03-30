@@ -1,7 +1,0 @@
-arrow
-fastapi
-python-dotenv
-pydantic-settings
-transformers[torch]
-uvicorn
-openai

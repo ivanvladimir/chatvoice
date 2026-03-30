@@ -1,8 +1,0 @@
-# Conversation example for simple hello
-
-plugins:
-    - random_greeting
-
-script:
-    - set_slot options ["whatsup",'nice day']
-    - random_greeting.execute('greeting',options)

@@ -1,8 +1,0 @@
-GREET:
-    - MSG:
-        - TEXT: |
-            ¡Hola **{username}** 👋! 
-
-            ¡Soy **Psi** 🤝, un agente conversacional 🤖!
-
-
