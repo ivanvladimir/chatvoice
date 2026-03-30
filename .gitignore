@@ -91,6 +91,7 @@ pip-selfcheck.json
 # Rope project settings
 .ropeproject
 
+logs/
 # moni_files
 conversations/**/is.json
 conversations/**/audios

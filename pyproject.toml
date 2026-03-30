@@ -5,9 +5,11 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "cyclopts>=4.10.1",
     "fastapi>=0.135.2",
     "pydantic-settings>=2.13.1",
     "redis>=7.4.0",
+    "structlog>=25.5.0",
 ]
 
 [dependency-groups]
