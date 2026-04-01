@@ -3,7 +3,6 @@ from typing import Annotated
 from pathlib import Path
 from rich import print
 
-from core.config import settings 
 from core.logger import setup_logging, get_logger
 
 cli = cyclopts.App(
@@ -26,13 +25,13 @@ def console(
 
     conversation: Directory with the conversation to have with the chat.
     """
-
+    from transport.console import Console
     setup_logging(json_output=logging_json, log_file=logging_file, log_level=logging_level)
     
     log = get_logger("chatvoice.console")
 
     print(f"Running [yellow]{conversation}[/] conversation from the console as [green]{name}[/].")
-    log.debug("Starting console chat", conversation=str(conversation), name=name)
+    log.info("Starting console chat", conversation=str(conversation), name=name)
 
 @cli.command
 def server():
@@ -42,7 +41,8 @@ def server():
     ----------
 
     """
-    print(f"Running the [yellow]server chat[/].")
+    print("Running the [yellow]server chat[/].")
+    log.info("Starting server chat")
 
 # Meta definition to load the config and run the app with the tokens passed as arguments.
 @cli.meta.default

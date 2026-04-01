@@ -91,6 +91,18 @@ pip-selfcheck.json
 # Rope project settings
 .ropeproject
 
+## Proyect specific
+
+# SQLite databases - NEVER commit these to version control
+*.db
+*.sqlite
+*.sqlite3
+crudadmin_data/
+
+# Also exclude database journals
+*.db-journal
+*.sqlite3-journal
+
 logs/
 # moni_files
 conversations/**/is.json
