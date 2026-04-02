@@ -32,6 +32,8 @@ def console(
 
     print(f"Running [yellow]{conversation}[/] conversation from the console as [green]{name}[/].")
     log.info("Starting console chat", conversation=str(conversation), name=name)
+    console = Console(name=name, log=log)
+    
 
 @cli.command
 def server():
@@ -43,6 +45,26 @@ def server():
     """
     print("Running the [yellow]server chat[/].")
     log.info("Starting server chat")
+
+@cli.command
+def create_admin(
+        logging_json: bool = False,
+        logging_level: str = "debug",
+        logging_file: str = "logs/chatvoice.log",
+):
+    """Runs the server chat.
+
+    Parameters
+    ----------
+
+    """
+    from utils.admin import create_admin_user
+
+    setup_logging(json_output=logging_json, log_file=logging_file, log_level=logging_level)
+    log = get_logger("chatvoice.create_admin")
+
+    print("About to create [yellow]admin user[/].")
+    create_admin_user()
 
 # Meta definition to load the config and run the app with the tokens passed as arguments.
 @cli.meta.default

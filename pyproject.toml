@@ -6,12 +6,17 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "aiosqlite>=0.22.1",
+    "bcrypt>=5.0.0",
     "cyclopts>=4.10.1",
     "fastapi>=0.135.2",
+    "fastcrud>=0.21.0",
     "pydantic-settings>=2.13.1",
+    "pydantic[email]>=2.12.5",
+    "python-jose>=3.5.0",
     "redis>=7.4.0",
     "sqlalchemy>=2.0.48",
     "structlog>=25.5.0",
+    "uuid6>=2025.0.1",
 ]
 
 [dependency-groups]

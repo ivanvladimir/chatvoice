@@ -1,10 +1,13 @@
 from core.logger import setup_logging, get_logger
-from core.db.database import async_get_db
+from models import *
+from core.db.database_sync import engine, Base 
 
 class Console():
     def __init__(self, 
                  log,
                  name: str = "chatvoice",
                  ):
-        pass
+        Base.metadata.create_all(bind=engine)
+        log.info("Initialized database tables")
+
 

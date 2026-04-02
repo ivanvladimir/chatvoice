@@ -29,7 +29,7 @@ class DatabaseOption(str,Enum):
     POSTGRES: str = "postgres"
 
 class DatabaseOptionSettings:
-    DATABASE: DatabaseOption = DatabaseOption.SQLITE
+    DATABASE: DatabaseOption = "sqlite"
 
 class DatabaseSettings:
     pass
@@ -94,6 +94,19 @@ class CRUDAdminSettings:
     CRUD_ADMIN_REDIS_PASSWORD: str | None = "None"
     CRUD_ADMIN_REDIS_SSL: bool = False
 
+class EnvironmentOption(str, Enum):
+    LOCAL = "local"
+    STAGING = "staging"
+    PRODUCTION = "production"
+
+class EnvironmentSettings(BaseSettings):
+    ENVIRONMENT: EnvironmentOption = EnvironmentOption.LOCAL
+
+class CORSSettings(BaseSettings):
+    CORS_ORIGINS: list[str] = ["*"]
+    CORS_METHODS: list[str] = ["*"]
+    CORS_HEADERS: list[str] = ["*"]
+
 class Settings(
             AppSettings,
             CryptSettings,
@@ -102,6 +115,8 @@ class Settings(
             MySQLSettings,
             PostgresSettings,
             CRUDAdminSettings,
+            EnvironmentSettings,
+            CORSSettings,
             BaseSettings,
         ):
     model_config = SettingsConfigDict(

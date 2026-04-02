@@ -2,12 +2,8 @@ from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.ext.asyncio.session import AsyncSession
-from sqlalchemy.orm import DeclarativeBase, MappedAsDataclass
 
 from ..config import settings, DatabaseOption
-
-class Base(DeclarativeBase, MappedAsDataclass):
-    pass
 
 if settings.DATABASE == DatabaseOption.SQLITE:
     DATABASE_URI = settings.SQLITE_URI
