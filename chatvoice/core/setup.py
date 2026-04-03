@@ -24,14 +24,9 @@ from .config import (
     DatabaseSettings,
     # EnvironmentOption,
     EnvironmentSettings,
-    # RedisCacheSettings,
-    # RedisQueueSettings,
-    # RedisRateLimiterSettings,
-    settings,
 )
 from .db.database import Base
 from .db.database import async_engine as engine
-from .utils import cache, queue
 
 
 # -------------- database --------------
@@ -243,14 +238,3 @@ def create_application(
             application.include_router(docs_router)
 
     return application
-
-def create_console(
-    settings: (
-        AppSettings
-        | EnvironmentSettings
-    ),
-    create_tables_on_start: bool = True,
-):
-    if create_tables_on_start:
-        create_tables()
-

@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 
 from sqlalchemy import  create_engine
-from sqlalchemy.orm import  sessionmaker, Session
+from sqlalchemy.orm import  sessionmaker
 
 
 from core.db import Base
@@ -23,7 +23,6 @@ engine = create_engine(DATABASE_URL, echo=False, future=True)
 
 local_session = sessionmaker(engine)
 
-
 @contextmanager
 def get_db_ctx():
     db = local_session()
@@ -37,6 +36,5 @@ def get_db_ctx():
         db.close()    # always close the session
 
 def init_db():
-
     Base.metadata.create_all(bind=engine)
 

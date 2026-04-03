@@ -8,10 +8,10 @@ from sqlalchemy.dialects.postgresql import UUID
 from uuid6 import uuid7  # 126
 
 from core.security import get_password_hash
-from core.logger import setup_logging, get_logger
-from core.db.database_sync import get_db_ctx, init_db, Base, engine 
+from core.logger import get_logger
+from core.db.database_sync import get_db_ctx, init_db 
 
-from models.user import User
+from models import *
 
 log = get_logger(__name__)
 
@@ -32,8 +32,8 @@ def create_admin_user():
         result = session.execute(query)
         user = result.scalar_one_or_none()
 
-    if not user is None:
-        print(f"[red]User with email {email} already exists. Please try again.[/]")
+    if user is not None:
+        print(f"[red]User with email '{email}' already exists. Please try again.[/]")
         return False
 
     metadata = MetaData()
@@ -71,9 +71,28 @@ def create_admin_user():
         session.execute(stmt)
         session.commit()
 
-    log.info(f"Admin user {username} created successfully.")
+    log.info(f"Admin user '{username}' created successfully.")
 
     
+def create_tier():
+    tiername = Prompt.ask("Enter the tier name", default="free")
+    init_db()  # Ensure tables are created before querying
+
+    with get_db_ctx() as session:
+        query = select(Tier).where(Tier.name == tiername)
+        result = session.execute(query)
+        tier = result.scalar_one_or_none()
+
+    if tier is not None:
+        print(f"[red]Tier name '{tiername}' already exists[/]")
+        return False
+
+    with get_db_ctx() as session:
+        session.add(Tier(name=tiername))
+        session.commit()
+
+    log.info(f"Tiername '{tiername}' created successfully.")
+
 
 
 

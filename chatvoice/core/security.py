@@ -49,7 +49,6 @@ async def authenticate_user(username_or_email: str, password: str, db: AsyncSess
 
     return db_user
 
-
 async def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
     to_encode = data.copy()
     if expires_delta:

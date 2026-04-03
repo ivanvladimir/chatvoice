@@ -2,6 +2,7 @@ import cyclopts
 from typing import Annotated
 from pathlib import Path
 from rich import print
+from rich.prompt import Prompt
 
 from core.logger import setup_logging, get_logger
 
@@ -26,26 +27,36 @@ def console(
     conversation: Directory with the conversation to have with the chat.
     """
     from transport.console import Console
+
     setup_logging(json_output=logging_json, log_file=logging_file, log_level=logging_level)
-    
-    log = get_logger("chatvoice.console")
+    log = get_logger(__name__)
 
     print(f"Running [yellow]{conversation}[/] conversation from the console as [green]{name}[/].")
     log.info("Starting console chat", conversation=str(conversation), name=name)
-    console = Console(name=name, log=log)
-    
+    console = Console(name=name)
+    user=console.authenticate_user()
+    if not user:
+        print("[red]Authentication failed. Please check your credentials and try again.[/]")
+        return None
 
 @cli.command
-def server():
+def server(
+    logging_json: bool = False,
+    logging_level: str = "debug",
+    logging_file: str = "logs/chatvoice.log",
+):
     """Runs the server chat.
 
     Parameters
     ----------
 
     """
+    setup_logging(json_output=logging_json, log_file=logging_file, log_level=logging_level)
+    log = get_logger(__name__)
+
     print("Running the [yellow]server chat[/].")
     log.info("Starting server chat")
-
+    
 @cli.command
 def create_admin(
         logging_json: bool = False,
@@ -61,10 +72,30 @@ def create_admin(
     from utils.admin import create_admin_user
 
     setup_logging(json_output=logging_json, log_file=logging_file, log_level=logging_level)
-    log = get_logger("chatvoice.create_admin")
+    log = get_logger(__name__)
 
     print("About to create [yellow]admin user[/].")
     create_admin_user()
+
+@cli.command
+def create_tier(
+        logging_json: bool = False,
+        logging_level: str = "debug",
+        logging_file: str = "logs/chatvoice.log",
+):
+    """Runs the server chat.
+
+    Parameters
+    ----------
+
+    """
+    from utils.admin import create_tier
+
+    setup_logging(json_output=logging_json, log_file=logging_file, log_level=logging_level)
+    log = get_logger(__name__)
+
+    print("About to create a [yellow]tier[/].")
+    create_tier()
 
 # Meta definition to load the config and run the app with the tokens passed as arguments.
 @cli.meta.default
