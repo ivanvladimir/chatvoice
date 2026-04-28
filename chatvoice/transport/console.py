@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, Literal
+from typing import Any, Literal, Callable
 from rich.prompt import Prompt
 
 from models import *
@@ -9,16 +9,22 @@ import bcrypt
 
 from crud.users import crud_users
 from core.security import get_password_hash
-
 from core.logger import get_logger
+
+from sessions.manager import SessionManager
 
 log = get_logger(__name__)
 
 class Console():
     def __init__(self, 
                  name: str = "chatvoice",
+                 store_type: str = "memory"
                  ):
         init_db()
+        if store_type.startswith("memory"):
+            self.store = MemoryStateStore()
+            self.sesion = SessionManager(store)
+
 
     def authenticate_user(self) -> dict[str, Any] | Literal[False]:
         username_or_email = Prompt.ask("Enter your username or email")
@@ -43,7 +49,9 @@ class Console():
         return db_user
 
     def run(user_id: str, conversation: Callable):
-        store = MemoryStateStore()
+        sesion = self.sesion.create(user_id, conversation)
+        print(sesion)
+        
 
 
 

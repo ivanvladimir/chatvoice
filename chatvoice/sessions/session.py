@@ -2,7 +2,7 @@ import queue
 from store.base import BaseStateStore
 
 class ChatSession:
-    def __init__(self, user_id: str, conversation: Callable, store: BaseStateStore, session_id: sr):
+    def __init__(self, user_id: str, conversation: Callable, store: BaseStateStore, session_id: str):
         self.user_id = user_id
         self.session_id = session_id
         self.store = store
