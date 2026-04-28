@@ -6,13 +6,15 @@ from rich.prompt import Prompt
 
 from core.logger import setup_logging, get_logger
 
+from core.conversation import Conversation
+
 cli = cyclopts.App(
     name="chatvoice",
     help="CLI for running the chat in different modes.")
 
 @cli.command
 def console(
-        conversation: Annotated[Path, cyclopts.Parameter(validator=cyclopts.validators.Path(exists=True))],
+        project_pathname: Annotated[Path, cyclopts.Parameter(validator=cyclopts.validators.Path(exists=True))],
         *,
         name: str = "chatvoice",
         logging_json: bool = False,
@@ -31,13 +33,16 @@ def console(
     setup_logging(json_output=logging_json, log_file=logging_file, log_level=logging_level)
     log = get_logger(__name__)
 
-    print(f"Running [yellow]{conversation}[/] conversation from the console as [green]{name}[/].")
-    log.info("Starting console chat", conversation=str(conversation), name=name)
+    print(f"Running [yellow]{project_pathname}[/] conversation from the console as [green]{name}[/].")
+    log.info("Starting console chat", conversation=str(project_pathname), name=name)
     console = Console(name=name)
     user=console.authenticate_user()
     if not user:
         print("[red]Authentication failed. Please check your credentials and try again.[/]")
         return None
+
+    conversation = Conversation(project_pathname)
+    console.run(user.username, conversation)
 
 @cli.command
 def server(

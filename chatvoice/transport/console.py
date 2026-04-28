@@ -12,6 +12,7 @@ from core.security import get_password_hash
 from core.logger import get_logger
 
 from sessions.manager import SessionManager
+from store.memory import MemoryStateStore
 
 log = get_logger(__name__)
 
@@ -23,7 +24,7 @@ class Console():
         init_db()
         if store_type.startswith("memory"):
             self.store = MemoryStateStore()
-            self.sesion = SessionManager(store)
+            self.sesion = SessionManager(self.store)
 
 
     def authenticate_user(self) -> dict[str, Any] | Literal[False]:
@@ -45,12 +46,11 @@ class Console():
             if not bcrypt.checkpw(password.encode(),db_user.hashed_password.encode()):
                 log.error("Authentication failed for user", username_or_email=username_or_email)
                 return False
-
+            db.expunge(db_user)
         return db_user
 
-    def run(user_id: str, conversation: Callable):
+    def run(self, user_id: str, conversation: Callable):
         sesion = self.sesion.create(user_id, conversation)
-        print(sesion)
         
 
 

@@ -1,0 +1,4 @@
+script:
+  - say: "What's your name?"
+  - listen: name
+  - say: "Nice to meet you, {name}!"

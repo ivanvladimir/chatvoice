@@ -1,12 +1,15 @@
 import queue
 from store.base import BaseStateStore
+from typing import Callable
+import threading
+
 
 class ChatSession:
     def __init__(self, user_id: str, conversation: Callable, store: BaseStateStore, session_id: str):
         self.user_id = user_id
         self.session_id = session_id
         self.store = store
-        self.conversation_name=conversation.__name__
+        self.conversation_name=conversation.name
 
         # Two queues act as the communication bridge between
         # the async WebSocket handler and the blocking script thread.
@@ -18,7 +21,7 @@ class ChatSession:
         # daemon=True means the thread dies automatically when the
         # main process exits — no manual cleanup needed on shutdown.
         self._thread = threading.Thread(
-            target=self._run, args=(script,), daemon=True, name=f"session-{user_id}"
+            target=self._run, args=(conversation,), daemon=True, name=f"session-{user_id}"
         )
 
     def start(self):
@@ -52,7 +55,7 @@ class ChatSession:
         # This is the callable passed into the script as recv().
         return self._inbox.get()
 
-    def _run(self, script: Callable):
+    def _run(self, conversation: Callable):
         # Runs entirely inside the script thread.
 
         # Load whatever state was saved from a previous session.

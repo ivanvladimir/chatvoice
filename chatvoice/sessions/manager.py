@@ -1,6 +1,8 @@
 import uuid
-from typing import Calable
-from session import ChatSession
+from typing import Callable
+import threading
+
+from .session import ChatSession
 
 
 class SessionManager:
@@ -13,7 +15,7 @@ class SessionManager:
         # Always creates a new session — caller gets back the session_id
         # to reference it later (send messages, close it, etc.)
         session_id = str(uuid.uuid4())
-        key = (user_id, conversation.__name__, session_id)
+        key = (user_id, conversation.name, session_id)
         session = ChatSession(user_id, conversation, self.store, session_id)
         with self._lock:
             self._sessions[key] = session

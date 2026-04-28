@@ -13,6 +13,7 @@ dependencies = [
     "pydantic-settings>=2.13.1",
     "pydantic[email]>=2.12.5",
     "python-jose>=3.5.0",
+    "pyyaml>=6.0.3",
     "redis>=7.4.0",
     "sqlalchemy>=2.0.48",
     "structlog>=25.5.0",
