@@ -16,7 +16,7 @@ class SessionManager:
         # to reference it later (send messages, close it, etc.)
         session_id = str(uuid.uuid4())
         key = (user_id, conversation.name, session_id)
-        session = ChatSession(user_id, conversation, self.store, session_id)
+        session = ChatSession(user_id, session_id, conversation, self.store)
         with self._lock:
             self._sessions[key] = session
         session.start()

@@ -3,13 +3,17 @@ from store.base import BaseStateStore
 from typing import Callable
 import threading
 
+def global_thread_exception_hook(args):
+    print(f"Thread {args.thread.name} crashed: {args.exc_value}")
+
+threading.excepthook = global_thread_exception_hook
 
 class ChatSession:
-    def __init__(self, user_id: str, conversation: Callable, store: BaseStateStore, session_id: str):
+    def __init__(self, user_id: str, session_id: str, conversation: Callable, store: BaseStateStore):
         self.user_id = user_id
         self.session_id = session_id
-        self.store = store
         self.conversation_name=conversation.name
+        self.store = store
 
         # Two queues act as the communication bridge between
         # the async WebSocket handler and the blocking script thread.
@@ -21,7 +25,7 @@ class ChatSession:
         # daemon=True means the thread dies automatically when the
         # main process exits — no manual cleanup needed on shutdown.
         self._thread = threading.Thread(
-            target=self._run, args=(conversation,), daemon=True, name=f"session-{user_id}"
+            target=self._run, args=(conversation,), daemon=True, name=f"session-{user_id}-{session_id}"
         )
 
     def start(self):
@@ -64,7 +68,7 @@ class ChatSession:
         # Build the generator, passing in the two interaction primitives.
         # The script never touches queues or threads directly —
         # it only calls recv() and yields strings.
-        gen = conversation(self._recv_from_user, state)
+        gen = conversation.execute(self._recv_from_user,state)
 
         # Each yield from the script is a bot message.
         # We forward it to the outbox so the WebSocket handler can send it.
@@ -72,7 +76,7 @@ class ChatSession:
             self._send_to_user(message)
 
         # Script is exhausted — persist final state.
-        self.store.set(self.user_id, state)
+        self.store.set(self.user_id, self.conversation_name, self.session_id, state)
 
         # Sentinel value: tells the WebSocket handler the conversation
         # is over so it can close the connection cleanly.

@@ -34,14 +34,13 @@ def console(
     log = get_logger(__name__)
 
     print(f"Running [yellow]{project_pathname}[/] conversation from the console as [green]{name}[/].")
-    log.info("Starting console chat", conversation=str(project_pathname), name=name)
-    console = Console(name=name)
+    console = Console()
     user=console.authenticate_user()
     if not user:
         print("[red]Authentication failed. Please check your credentials and try again.[/]")
         return None
 
-    conversation = Conversation(project_pathname)
+    conversation = Conversation(project_pathname, {"name":name})
     console.run(user.username, conversation)
 
 @cli.command

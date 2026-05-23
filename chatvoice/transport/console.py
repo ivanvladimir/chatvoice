@@ -1,6 +1,7 @@
 import asyncio
 from typing import Any, Literal, Callable
 from rich.prompt import Prompt
+from rich.console import Console as PConsole
 
 from models import *
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, String, Table, insert, select
@@ -18,14 +19,14 @@ log = get_logger(__name__)
 
 class Console():
     def __init__(self, 
-                 name: str = "chatvoice",
                  store_type: str = "memory"
                  ):
         init_db()
         if store_type.startswith("memory"):
             self.store = MemoryStateStore()
-            self.sesion = SessionManager(self.store)
-
+            self.session_manager = SessionManager(self.store)
+        self.console = PConsole()
+        log.info("Starting console chat")
 
     def authenticate_user(self) -> dict[str, Any] | Literal[False]:
         username_or_email = Prompt.ask("Enter your username or email")
@@ -50,8 +51,18 @@ class Console():
         return db_user
 
     def run(self, user_id: str, conversation: Callable):
-        sesion = self.sesion.create(user_id, conversation)
-        
+        session = self.session_manager.create(user_id, conversation)
+        self.console.print(f"\n\n====== Starting conversation with {user_id} =====")
+        while True:
+            m = session.recv()
+            if m is None:
+                return
+            if m["cmd"] == "say":
+                self.console.print(f"{conversation.settings['name']}:",*m['args'])
+            if m["cmd"] == "listen":
+                input=self.console.input(f"{conversation.settings['user_name']}: ")
+                session.send(input)
+
 
 
 
