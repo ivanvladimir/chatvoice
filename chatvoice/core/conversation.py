@@ -4,6 +4,8 @@ from rich.markdown import Markdown
 import sys
 import os
 
+from .parser import parse_line
+
 from typing import Generator, Any
 from core.logger import get_logger
 
@@ -12,7 +14,9 @@ log = get_logger(__name__)
 class Conversation:
     def __init__(self, pathname: str, settings: dict):
         self.console = Console(record=True)
-        self.commands : list[dict] = []
+        self.stacks_ : list[list] = []
+        self.commands : list[str] = []
+        self.strategies : list[dict] = []
         self.main_file = self.load_conversation(pathname, settings)
         self.path = os.path.dirname(pathname)
         self.basename = os.path.basename(pathname)
@@ -29,8 +33,9 @@ class Conversation:
                 log.error(f"Error while reading: {filename}")
                 sys.exit()
 
-        self.commands = definition.get("script",{})
+        self.commands = list(definition.get("script",{}))
         self.load_slots(definition.get("slots",{}))
+        self.load_strategies(definition.get("strategies",{}))
         settings= definition.get("settings",{})
         settings.update(settings_)
         self.load_settings(settings)
@@ -42,6 +47,11 @@ class Conversation:
         }
         self.slots.update(slots_)
 
+    def load_strategies(self, strategies_: dict):
+        self.strategies = {
+        }
+        self.strategies.update(strategies_)
+
     def load_settings(self, settings_: dict):
         self.settings = {
             "user_name":"USER",
@@ -52,27 +62,41 @@ class Conversation:
     def execute(self, callback, state: dict):
         log.info(f"Starting execution of conversation")
         self.slots.update(state.get('slots',{}))
-        for command in self.commands:
-            if not isinstance(command, dict):
-                raise ValueError(f"Invalid command (must be a mapping): {command!r}")
+        EXIT=False
+        ERROR=None
+        while len(self.commands)>0 and not EXIT:
+            line=self.commands.pop(0)
+            chain = parse_line(line)
+            while len(chain.commands)>0 and not EXIT:
+                c=chain.commands.pop(0)
+                if c.name=="solve":
+                    strategy_name=c.args[0]
+                    if not strategy_name in self.strategies:
+                        EXIT=True
+                        ERROR=ValueError(f"Unknown strategy {strategy_name}")
+                        break
+                    self.stacks_.append(self.commands)
+                    self.commands=list(self.strategies[strategy_name])
+       
+                elif c.name == "say":
+                    text = str(c.args[0]).format_map(self.slots)
+                    yield {"cmd":"say", "args": [text]}
     
-            if len(command) != 1:
-                raise ValueError(f"Each command must have exactly one key: {command!r}")
-    
-            [(cmd, value)] = command.items()
-    
-            if cmd == "say":
-                text = str(value).format_map(self.slots)
-                yield {"cmd":"say", "args": [text]}
-    
-            elif cmd == "listen":
-                variable = str(value)
-                yield {"cmd":"listen"}
-                user_input = callback()
-                self.slots[variable] = user_input or ""
-            else:
-                raise ValueError(f"Unknown command: {cmd!r}")
+                elif c.name == "listen":
+                    variable = str(c.args[0])
+                    yield {"cmd":"listen"}
+                    user_input = callback()
+                    self.slots[variable] = user_input or ""
+                else:
+                    EXIT=True
+                    ERROR=ValueError(f"Unknown command {c}")
+                    break
+ 
+            if len(self.commands)==0 and len(self.stacks_)>0:
+                self.commands=self.stacks_.pop()
 
-
+        log.info(f"Finishing execution of conversation")
+        if not ERROR is None:
+            raise ERROR
 
         

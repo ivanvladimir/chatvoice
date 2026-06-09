@@ -21,6 +21,7 @@ class Console():
     def __init__(self, 
                  store_type: str = "memory"
                  ):
+        """ Initializating the console """
         init_db()
         if store_type.startswith("memory"):
             self.store = MemoryStateStore()
@@ -29,6 +30,7 @@ class Console():
         log.info("Starting console chat")
 
     def authenticate_user(self) -> dict[str, Any] | Literal[False]:
+        """ Managing authentification """
         username_or_email = Prompt.ask("Enter your username or email")
         password = Prompt.ask("Enter your password", password=True)
 
@@ -51,6 +53,7 @@ class Console():
         return db_user
 
     def run(self, user_id: str, conversation: Callable):
+        """ Run the script """
         session = self.session_manager.create(user_id, conversation)
         self.console.print(f"\n\n====== Starting conversation with {user_id} =====")
         while True:

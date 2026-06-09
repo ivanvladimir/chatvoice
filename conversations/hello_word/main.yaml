@@ -1,4 +1,19 @@
+strategies:
+    name:
+        - say "¿cúal es tu nombre?"
+        - listen name | remember 
+        - say "mucho gusto en conocerte, {name}"
+    excelent:
+        - say "me da mucho gusto que estés bien"
+    sorry:
+        - say "siento que no te encuentre bien"
+    something_else:
+        - say "creo que me dijiste algo que no entiendo bien"
+
 script:
-  - say: "What's your name?"
-  - listen: name
-  - say: "Nice to meet you, {name}!"
+  - solve name
+  - say "¿como estás hoy {}?"
+  - input status
+  - if status == "good" then solve excelent
+  - if status == "bad" then solve sorry
+  - if not status == "good" or not status == "bad" then solve something_else

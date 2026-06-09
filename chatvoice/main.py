@@ -67,7 +67,7 @@ def create_admin(
         logging_level: str = "debug",
         logging_file: str = "logs/chatvoice.log",
 ):
-    """Runs the server chat.
+    """Creates admin user.
 
     Parameters
     ----------
@@ -87,7 +87,7 @@ def create_tier(
         logging_level: str = "debug",
         logging_file: str = "logs/chatvoice.log",
 ):
-    """Runs the server chat.
+    """Creates tier.
 
     Parameters
     ----------
