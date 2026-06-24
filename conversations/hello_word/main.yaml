@@ -6,14 +6,14 @@ strategies:
     excelent:
         - say "me da mucho gusto que estés bien"
     sorry:
-        - say "siento que no te encuentre bien"
+        - say "siento que no te encuentres bien"
     something_else:
         - say "creo que me dijiste algo que no entiendo bien"
 
 script:
   - solve name
-  - say "¿como estás hoy {}?"
-  - input status
+  - say "¿como estás hoy, {name}?"
+  - listen status
   - if status == "good" then solve excelent
   - if status == "bad" then solve sorry
   - if not status == "good" or not status == "bad" then solve something_else

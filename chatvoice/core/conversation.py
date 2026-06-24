@@ -67,6 +67,7 @@ class Conversation:
         while len(self.commands)>0 and not EXIT:
             line=self.commands.pop(0)
             chain = parse_line(line)
+            STATUS = {}
             while len(chain.commands)>0 and not EXIT:
                 c=chain.commands.pop(0)
                 if c.name=="solve":
@@ -77,9 +78,17 @@ class Conversation:
                         break
                     self.stacks_.append(self.commands)
                     self.commands=list(self.strategies[strategy_name])
-       
+                    STATUS = {
+                            'command': 'solve',
+                            'ok': True
+                            }
                 elif c.name == "say":
                     text = str(c.args[0]).format_map(self.slots)
+                    STATUS = {
+                            'command': 'say',
+                            'value': [text],
+                            'ok': True
+                            }
                     yield {"cmd":"say", "args": [text]}
     
                 elif c.name == "listen":
@@ -87,9 +96,32 @@ class Conversation:
                     yield {"cmd":"listen"}
                     user_input = callback()
                     self.slots[variable] = user_input or ""
+                    STATUS = {
+                            'command': 'listen',
+                            'value': user_input or "",
+                            'variable': variable,
+                            'ok': True
+                            }
+                elif c.name == "remember":
+                    if len(c.args)==1:
+                        variable = str(c.args[0])
+                    elif len(c.args)==0:
+                        variable=STATUS['variable']
+                        value=STATUS['value']
+                    print('remember',STATUS)
+                    STATUS = {
+                            'command': 'remember',
+                            'value': value,
+                            'variable': variable,
+                            'ok': True
+                            }
                 else:
                     EXIT=True
-                    ERROR=ValueError(f"Unknown command {c}")
+                    ERROR=ValueError(f"Unknown command {c._command}")
+                    break
+                if not STATUS['ok']:
+                    EXIT=True
+                    ERROR=ValueError(f"Error while evaluating {c._command}")
                     break
  
             if len(self.commands)==0 and len(self.stacks_)>0:

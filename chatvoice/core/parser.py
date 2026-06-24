@@ -52,6 +52,7 @@ class Condition:
 class Command:
     """A single command with optional args and an optional guard condition."""
     name: str
+    _command : str
     args: tuple[str, ...] = field(default_factory=tuple)
     condition: Optional[Condition] = None
 
@@ -161,12 +162,12 @@ def _parse_command(text: str) -> Command:
     if m:
         condition = _parse_condition(m.group(1))
         tokens = _tokenize(m.group(2))
-        return Command(name=tokens[0], args=tuple(tokens[1:]), condition=condition)
+        return Command(name=tokens[0], _command = text, args=tuple(tokens[1:]), condition=condition )
 
     tokens = _tokenize(text)
     if not tokens:
         raise ValueError(f"Empty command in: {text!r}")
-    return Command(name=tokens[0], args=tuple(tokens[1:]))
+    return Command(name=tokens[0], _command = text, args=tuple(tokens[1:]))
 
 
 # ---------------------------------------------------------------------------
