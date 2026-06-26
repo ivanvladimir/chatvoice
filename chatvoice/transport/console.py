@@ -4,6 +4,8 @@ from rich.prompt import Prompt
 from rich.console import Console as PConsole
 
 from models import *
+from schemas.user import UserRead
+from schemas.kb import KBRead
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, String, Table, insert, select
 from core.db.database_sync import init_db, get_db_ctx 
 import bcrypt
@@ -29,7 +31,7 @@ class Console():
         self.console = PConsole()
         log.info("Starting console chat")
 
-    def authenticate_user(self) -> dict[str, Any] | Literal[False]:
+    def authenticate_user(self, key_kdb: str) -> dict[str, Any] | Literal[False]:
         """ Managing authentification """
         username_or_email = Prompt.ask("Enter your username or email")
         password = Prompt.ask("Enter your password", password=True)
@@ -49,21 +51,22 @@ class Console():
             if not bcrypt.checkpw(password.encode(),db_user.hashed_password.encode()):
                 log.error("Authentication failed for user", username_or_email=username_or_email)
                 return False
+            user_read = UserRead.model_validate(db_user)
             db.expunge(db_user)
-        return db_user
+        return user_read
 
-    def run(self, user_id: str, conversation: Callable):
+    def run(self, user_id: int, conversation: Callable):
         """ Run the script """
-        session = self.session_manager.create(user_id, conversation)
+        session = self.session_manager.create(str(user_id), conversation)
         self.console.print(f"\n\n====== Starting conversation with {user_id} =====")
         while True:
             m = session.recv()
             if m is None:
                 return
             if m["cmd"] == "say":
-                self.console.print(f"{conversation.settings['name']}:",*m['args'])
+                self.console.print(f"{conversation.settings['_name_system']}:",*m['args'])
             if m["cmd"] == "listen":
-                input=self.console.input(f"{conversation.settings['user_name']}: ")
+                input=self.console.input(f"{conversation.settings['_name_user']}: ")
                 session.send(input)
 
 

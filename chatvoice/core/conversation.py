@@ -9,18 +9,26 @@ from .parser import parse_line
 from typing import Generator, Any
 from core.logger import get_logger
 
+from models import User, KB
+from schemas.kb import KBUpdateInternal, KBCreate
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, String, Table, insert, select
+from core.db.database_sync import init_db, get_db_ctx 
+
+
 log = get_logger(__name__)
 
 class Conversation:
-    def __init__(self, pathname: str, settings: dict):
+    def __init__(self, pathname: str, user_id: int, settings: dict):
         self.console = Console(record=True)
         self.stacks_ : list[list] = []
         self.commands : list[str] = []
         self.strategies : list[dict] = []
+        self.project_pathname = str(pathname)
         self.main_file = self.load_conversation(pathname, settings)
         self.path = os.path.dirname(pathname)
         self.basename = os.path.basename(pathname)
         self.name = os.path.splitext(self.basename)[-1]
+        self.user_id = user_id
  
     def load_conversation(self, pathname: str, settings_: dict):
         log.info(f"Starting loading conversation from: {pathname}")
@@ -54,8 +62,8 @@ class Conversation:
 
     def load_settings(self, settings_: dict):
         self.settings = {
-            "user_name":"USER",
-            "name":"SYSTEM"
+            "_name_user":"USER",
+            "_name_system":"SYSTEM"
         }
         self.settings.update(settings_)
 
@@ -108,7 +116,19 @@ class Conversation:
                     elif len(c.args)==0:
                         variable=STATUS['variable']
                         value=STATUS['value']
-                    print('remember',STATUS)
+                    self.slots[variable] = value
+                    with get_db_ctx() as db:
+                        result = db.execute(select(KB).filter_by(user_id=self.user_id, project_path=self.project_pathname))
+                        db_kb = result.scalar_one_or_none()
+                        if not db_kb:
+                            entry=KBCreate(user_id=self.user_id,
+                                           project_path=self.project_pathname,
+                                           payload={variable:value})
+                            kb = KB(**entry.model_dump(mode="python"))
+                            db.add(kb)
+                            db.commit()
+                            db.refresh(kb)
+
                     STATUS = {
                             'command': 'remember',
                             'value': value,

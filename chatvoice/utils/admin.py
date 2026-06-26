@@ -3,7 +3,7 @@ from rich import print
 
 from datetime import UTC, datetime
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, String, Table, insert, select
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, String, Table, insert, select, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from uuid6 import uuid7  # 126
 
@@ -24,7 +24,7 @@ def create_admin_user():
     if passwd != passwd_:
         print("[red]Passwords do not match. Please try again.[/]")
         return False
-    password_hash = get_password_hash(passwd)
+    hashed_password = get_password_hash(passwd)
     init_db()  # Ensure tables are created before querying
 
     with get_db_ctx() as session:
@@ -36,40 +36,10 @@ def create_admin_user():
         print(f"[red]User with email '{email}' already exists. Please try again.[/]")
         return False
 
-    metadata = MetaData()
-    user_table = Table(
-        "user",
-        metadata,
-        Column("id", Integer, primary_key=True, autoincrement=True, nullable=False),
-        Column("name", String(30), nullable=False),
-        Column("username", String(20), nullable=False, unique=True, index=True),
-        Column("email", String(50), nullable=False, unique=True, index=True),
-        Column("hashed_password", String, nullable=False),
-        Column("profile_image_url", String, default="https://profileimageurl.com"),
-        Column("uuid", UUID(as_uuid=True), default=uuid7, unique=True),
-        Column("institution", String),
-        Column("description", String),
-        Column("created_at", DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False),
-        Column("updated_at", DateTime),
-        Column("deleted_at", DateTime),
-        Column("is_deleted", Boolean, default=False, index=True),
-        Column("is_superuser", Boolean, default=False),
-        Column("is_verified", Boolean, default=False),
-        Column("tier_id", Integer, ForeignKey("tier.id"), index=True),
-    )
-    data = {
-                "name": name,
-                "email": email,
-                "username": username,
-                "hashed_password": password_hash,
-                "is_superuser": True,
-                "is_verified": True,
-            }
-
-    stmt = insert(user_table).values(data)
+    admin = User(name=name, email=email, username=username, hashed_password=hashed_password, is_verified=True, is_superuser=True)
     with get_db_ctx() as session:
-        session.execute(stmt)
-        session.commit()
+        session.add(admin)
+        session.flush()
 
     log.info(f"Admin user '{username}' created successfully.")
 

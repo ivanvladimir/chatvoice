@@ -1,3 +1,4 @@
 from .rate_limit import RateLimit
-from .tier import Tier
 from .user import User
+from .kb import KB
+from .tier import Tier

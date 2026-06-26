@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -28,19 +28,19 @@ class UserRead(BaseModel):
     name: Annotated[str, Field(min_length=2, max_length=30, examples=["User Userson"])]
     username: Annotated[str, Field(min_length=2, max_length=20, pattern=r"^[a-z0-9]+$", examples=["userson"])]
     email: Annotated[EmailStr, Field(examples=["user.userson@example.com"])]
-    institution: Annotated[str, Field(default="UNAM")]
-    description: Annotated[str, Field(default="Researcher at UNAM.")]
+    institution: Annotated[str | None, Field(default=None)]
+    description: Annotated[str | None, Field(default=None)]
     is_verified: bool
     profile_image_url: str
     tier_id: int | None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserCreate(UserBase):
     model_config = ConfigDict(extra="forbid")
 
     password: Annotated[str, Field(pattern=r"^.{8,}|[0-9]+|[A-Z]+|[a-z]+|[^a-zA-Z0-9]+$", examples=["Str1ngst!"])]
-
-
 
 
 class UserCreateInternal(UserBase):
@@ -83,3 +83,4 @@ class UserDelete(BaseModel):
 
 class UserRestoreDeleted(BaseModel):
     is_deleted: bool
+

@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy import DateTime, ForeignKey, String, JSON
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid6 import uuid7
 
 from core.db import Base
@@ -32,5 +32,12 @@ class User(Base):
 
     tier_id: Mapped[int | None] = mapped_column(ForeignKey("tier.id"), index=True, default=None, init=False)
 
-    # Knodledge based for the user
-    kdb: Mapped[dict] = mapped_column(JSON, default=None, nullable=True)
+    kbs: Mapped[list["KB"]] = relationship(
+        "KB", back_populates="user", cascade="all, delete-orphan", default_factory=list
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"<user id={self.id!r} username={self.username!r} email={self.email!r}>"
+        )
+

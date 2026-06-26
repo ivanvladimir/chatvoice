@@ -35,13 +35,13 @@ def console(
 
     print(f"Running [yellow]{project_pathname}[/] conversation from the console as [green]{name}[/].")
     console = Console()
-    user=console.authenticate_user()
+    user=console.authenticate_user(project_pathname)
     if not user:
         print("[red]Authentication failed. Please check your credentials and try again.[/]")
         return None
 
-    conversation = Conversation(project_pathname, {"name":name})
-    console.run(user.username, conversation)
+    conversation = Conversation(project_pathname, user.id, {"_name_system":name})
+    console.run(user.id, conversation)
 
 @cli.command
 def server(
