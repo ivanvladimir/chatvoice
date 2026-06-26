@@ -7,23 +7,19 @@ from core.db import Base
 
 class KB(Base):
     __tablename__ = "kb"
-
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True, init=False)
     user_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False
+        Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False, kw_only=True
     )
     project_path: Mapped[str] = mapped_column(
-        String(64), nullable=False, default=""
+        String(64), nullable=False, default="", kw_only=True
     )
-    payload: Mapped[dict] = mapped_column(JSON, default=None, nullable=True)
-
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default_factory=lambda: datetime.now(UTC))
-    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
-    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
-
-    # Relationships — always declare AFTER columns
+    payload: Mapped[dict] = mapped_column(JSON, default=None, nullable=True, kw_only=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default_factory=lambda: datetime.now(UTC), kw_only=True)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None, kw_only=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None, kw_only=True)
     user: Mapped["User"] = relationship(
-        "User", back_populates="kbs", default=None
+        "User", back_populates="kbs", default=None, kw_only=True, init=False
     )
 
     def __repr__(self) -> str:

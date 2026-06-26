@@ -120,10 +120,24 @@ class Conversation:
                     with get_db_ctx() as db:
                         result = db.execute(select(KB).filter_by(user_id=self.user_id, project_path=self.project_pathname))
                         db_kb = result.scalar_one_or_none()
+                        import inspect
+                        print(inspect.signature(KB.__init__))
                         if not db_kb:
+                            from sqlalchemy import inspect as sa_inspect
+                            kb = KB(user_id=1, project_path="test", payload=None)
+                            state = sa_inspect(kb)
+                            print("committed state:", state.committed_state)
+                            print("attrs:", {k: v for k, v in state.attrs.items()})
+                            print("user_id history:", state.attrs.user_id.history)
+                            db.add(kb)
+                            db.commit()
                             entry=KBCreate(user_id=self.user_id,
                                            project_path=self.project_pathname,
                                            payload={variable:value})
+                            data = entry.model_dump(mode="python")
+                            print("DUMP:", data)
+                            kb = KB(**data)
+                            print("KB user_id:", kb.user_id)
                             kb = KB(**entry.model_dump(mode="python"))
                             db.add(kb)
                             db.commit()
