@@ -25,11 +25,11 @@ class Conversation:
         self.commands : list[str] = []
         self.strategies : list[dict] = []
         self.project_pathname = str(pathname)
-        self.main_file = self.load_conversation(pathname, settings)
         self.path = os.path.dirname(pathname)
         self.basename = os.path.basename(pathname)
         self.name = os.path.splitext(self.basename)[-1]
         self.user_id = user_id
+        self.main_file = self.load_conversation(pathname, settings)
  
     def load_conversation(self, pathname: str, settings_: dict):
         log.info(f"Starting loading conversation from: {pathname}")
@@ -52,8 +52,18 @@ class Conversation:
         return filename
 
     def load_slots(self, slots_: dict):
-        self.slots = {
-        }
+        with get_db_ctx() as db:
+            result = db.execute(
+                select(KB).filter_by(
+                    user_id=self.user_id,
+                    project_path=self.project_pathname,
+                )
+            )
+            kb = result.scalar_one_or_none()
+            if kb:
+                self.slots = dict(kb.payload)
+            else:
+                self.slots = dict()
         self.slots.update(slots_)
 
     def load_strategies(self, strategies_: dict):

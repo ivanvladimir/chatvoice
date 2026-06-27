@@ -11,7 +11,8 @@ strategies:
         - say "creo que me dijiste algo que no entiendo bien"
 
 script:
-  - solve name
+  - info slots
+  - if not name then solve name
   - say "¿como estás hoy, {name}?"
   - listen status
   - if status == "good" then solve excelent

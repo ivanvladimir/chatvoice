@@ -63,12 +63,14 @@ class Console():
             m = session.recv()
             if m is None:
                 return
-            if m["cmd"] == "say":
-                self.console.print(f"{conversation.settings['_name_system']}:",*m['args'])
-            if m["cmd"] == "listen":
-                input=self.console.input(f"{conversation.settings['_name_user']}: ")
+            if m["cmd"] == "say" and len(m['args']) > 0:
+                self.console.print(f"[blue]{conversation.settings['_name_system']}[/]:",*m['args'])
+            elif m["cmd"] == "listen":
+                input=self.console.input(f"[red]{conversation.settings['_name_user']}[/]: ")
                 session.send(input)
-
+            elif m["cmd"] == "info" and len(m['args']) > 0:
+                self.console.print(f"[yellow]INFO: [/]",*m['args'])
+ 
 
 
 
