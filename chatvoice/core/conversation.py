@@ -3,17 +3,18 @@ from rich.console import Console
 from rich.markdown import Markdown
 import sys
 import os
-
-from .parser import parse_line
+from datetime import datetime, UTC
 
 from typing import Generator, Any
 from core.logger import get_logger
 
 from models import User, KB
 from schemas.kb import KBUpdateInternal, KBCreate
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, String, Table, insert, select
+from sqlalchemy import update, insert, Boolean, Column, DateTime, ForeignKey, Integer, MetaData, String, Table, insert, select
 from core.db.database_sync import init_db, get_db_ctx 
 
+from .parser import parse_line
+from .interpreter import Interpreter
 
 log = get_logger(__name__)
 
@@ -70,99 +71,16 @@ class Conversation:
     def execute(self, callback, state: dict):
         log.info(f"Starting execution of conversation")
         self.slots.update(state.get('slots',{}))
-        EXIT=False
-        ERROR=None
-        while len(self.commands)>0 and not EXIT:
-            line=self.commands.pop(0)
-            chain = parse_line(line)
-            STATUS = {}
-            while len(chain.commands)>0 and not EXIT:
-                c=chain.commands.pop(0)
-                if c.name=="solve":
-                    strategy_name=c.args[0]
-                    if not strategy_name in self.strategies:
-                        EXIT=True
-                        ERROR=ValueError(f"Unknown strategy {strategy_name}")
-                        break
-                    self.stacks_.append(self.commands)
-                    self.commands=list(self.strategies[strategy_name])
-                    STATUS = {
-                            'command': 'solve',
-                            'ok': True
-                            }
-                elif c.name == "say":
-                    text = str(c.args[0]).format_map(self.slots)
-                    STATUS = {
-                            'command': 'say',
-                            'value': [text],
-                            'ok': True
-                            }
-                    yield {"cmd":"say", "args": [text]}
     
-                elif c.name == "listen":
-                    variable = str(c.args[0])
-                    yield {"cmd":"listen"}
-                    user_input = callback()
-                    self.slots[variable] = user_input or ""
-                    STATUS = {
-                            'command': 'listen',
-                            'value': user_input or "",
-                            'variable': variable,
-                            'ok': True
-                            }
-                elif c.name == "remember":
-                    if len(c.args)==1:
-                        variable = str(c.args[0])
-                    elif len(c.args)==0:
-                        variable=STATUS['variable']
-                        value=STATUS['value']
-                    self.slots[variable] = value
-                    with get_db_ctx() as db:
-                        result = db.execute(select(KB).filter_by(user_id=self.user_id, project_path=self.project_pathname))
-                        db_kb = result.scalar_one_or_none()
-                        import inspect
-                        print(inspect.signature(KB.__init__))
-                        if not db_kb:
-                            from sqlalchemy import inspect as sa_inspect
-                            kb = KB(user_id=1, project_path="test", payload=None)
-                            state = sa_inspect(kb)
-                            print("committed state:", state.committed_state)
-                            print("attrs:", {k: v for k, v in state.attrs.items()})
-                            print("user_id history:", state.attrs.user_id.history)
-                            db.add(kb)
-                            db.commit()
-                            entry=KBCreate(user_id=self.user_id,
-                                           project_path=self.project_pathname,
-                                           payload={variable:value})
-                            data = entry.model_dump(mode="python")
-                            print("DUMP:", data)
-                            kb = KB(**data)
-                            print("KB user_id:", kb.user_id)
-                            kb = KB(**entry.model_dump(mode="python"))
-                            db.add(kb)
-                            db.commit()
-                            db.refresh(kb)
-
-                    STATUS = {
-                            'command': 'remember',
-                            'value': value,
-                            'variable': variable,
-                            'ok': True
-                            }
-                else:
-                    EXIT=True
-                    ERROR=ValueError(f"Unknown command {c._command}")
-                    break
-                if not STATUS['ok']:
-                    EXIT=True
-                    ERROR=ValueError(f"Error while evaluating {c._command}")
-                    break
- 
-            if len(self.commands)==0 and len(self.stacks_)>0:
-                self.commands=self.stacks_.pop()
+        interpreter = Interpreter(self)
+        while len(self.commands) > 0 and not interpreter.exit:
+            line = self.commands.pop(0)
+            chain = parse_line(line)
+            yield from interpreter.run_chain(chain, callback)
+            if len(self.commands) == 0 and len(self.stacks_) > 0:
+                self.commands = self.stacks_.pop()
 
         log.info(f"Finishing execution of conversation")
-        if not ERROR is None:
-            raise ERROR
-
+        if interpreter.error is not None:
+            raise interpreter.error
         
