@@ -1,8 +1,7 @@
+conversations:
+  - name.yaml
+
 strategies:
-    name:
-        - say "¿cúal es tu nombre?"
-        - listen name | remember 
-        - say "mucho gusto en conocerte, {name}"
     excelent:
         - say "me da mucho gusto que estés bien"
     sorry:

@@ -40,7 +40,7 @@ def console(
         print("[red]Authentication failed. Please check your credentials and try again.[/]")
         return None
 
-    conversation = Conversation(project_pathname, user.id, {"_name_system":name})
+    conversation = Conversation(project_pathname, user_id = user.id, settings = {"_name_system":name})
     console.run(user.id, conversation)
 
 @cli.command

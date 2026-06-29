@@ -15,7 +15,8 @@ class Interpreter:
     """Runs the execution of commands within a parsed chain."""
 
     def __init__(self, conversation):
-        self.conversation = conversation
+        self.stack_ = [conversation]
+        self.conversation = self.stack_[-1]
         self.exit = False
         self.error = None
         self.status: dict = {}
@@ -158,15 +159,28 @@ class Interpreter:
     def _cmd_solve(self, args, callback):
         strategy_name = args[0]
         if strategy_name not in self.conversation.strategies:
-            self.exit = True
-            self.error = ValueError(f"Unknown strategy {strategy_name}")
-            return
-        self.conversation.stacks_.append(self.conversation.commands)
-        self.conversation.commands = list(self.conversation.strategies[strategy_name])
-        self.status = {
-            'command': 'solve',
-            'ok': True,
-        }
+            if strategy_name not in self.conversation.conversations:
+                self.exit = True
+                self.error = ValueError(f"Unknown strategy {strategy_name}")
+                return
+            else:
+                self.conversation.stacks_.append(self.conversation.commands)
+                new_conversation=self.conversation.create(strategy_name)
+                self.stack_.append(new_conversation)
+                # TODO pass information
+                self.conversation=new_conversation
+                self.commands=list(new_conversation.commands)
+                self.status = {
+                    'command': 'solve',
+                    'ok': True,
+                }
+        else:
+            self.conversation.stacks_.append(self.conversation.commands)
+            self.conversation.commands = list(self.conversation.strategies[strategy_name])
+            self.status = {
+                'command': 'solve',
+                'ok': True,
+            }
         yield from ()
 
     def _cmd_say(self, args, callback) -> Generator[dict, Any, None]:
