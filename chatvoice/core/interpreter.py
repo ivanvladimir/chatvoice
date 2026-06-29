@@ -102,7 +102,9 @@ class Interpreter:
             return context[key]
         try:
             return ast.literal_eval(key)
-        except (ValueError, SyntaxError):
+        except ValueError:
+            return False
+        except SyntaxError:
             return key
 
     def _apply_op(self, left: Any, op: str, right: Any) -> bool:
