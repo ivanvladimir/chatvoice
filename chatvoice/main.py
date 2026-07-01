@@ -2,7 +2,6 @@ import cyclopts
 from typing import Annotated
 from pathlib import Path
 from rich import print
-from rich.prompt import Prompt
 
 from core.logger import setup_logging, get_logger
 

@@ -1,23 +1,18 @@
-import asyncio
 from typing import Any, Literal, Callable
 from rich.prompt import Prompt
 from rich.console import Console as PConsole
 
-from models import *
+from models import User
 from schemas.user import UserRead
-from schemas.kb import KBRead
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, String, Table, insert, select
+from sqlalchemy import select
 from core.db.database_sync import init_db, get_db_ctx 
 import bcrypt
 
-from crud.users import crud_users
-from core.security import get_password_hash
 from core.logger import get_logger
 
 from sessions.manager import SessionManager
 from store.memory import MemoryStateStore
 
-from pathlib import Path
 
 log = get_logger(__name__)
 
@@ -71,7 +66,7 @@ class Console():
                 input=self.console.input(f"[red]{interpreter.settings['_name_user']}[/]: ")
                 session.send(input)
             elif m["cmd"] == "info" and len(m['args']) > 0:
-                self.console.print(f"[yellow]INFO: [/]")
+                self.console.print("[yellow]INFO: [/]")
                 for label,info in m['args']:
                     self.console.print(f"[cyan]  {label: <10}: {info}[/]")
 

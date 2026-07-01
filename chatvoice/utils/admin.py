@@ -1,17 +1,14 @@
 from rich.prompt import Prompt
 from rich import print
 
-from datetime import UTC, datetime
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, String, Table, insert, select, JSON
-from sqlalchemy.dialects.postgresql import UUID
-from uuid6 import uuid7  # 126
+from sqlalchemy import select
 
 from core.security import get_password_hash
 from core.logger import get_logger
 from core.db.database_sync import get_db_ctx, init_db 
 
-from models import *
+from models import User, Tier
 
 log = get_logger(__name__)
 

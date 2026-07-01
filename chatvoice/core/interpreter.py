@@ -44,12 +44,12 @@ class Interpreter:
                 obj = self.stack_.pop()
                 if len(obj)==1: # strategy
                     self.commands=obj[0]
-                    log.info(f"Finishing strategy")
+                    log.info("Finishing strategy")
                 elif len(obj)==2: # Conversation
                     conversation, commands=obj
                     conversation.slots.update(self.conversation.return_)
                     self.conversation, self.commands= conversation, commands
-                    log.info(f"Finishing execuetion of conversation")
+                    log.info("Finishing execuetion of conversation")
 
         if self.error is not None:
             raise self.error
@@ -226,7 +226,7 @@ class Interpreter:
 
     def _cmd_return(self, args, callback) -> Generator[dict, Any, None]:
         slot_name=args[0]
-        if not slot_name in self.conversation.slots:
+        if slot_name not in self.conversation.slots:
             self.status = {
                 'command': 'return',
                 'value': slot_name,
@@ -266,7 +266,7 @@ class Interpreter:
 
     def _cmd_remember(self, args, callback):
         if len(args) == 1:
-            variable = str(c.args[0])
+            variable = str(args[0])
         elif len(args) == 0:
             variable = self.status['variable']
             value = self.status['value']

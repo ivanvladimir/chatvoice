@@ -2,7 +2,7 @@ from collections.abc import AsyncGenerator, Callable
 from contextlib import _AsyncGeneratorContextManager, asynccontextmanager
 from typing import Any
 
-# import anyio
+import anyio
 import fastapi
 # import redis.asyncio as redis
 # from arq import create_pool

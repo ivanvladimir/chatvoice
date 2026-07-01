@@ -1,17 +1,13 @@
 import yaml
 from rich.console import Console
-from rich.markdown import Markdown
 import sys
 import os
-from datetime import datetime, UTC
 
-from typing import Generator, Any
 from core.logger import get_logger
 
-from models import User, KB
-from schemas.kb import KBUpdateInternal, KBCreate
-from sqlalchemy import update, insert, Boolean, Column, DateTime, ForeignKey, Integer, MetaData, String, Table, insert, select
-from core.db.database_sync import init_db, get_db_ctx 
+from models import KB
+from sqlalchemy import select
+from core.db.database_sync import get_db_ctx 
 
 log = get_logger(__name__)
 
@@ -81,7 +77,7 @@ class Conversation:
         }
         for filename in conversations_:
             basename = os.path.splitext(os.path.basename(filename))[0]
-            if not basename in self.conversations: 
+            if basename not in self.conversations: 
                 log.info(f"Loading conversation '{filename}'")
                 self.conversations[basename]={'project_pathname':self.project_pathname,
                                               'filename':filename,

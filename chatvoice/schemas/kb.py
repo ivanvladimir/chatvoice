@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field
-from core.schemas import TimestampSchema
 
 ProjectPath = Annotated[str, Field(max_length=64, examples=["/projects/my-kb"])]
 Payload     = Annotated[dict[str, Any] | None, Field(default=None)]
