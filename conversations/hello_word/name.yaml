@@ -1,0 +1,9 @@
+strategies:
+    name:
+        - say "¿cúal es tu nombre?"
+        - listen name | remember 
+        - say "mucho gusto en conocerte, {name}"
+
+script:
+  - info slots
+  - if not name then solve name
