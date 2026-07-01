@@ -7,3 +7,4 @@ strategies:
 script:
   - info slots
   - if not name then solve name
+  - return name

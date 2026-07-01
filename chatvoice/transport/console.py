@@ -55,18 +55,18 @@ class Console():
             db.expunge(db_user)
         return user_read
 
-    def run(self, user_id: int, conversation: Callable):
+    def run(self, user_id: int, interpreter: Callable):
         """ Run the script """
-        session = self.session_manager.create(str(user_id), conversation)
+        session = self.session_manager.create(user_id, interpreter)
         self.console.print(f"\n\n====== Starting conversation with {user_id} =====")
         while True:
             m = session.recv()
             if m is None:
                 return
             if m["cmd"] == "say" and len(m['args']) > 0:
-                self.console.print(f"[blue]{conversation.settings['_name_system']}[/]:",*m['args'])
+                self.console.print(f"[blue]{interpreter.settings['_name_system']}[/]:",*m['args'])
             elif m["cmd"] == "listen":
-                input=self.console.input(f"[red]{conversation.settings['_name_user']}[/]: ")
+                input=self.console.input(f"[red]{interpreter.settings['_name_user']}[/]: ")
                 session.send(input)
             elif m["cmd"] == "info" and len(m['args']) > 0:
                 self.console.print(f"[yellow]INFO: [/]",*m['args'])

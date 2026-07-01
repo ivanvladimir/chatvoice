@@ -16,4 +16,4 @@ script:
   - listen status
   - if status == "good" then solve excelent
   - if status == "bad" then solve sorry
-  - if not status == "good" or not status == "bad" then solve something_else
+  - if not status == "good" or status == "bad" then solve something_else

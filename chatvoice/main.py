@@ -6,7 +6,7 @@ from rich.prompt import Prompt
 
 from core.logger import setup_logging, get_logger
 
-from core.conversation import Conversation
+from core.interpreter import Interpreter
 
 cli = cyclopts.App(
     name="chatvoice",
@@ -40,8 +40,9 @@ def console(
         print("[red]Authentication failed. Please check your credentials and try again.[/]")
         return None
 
-    conversation = Conversation(project_pathname, user_id = user.id, settings = {"_name_system":name})
-    console.run(user.id, conversation)
+    #conversation = Conversation(project_pathname, user_id = user.id, settings = {"_name_system":name})
+    interpreter = Interpreter(project_pathname, user_id = user.id, settings = {"_name_system":name})
+    console.run(user.id, interpreter)
 
 @cli.command
 def server(

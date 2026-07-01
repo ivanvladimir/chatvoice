@@ -13,31 +13,24 @@ from schemas.kb import KBUpdateInternal, KBCreate
 from sqlalchemy import update, insert, Boolean, Column, DateTime, ForeignKey, Integer, MetaData, String, Table, insert, select
 from core.db.database_sync import init_db, get_db_ctx 
 
-from .parser import parse_line
-from .interpreter import Interpreter
-
 log = get_logger(__name__)
 
 class Conversation:
-    def __init__(self, pathname: str, user_id: int, filename: str = None, settings: dict = {}, slots: dict = {}, main: bool = True):
+    def __init__(self, project_pathname: str, user_id: int, filename: str = "main.yaml", settings: dict = {}, slots: dict = {}):
+        self.project_pathname = project_pathname
         self.console = Console(record=True)
         self.stacks_ : list[list] = []
         self.commands : list[str] = []
         self.strategies : list[dict] = []
         self.conversations : dict = {}
         self.slots : dict = {}
-        self.project_pathname = str(pathname)
-        self.basename = os.path.basename(pathname)
-        self.name = os.path.splitext(self.basename)[-1]
+        self.return_ : dict = {}
         self.user_id = user_id
-        self.main_file = self._load_conversation(pathname, filename, settings, slots, main)
+        self._load_conversation(project_pathname, filename, settings, slots)
  
-    def _load_conversation(self, pathname: str, filename: str = None, settings_: dict = {}, slots_ : dict = {}, main: bool = True):
-        log.info(f"Starting loading conversation from: {pathname}")
-        if filename:
-            filename = os.path.join(pathname,filename) 
-        else:
-            filename = os.path.join(pathname,"main.yaml") 
+    def _load_conversation(self, project_pathname: str, filename: str = "main.yaml", settings_: dict = {}, slots_ : dict = {}):
+        log.info(f"Starting loading conversation from: {project_pathname}")
+        filename = os.path.join(project_pathname,filename) 
         with open(filename, "r", encoding="utf-8") as stream:
             try:
                 definition = yaml.safe_load(stream)
@@ -49,7 +42,7 @@ class Conversation:
 
         slots = definition.get("slots",{})
         slots.update(slots_)
-        self.load_slots(slots, main)
+        self.load_slots(slots, filename.endswith('main.yaml'))
 
         
         settings= definition.get("settings",{})
@@ -58,10 +51,9 @@ class Conversation:
         
         self.commands = list(definition.get("script",{}))
         self.load_strategies(definition.get("strategies",{}))
-        self.load_conversations(definition.get("conversations",{}),main=main)
+        self.load_conversations(definition.get("conversations",{}),settings=self.settings)
         
         log.info(f"Finishing loading conversation from: {filename}")
-        return filename
 
     def load_slots(self, slots_: dict, main: bool = True):
         if main:
@@ -69,7 +61,7 @@ class Conversation:
                 result = db.execute(
                     select(KB).filter_by(
                         user_id=self.user_id,
-                        project_path=self.project_pathname,
+                        project_path=str(self.project_pathname),
                     )
                 )
                 kb = result.scalar_one_or_none()
@@ -84,17 +76,16 @@ class Conversation:
         }
         self.strategies.update(strategies_)
 
-    def load_conversations(self, conversations_: dict, main : bool = True ):
+    def load_conversations(self, conversations_: dict, settings: dict = {} ):
         self.conversations = {
         }
         for filename in conversations_:
             basename = os.path.splitext(os.path.basename(filename))[0]
             if not basename in self.conversations: 
-                log.info(f"Loading conversation '{filename}' as part of {self.basename}")
-                self.conversations[basename]={'pathname':self.project_pathname,
+                log.info(f"Loading conversation '{filename}'")
+                self.conversations[basename]={'project_pathname':self.project_pathname,
                                               'filename':filename,
-                                              'user_id':self.user_id,
-                                              'main':False}
+                                              'user_id':self.user_id}
             else:
                 log.info(f"Conversation '{filename}' already in {self.basename}, it will be ignored")
 
@@ -105,30 +96,4 @@ class Conversation:
         }
         self.settings.update(settings_)
 
-    def execute(self, callback, state: dict):
-        log.info(f"Starting execution of conversation")
-        self.slots.update(state.get('slots',{}))
-    
-        interpreter = Interpreter(self)
-        while len(self.commands) > 0 and not interpreter.exit:
-            line = self.commands.pop(0)
-            chain = parse_line(line)
-            yield from interpreter.run_chain(chain, callback)
-            if len(self.commands) == 0 and len(self.stacks_) > 0:
-                self.commands = self.stacks_.pop()
-            if len(self.commands) == 0 and len(self.stacks_) == 0 and len(interpreter.stack_):
-                interpreter.stack_.pop()
-                if len(interpreter.stack_):
-                    interpreter.conversation = interpreter.stack_[-1]
-                else:
-                    break
-                self.commands = intrepreter.conversation.stacks_[-1]
 
-
-        log.info(f"Finishing execution of conversation")
-        if interpreter.error is not None:
-            raise interpreter.error
-       
-    def create(self, name):
-        args=self.conversations[name]
-        return Conversation(**args)

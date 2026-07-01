@@ -5,8 +5,10 @@ from core.logger import get_logger
 from core.db.database_sync import get_db_ctx
 from models import KB
 import ast
+import os
 
-from .parser import Clause, Condition
+from .parser import Clause, Condition, parse_line
+from .conversation import Conversation
 
 log = get_logger(__name__)
 
@@ -14,14 +16,46 @@ log = get_logger(__name__)
 class Interpreter:
     """Runs the execution of commands within a parsed chain."""
 
-    def __init__(self, conversation):
-        self.stack_ = [conversation]
-        self.conversation = self.stack_[-1]
+    def __init__(self, project_pathname: str, user_id: int, settings: dict = {}, slots: dict = {}):
+        self.project_pathname = project_pathname
+        self.basename = os.path.basename(project_pathname)
+        self.name = os.path.splitext(self.basename)[-1]
+        
+        
+        self.stack_ = []
+        self.conversation = Conversation(project_pathname, user_id, settings=settings, slots=slots)
+        self.settings: dict = self.conversation.settings
+        self.commands = list(self.conversation.commands)
         self.exit = False
         self.error = None
         self.status: dict = {}
+        
 
-    def run_chain(self, chain, callback) -> Generator[dict, Any, None]:
+    def run(self, callback, state: dict = {}):
+        log.info(f"Starting execution of conversation {self.name}")
+   
+        while len(self.commands) > 0 and not self.exit:
+            line = self.commands.pop(0)
+            chain = parse_line(line)
+            yield from self._run_chain(chain, callback)
+            if len(self.commands) == 0 and len(self.stack_):
+                obj = self.stack_.pop()
+                if len(obj)==1: # strategy
+                    self.commands=obj[0]
+                    log.info(f"Finishing strategy")
+                elif len(obj)==2: # Conversation
+                    conversation, commands=obj
+                    conversation.slots.update(self.conversation.return_)
+                    self.conversation, self.commands= conversation, commands
+                    log.info(f"Finishing execuetion of conversation")
+
+        if self.error is not None:
+            raise self.error
+
+        log.info(f"Finishing execution of conversation {self.name}")
+ 
+
+    def _run_chain(self, chain, callback) -> Generator[dict, Any, None]:
         """Execute each command in the given chain sequentially."""
         self.status = {}
         while len(chain.commands) > 0 and not self.exit:
@@ -164,10 +198,12 @@ class Interpreter:
                 self.error = ValueError(f"Unknown strategy {strategy_name}")
                 return
             else:
-                self.conversation.stacks_.append(self.conversation.commands)
-                new_conversation=self.conversation.create(strategy_name)
-                self.stack_.append(new_conversation)
-                # TODO pass information
+                # Conversation
+                self.stack_.append((self.conversation, self.commands))
+                args=self.conversation.conversations[strategy_name]
+                args['slots']=dict(self.conversation.slots)
+                log.info(f"Starting execution of conversation {strategy_name}")
+                new_conversation=Conversation(**args)
                 self.conversation=new_conversation
                 self.commands=list(new_conversation.commands)
                 self.status = {
@@ -175,13 +211,35 @@ class Interpreter:
                     'ok': True,
                 }
         else:
-            self.conversation.stacks_.append(self.conversation.commands)
-            self.conversation.commands = list(self.conversation.strategies[strategy_name])
+            # Strategy
+            log.info(f"Starting execution of conversation {self.name}")
+            self.stack_.append((self.commands,))
+            self.commands = list(self.conversation.strategies[strategy_name])
+            log.info(f"Starting execution of strategy {strategy_name}")
             self.status = {
                 'command': 'solve',
                 'ok': True,
             }
         yield from ()
+
+    def _cmd_return(self, args, callback) -> Generator[dict, Any, None]:
+        slot_name=args[0]
+        if not slot_name in self.conversation.slots:
+            self.status = {
+                'command': 'return',
+                'value': slot_name,
+                'ok': False,
+            }
+            yield from ()
+        else:
+            self.conversation.return_[slot_name]=self.conversation.slots[slot_name]
+            self.status = {
+                'command': 'say',
+                'variable': slot_name,
+                'value': self.conversation.slots[slot_name],
+                'ok': True,
+            }
+            yield from ()
 
     def _cmd_say(self, args, callback) -> Generator[dict, Any, None]:
         text = str(args[0]).format_map(self.conversation.slots)
@@ -215,14 +273,14 @@ class Interpreter:
             result = db.execute(
                 select(KB).filter_by(
                     user_id=self.conversation.user_id,
-                    project_path=self.conversation.project_pathname,
+                    project_path=str(self.conversation.project_pathname),
                 )
             )
             kb = result.scalar_one_or_none()
             if not kb:
                 stmt = insert(KB).values(
                     user_id=self.conversation.user_id,
-                    project_path=self.conversation.project_pathname,
+                    project_path=str(self.conversation.project_pathname),
                     payload={variable: value},
                     created_at=datetime.now(UTC),
                 )
