@@ -17,8 +17,10 @@ class Conversation:
         self.console = Console(record=True)
         self.stacks_ : list[list] = []
         self.commands : list[str] = []
-        self.strategies : list[dict] = {}
-        self._restricted_locals : list[dict] = {}
+        self.strategies : dict = {}
+        self.templates : dict = {}
+        self.prompts: dict = {}
+        self._restricted_locals : dict = {}
         self.conversations : dict = {}
         self.slots : dict = {}
         self.return_ : dict = {}
@@ -46,12 +48,51 @@ class Conversation:
         
         self.commands = list(definition.get("script",{}))
         self.load_strategies(definition.get("strategies",{}))
+        self.load_templates(definition.get("templates",{}))
+        self.load_prompts(definition.get("prompts",{}))
 
         self.plugins = self.load_plugins(definition.get("plugins",{}))
 
         self.load_conversations(definition.get("conversations",{}),settings=self.settings)
         
         log.info(f"Finishing loading conversation from: {filename}")
+
+    def load_templates(self, templates={}, path="resources"):
+        for template in templates:
+            template = os.path.join(self.project_pathname,path,template)
+            log.info(f"Starting loading templates from: {template}")
+            with open(template, "r", encoding="utf-8") as stream:
+                try:
+                    template_ = yaml.safe_load(stream)
+                    for k in template_.keys():
+                        if k in self.templates:
+                            log.error(f"Template {k} already defined")
+                            console.pint(f"[red]Template {k} already defined, being redifined[/]")
+                    self.templates.update(template_)
+                except yaml.YAMLError as exc:
+                    self.console.print(f"Error while reading: {template}, definitions being ignored")
+                    self.console.print(exc)
+                    log.error(f"Error while reading: {template}, definitions being ignored")
+                    log.error(exec)
+                    sys.exit()
+
+    def load_prompts(self, prompts={}, path="resources"):
+        for prompts_ in prompts:
+            prompts_ = os.path.join(self.project_pathname,path,prompts_)
+            with open(prompts_, "r", encoding="utf-8") as stream:
+                try:
+                    prompts_ = yaml.safe_load(stream)
+                    for k in prompts_.keys():
+                        if k in self.prompts:
+                            log.error(f"Prompt {k} already defined")
+                            self.console.pint(f"[red]Prompt {k} already defined, being redifined[/]")
+                    self.prompts.update(prompts_)
+                except yaml.YAMLError as exc:
+                    self.console.print(f"Error while reading: {prompts}, definitions being ignored")
+                    self.console.print(exc)
+                    log.error(f"Error while reading: {prompts}, definitions being ignored")
+                    log.error(exec)
+                    sys.exit()
 
     def load_plugins(self, plugins_: dict):
         safe_builtins = {

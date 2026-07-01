@@ -6,6 +6,7 @@ from core.db.database_sync import get_db_ctx
 from models import KB
 import ast
 import os
+import random
 from pathlib import Path
 
 from simpleeval import simple_eval, NameNotDefined, InvalidExpression
@@ -250,13 +251,19 @@ class Interpreter:
             yield from ()
 
     def _cmd_say(self, args, callback, continuation) -> Generator[dict, Any, None]:
-        text = str(args[0]).format_map(self.conversation.slots)
+        key= args[0]
+        if key in self.conversation.templates:
+            texts = self._resolve_template(key)
+        else:
+            text = key.format_map(self.conversation.slots)
+            texts=[text]
+        
         self.status = {
             'command': 'say',
-            'value': [text],
+            'value': texts,
             'ok': True,
         }
-        yield {"cmd": "say", "args": [text]}
+        yield {"cmd": "say", "args": texts}
 
     def _cmd_listen(self, args, callback, continuation) -> Generator[dict, Any, None]:
         variable = str(args[0])
@@ -383,3 +390,18 @@ class Interpreter:
         }
 
         yield {"cmd": "info", "args": args_}
+
+
+    def _resolve_template(self,name):
+        t=self.conversation.templates[name]
+        # Check for cased
+        if 'CASES' in t:
+            val=eval(t['SLOT'],self.slots)
+            for case in t['CASES']:
+                if val in case['VALS']:
+                    res=random.choice(case['MSGS'])
+        else:
+            # TODO: change this for a selector that can take weigths
+            res=random.choice(t)
+        res=[f'f"""{m["TEXT"].strip()}"""' if '\n' in m['TEXT'] else f'f"{m["TEXT"].strip()}"' for m in res['MSG']]
+        return [simple_eval(m,self.conversation.slots) for m in res]

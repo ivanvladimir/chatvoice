@@ -4,6 +4,9 @@ conversations:
 plugins:
   - filters.py
 
+templates:
+  - messages.yaml
+
 strategies:
     excelent:
         - say "me da mucho gusto que estés bien"
@@ -18,6 +21,7 @@ slots:
     mal: bad
 
 script:
+  - say GREET
   - if not name then solve name
   - say "¿como estás hoy, {name}?"
   - listen status | .keyword options | set status

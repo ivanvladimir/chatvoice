@@ -61,7 +61,8 @@ class Console():
             if m is None:
                 return
             if m["cmd"] == "say" and len(m['args']) > 0:
-                self.console.print(f"[blue]{interpreter.settings['_name_system']}[/]:",*m['args'])
+                for msg in m['args']:
+                    self.console.print(f"[blue]{interpreter.settings['_name_system']}[/]:",msg)
             elif m["cmd"] == "listen":
                 input=self.console.input(f"[red]{interpreter.settings['_name_user']}[/]: ")
                 session.send(input)
