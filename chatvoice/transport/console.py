@@ -17,6 +17,8 @@ from core.logger import get_logger
 from sessions.manager import SessionManager
 from store.memory import MemoryStateStore
 
+from pathlib import Path
+
 log = get_logger(__name__)
 
 class Console():
@@ -31,7 +33,7 @@ class Console():
         self.console = PConsole()
         log.info("Starting console chat")
 
-    def authenticate_user(self, key_kdb: str) -> dict[str, Any] | Literal[False]:
+    def authenticate_user(self) -> dict[str, Any] | Literal[False]:
         """ Managing authentification """
         username_or_email = Prompt.ask("Enter your username or email")
         password = Prompt.ask("Enter your password", password=True)
@@ -69,7 +71,10 @@ class Console():
                 input=self.console.input(f"[red]{interpreter.settings['_name_user']}[/]: ")
                 session.send(input)
             elif m["cmd"] == "info" and len(m['args']) > 0:
-                self.console.print(f"[yellow]INFO: [/]",*m['args'])
+                self.console.print(f"[yellow]INFO: [/]")
+                for label,info in m['args']:
+                    self.console.print(f"[cyan]  {label: <10}: {info}[/]")
+
  
 
 

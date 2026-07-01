@@ -35,12 +35,11 @@ def console(
 
     print(f"Running [yellow]{project_pathname}[/] conversation from the console as [green]{name}[/].")
     console = Console()
-    user=console.authenticate_user(project_pathname)
+    user=console.authenticate_user()
     if not user:
         print("[red]Authentication failed. Please check your credentials and try again.[/]")
         return None
 
-    #conversation = Conversation(project_pathname, user_id = user.id, settings = {"_name_system":name})
     interpreter = Interpreter(project_pathname, user_id = user.id, settings = {"_name_system":name})
     console.run(user.id, interpreter)
 

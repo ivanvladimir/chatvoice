@@ -10,7 +10,7 @@ strategies:
         - say "creo que me dijiste algo que no entiendo bien"
 
 script:
-  - info slots
+  - info name, slots
   - if not name then solve name
   - say "¿como estás hoy, {name}?"
   - listen status

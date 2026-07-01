@@ -5,6 +5,6 @@ strategies:
         - say "mucho gusto en conocerte, {name}"
 
 script:
-  - info slots
+  - info name
   - if not name then solve name
   - return name

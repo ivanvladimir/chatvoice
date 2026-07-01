@@ -6,6 +6,7 @@ from core.db.database_sync import get_db_ctx
 from models import KB
 import ast
 import os
+from pathlib import Path
 
 from .parser import Clause, Condition, parse_line
 from .conversation import Conversation
@@ -16,12 +17,14 @@ log = get_logger(__name__)
 class Interpreter:
     """Runs the execution of commands within a parsed chain."""
 
-    def __init__(self, project_pathname: str, user_id: int, settings: dict = {}, slots: dict = {}):
+    def __init__(self, project_pathname: Path, user_id: int, settings: dict = {}, slots: dict = {}):
         self.project_pathname = project_pathname
         self.basename = os.path.basename(project_pathname)
-        self.name = os.path.splitext(self.basename)[-1]
-        
-        
+        if  not project_pathname.suffix: 
+            self.name = self.basename
+        else:
+            self.name = os.path.splitext(self.basename)[-1]
+
         self.stack_ = []
         self.conversation = Conversation(project_pathname, user_id, settings=settings, slots=slots)
         self.settings: dict = self.conversation.settings
@@ -29,7 +32,6 @@ class Interpreter:
         self.exit = False
         self.error = None
         self.status: dict = {}
-        
 
     def run(self, callback, state: dict = {}):
         log.info(f"Starting execution of conversation {self.name}")
@@ -305,22 +307,25 @@ class Interpreter:
         yield from ()
 
     def _cmd_info(self, args, callback):
-        if len(args) != 1:
+        if len(args) == 0:
             self.status = {
                 'command': 'info',
                 'ok': False,
             }
             yield {"cmd": "info", "args": {}}
-        info_type=args[0]
-        if info_type == "slots":
-            value= dict(self.conversation.slots)
-
+        args_=[]
+        for  info_type in args:
+            if info_type.startswith("slots"):
+                args_.append(('slots',self.conversation.slots))
+            if info_type.startswith("name"):
+                args_.append(('name', self.name))
         self.status = {
             'command': 'info',
-            'value': [value],
+            'value': args_[-1] if len(args_) else [],
             'ok': True,
         }
-        yield {"cmd": "info", "args": [value]}
+
+        yield {"cmd": "info", "args": args_}
 
 
 
