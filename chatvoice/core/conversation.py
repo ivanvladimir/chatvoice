@@ -17,7 +17,8 @@ class Conversation:
         self.console = Console(record=True)
         self.stacks_ : list[list] = []
         self.commands : list[str] = []
-        self.strategies : list[dict] = []
+        self.strategies : list[dict] = {}
+        self._restricted_locals : list[dict] = {}
         self.conversations : dict = {}
         self.slots : dict = {}
         self.return_ : dict = {}
@@ -35,21 +36,42 @@ class Conversation:
                 log.error(f"Error while reading: {filename}")
                 sys.exit()
 
-
         slots = definition.get("slots",{})
         slots.update(slots_)
         self.load_slots(slots, filename.endswith('main.yaml'))
 
-        
         settings= definition.get("settings",{})
         settings.update(settings_)
         self.load_settings(settings)
         
         self.commands = list(definition.get("script",{}))
         self.load_strategies(definition.get("strategies",{}))
+
+        self.plugins = self.load_plugins(definition.get("plugins",{}))
+
         self.load_conversations(definition.get("conversations",{}),settings=self.settings)
         
         log.info(f"Finishing loading conversation from: {filename}")
+
+    def load_plugins(self, plugins_: dict):
+        safe_builtins = {
+            'print': print,
+            'len': len,
+            'range': range,
+            'int': int,
+            'dict':dict,
+            'str': str,
+            'list': list}
+
+        restricted_globals = {'__builtins__': safe_builtins}
+        restricted_locals = self._restricted_locals
+        for filename in plugins_:
+            plugin_name= os.path.splitext(filename)[-2]
+            plugin_path = os.path.join(self.project_pathname,"plugins",filename)
+            with open(plugin_path, 'r') as f:
+                code = f.read()
+            compiled_code = compile(code, plugin_path, 'exec')
+            exec(compiled_code, restricted_globals, restricted_locals)
 
     def load_slots(self, slots_: dict, main: bool = True):
         if main:

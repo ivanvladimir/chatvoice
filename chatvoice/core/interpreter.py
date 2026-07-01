@@ -8,7 +8,9 @@ import ast
 import os
 from pathlib import Path
 
-from .parser import Clause, Condition, parse_line
+from simpleeval import simple_eval, NameNotDefined, InvalidExpression
+
+from .parser import Clause, Condition, parse_line, Command
 from .conversation import Conversation
 
 log = get_logger(__name__)
@@ -36,6 +38,7 @@ class Interpreter:
     def run(self, callback, state: dict = {}):
         log.info(f"Starting execution of conversation {self.name}")
    
+        self.status = {}
         while len(self.commands) > 0 and not self.exit:
             line = self.commands.pop(0)
             chain = parse_line(line)
@@ -59,9 +62,11 @@ class Interpreter:
 
     def _run_chain(self, chain, callback) -> Generator[dict, Any, None]:
         """Execute each command in the given chain sequentially."""
-        self.status = {}
+        i=0
         while len(chain.commands) > 0 and not self.exit:
             c = chain.commands.pop(0)
+            if c.name.startswith("."):
+                c=Command(name="exec",_command=c._command,args=[c.name[1:]]+list(c.args), condition=c.condition, condition_type=c.condition_type)
             # 1. Evaluate 'if ... then' condition if present
             if c.condition is not None:
                 if not self._evaluate_condition(c.condition):
@@ -71,7 +76,7 @@ class Interpreter:
             handler = getattr(self, f"_cmd_{c.name}", None)
             if handler:
                 # All handlers are generators, so yield from them safely
-                yield from handler(c.args, callback)
+                yield from handler(c.args, callback,i>0)
             else:
                 self.exit = True
                 self.error = ValueError(f"Unknown command: {c.name}")
@@ -84,6 +89,7 @@ class Interpreter:
                 self.exit = True
                 self.error = ValueError(f"Error while evaluating {c._command}")
                 return
+            i+=1
     
     def _evaluate_condition(self, condition: Condition) -> bool:
         """
@@ -192,7 +198,7 @@ class Interpreter:
             
         return left, right
 
-    def _cmd_solve(self, args, callback):
+    def _cmd_solve(self, args, callback, continuation) -> Generator[dict, Any, None]:
         strategy_name = args[0]
         if strategy_name not in self.conversation.strategies:
             if strategy_name not in self.conversation.conversations:
@@ -224,7 +230,7 @@ class Interpreter:
             }
         yield from ()
 
-    def _cmd_return(self, args, callback) -> Generator[dict, Any, None]:
+    def _cmd_return(self, args, callback, continuation) -> Generator[dict, Any, None]:
         slot_name=args[0]
         if slot_name not in self.conversation.slots:
             self.status = {
@@ -243,7 +249,7 @@ class Interpreter:
             }
             yield from ()
 
-    def _cmd_say(self, args, callback) -> Generator[dict, Any, None]:
+    def _cmd_say(self, args, callback, continuation) -> Generator[dict, Any, None]:
         text = str(args[0]).format_map(self.conversation.slots)
         self.status = {
             'command': 'say',
@@ -252,7 +258,7 @@ class Interpreter:
         }
         yield {"cmd": "say", "args": [text]}
 
-    def _cmd_listen(self, args, callback) -> Generator[dict, Any, None]:
+    def _cmd_listen(self, args, callback, continuation) -> Generator[dict, Any, None]:
         variable = str(args[0])
         yield {"cmd": "listen"}
         user_input = callback()
@@ -264,7 +270,56 @@ class Interpreter:
             'ok': True,
         }
 
-    def _cmd_remember(self, args, callback):
+    def _cmd_set(self, args, callback, continuation) -> Generator[dict, Any, None]:
+        if len(args) == 0:
+            self.status = {
+                'command': 'exec',
+                'ok': False,
+            }
+            yield from ()
+
+        variable = str(args[0])
+        if continuation and len(args)==1:
+            value = self.status['value']
+        else:
+            value = args[1:]
+
+        self.conversation.slots[variable]=value
+        self.status = {
+                'command': 'set',
+                'value': value,
+                'variable': variable,
+                'ok': True,
+        }
+        yield from ()
+
+    def _cmd_exec(self, args, callback, continuation) -> Generator[dict, Any, None]:
+        if len(args) == 1:
+            self.status = {
+                'command': 'exec',
+                'ok': False,
+            }
+            yield from ()
+
+        func_name=args[0]
+        args_=[simple_eval(arg, names=self.conversation.slots) for arg in args[1:]]
+
+        if continuation:
+            args_.append(self.status["value"])
+        
+        restricted_locals=dict(self.conversation._restricted_locals)
+        restricted_locals.update(self.conversation.slots)
+
+        output=restricted_locals[func_name](*args_)
+
+        self.status = {
+                'command': 'exec',
+                'value': output,
+                'ok': True,
+        }
+        yield from ()
+
+    def _cmd_remember(self, args, callback, continuation) -> Generator[dict, Any, None]:
         if len(args) == 1:
             variable = str(args[0])
         elif len(args) == 0:
@@ -306,7 +361,7 @@ class Interpreter:
         }
         yield from ()
 
-    def _cmd_info(self, args, callback):
+    def _cmd_info(self, args, callback, continuation) -> Generator[dict, Any, None]:
         if len(args) == 0:
             self.status = {
                 'command': 'info',
@@ -319,6 +374,8 @@ class Interpreter:
                 args_.append(('slots',self.conversation.slots))
             if info_type.startswith("name"):
                 args_.append(('name', self.name))
+            if info_type.startswith("status"):
+                args_.append(('status', self.status))
         self.status = {
             'command': 'info',
             'value': args_[-1] if len(args_) else [],
@@ -326,7 +383,3 @@ class Interpreter:
         }
 
         yield {"cmd": "info", "args": args_}
-
-
-
-

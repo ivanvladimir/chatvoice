@@ -15,6 +15,7 @@ dependencies = [
     "python-jose>=3.5.0",
     "pyyaml>=6.0.3",
     "redis>=7.4.0",
+    "simpleeval>=1.0.7",
     "sqlalchemy>=2.0.48",
     "structlog>=25.5.0",
     "uuid6>=2025.0.1",
