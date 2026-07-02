@@ -68,6 +68,7 @@ class Console():
             elif m["cmd"] == "listen":
                 input=self.console.input(f"[red]{interpreter.settings['_name_user']}[/]: ")
                 session.send(input)
+                self.console.print()
             elif m["cmd"] == "info" and len(m['args']) > 0:
                 self.console.print("[yellow]INFO: [/]")
                 for label,info in m['args']:

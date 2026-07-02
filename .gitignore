@@ -103,7 +103,11 @@ crudadmin_data/
 *.db-journal
 *.sqlite3-journal
 
+
+.env
+.env.local
+.env.*.local
+
 logs/
-# moni_files
 conversations/**/is.json
 conversations/**/audios

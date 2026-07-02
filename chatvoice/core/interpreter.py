@@ -5,7 +5,6 @@ from core.logger import get_logger
 from core.db.database_sync import get_db_ctx
 from models import KB
 import ast
-import os
 import random
 from pathlib import Path
 
@@ -20,105 +19,103 @@ log = get_logger(__name__)
 class Interpreter:
     """Runs the execution of commands within a parsed chain."""
 
-    def __init__(self, project_pathname: Path, user_id: int, settings: dict = {}, slots: dict = {}):
+    def __init__(self, project_pathname: Path, user_id: int, settings: dict = None, slots: dict = None):
         self.project_pathname = project_pathname
-        self.basename = os.path.basename(project_pathname)
-        if  not project_pathname.suffix: 
-            self.name = self.basename
-        else:
-            self.name = os.path.splitext(self.basename)[-1]
+        
+        # Path.stem correctly gets the filename without the extension
+        self.name = project_pathname.stem
 
         self.stack_ = []
-        self.conversation = Conversation(project_pathname, user_id, settings=settings, slots=slots)
+        self.conversation = Conversation(
+            project_pathname, 
+            user_id, 
+            settings=settings or {}, 
+            slots=slots or {}
+        )
         self.settings: dict = self.conversation.settings
         self.commands = list(self.conversation.commands)
         self.exit = False
         self.error = None
         self.status: dict = {}
 
-    def run(self, callback, state: dict = {}):
+    def run(self, callback, state: dict = None) -> Generator[dict, Any, None]:
         log.info(f"Starting execution of conversation {self.name}")
    
         self.status = {}
-        while len(self.commands) > 0 and not self.exit:
+        while self.commands and not self.exit:
             line = self.commands.pop(0)
             chain = parse_line(line)
             yield from self._run_chain(chain, callback)
-            if len(self.commands) == 0 and len(self.stack_):
+            
+            # Handle stack (strategies and sub-conversations)
+            if not self.commands and self.stack_:
                 obj = self.stack_.pop()
-                if len(obj)==1: # strategy
-                    self.commands=obj[0]
-                    log.info("Finishing strategy")
-                elif len(obj)==2: # Conversation
-                    conversation, commands=obj
-                    conversation.slots.update(self.conversation.return_)
-                    self.conversation, self.commands= conversation, commands
-                    log.info("Finishing execuetion of conversation")
+                if len(obj) == 1:  # Strategy
+                    self.commands = obj[0]
+                    log.info("Resuming after strategy")
+                elif len(obj) == 2:  # Conversation
+                    old_conversation, commands = obj
+                    old_conversation.slots.update(self.conversation.return_)
+                    self.conversation, self.commands = old_conversation, commands
+                    log.info("Resuming execution of parent conversation")
 
-        if self.error is not None:
+        if self.error:
             raise self.error
 
         log.info(f"Finishing execution of conversation {self.name}")
  
-
     def _run_chain(self, chain, callback) -> Generator[dict, Any, None]:
         """Execute each command in the given chain sequentially."""
-        i=0
-        while len(chain.commands) > 0 and not self.exit:
+        is_continuation = False
+        
+        while chain.commands and not self.exit:
             c = chain.commands.pop(0)
+            
+            # Handle shorthand dot-commands (e.g., .my_func -> exec my_func)
             if c.name.startswith("."):
-                c=Command(name="exec",_command=c._command,args=[c.name[1:]]+list(c.args), condition=c.condition, condition_type=c.condition_type)
+                c = Command(
+                    name="exec",
+                    _command=c._command,
+                    args=[c.name[1:]] + list(c.args),
+                    condition=c.condition,
+                    condition_type=c.condition_type
+                )
+            
             # 1. Evaluate 'if ... then' condition if present
-            if c.condition is not None:
-                if not self._evaluate_condition(c.condition):
-                    continue # Condition is False, skip this command
+            if c.condition is not None and not self._evaluate_condition(c.condition):
+                continue  # Condition is False, skip this command
             
             # 2. Dispatch to the correct handler method
             handler = getattr(self, f"_cmd_{c.name}", None)
             if handler:
-                # All handlers are generators, so yield from them safely
-                yield from handler(c.args, callback,i>0)
+                yield from handler(c.args, callback, is_continuation)
             else:
                 self.exit = True
                 self.error = ValueError(f"Unknown command: {c.name}")
                 return
 
             # 3. Check for execution errors
-            if self.exit:
+            if self.exit or not self.status.get('ok', False):
+                if not self.error:
+                    self.error = ValueError(f"Error while evaluating {c._command}")
                 return
-            if not self.status.get('ok', False):
-                self.exit = True
-                self.error = ValueError(f"Error while evaluating {c._command}")
-                return
-            i+=1
+                
+            is_continuation = True
     
     def _evaluate_condition(self, condition: Condition) -> bool:
-        """
-        Evaluates a parsed Condition (one or more OR-joined Clauses).
-        Returns True if ANY of the clauses evaluate to True.
-        """
+        """Evaluates a parsed Condition. Returns True if ANY clause is True."""
         for clause in condition.clauses:
             if self._evaluate_clause(clause):
                 return True
-            
-            # If evaluate_clause encountered an error (e.g., missing right operand), 
-            # self.exit will be True. We should stop evaluating immediately.
             if self.exit:
                 return False
-                
         return False
 
-
     def _evaluate_clause(self, clause: Clause) -> bool:
-        """
-        Evaluates a parsed Clause using the conversation's slots.
-        """
+        """Evaluates a parsed Clause using the conversation's slots."""
         context = self.conversation.slots
-        
-        # Resolve the left operand
         left_val = self._resolve_value(clause.left, context)
 
-        # If no operator is provided, evaluate the truthiness of the left value
         if clause.op is None:
             result = bool(left_val)
         else:
@@ -133,43 +130,37 @@ class Interpreter:
             if self.exit:
                 return False
 
-        # Apply negation
         return (not result) if clause.negate else result
 
     def _resolve_value(self, key: str, context: dict) -> Any:
         """
-        Looks up the key in the context (slots). 
-        If not found, attempts to parse it as a literal (True, 1, 'string', etc.).
+        Looks up the key in context. If not found, attempts to parse as a literal.
         Falls back to returning the raw string.
         """
         if key in context:
             return context[key]
         try:
             return ast.literal_eval(key)
-        except ValueError:
-            return False
-        except SyntaxError:
+        except (ValueError, SyntaxError):
             return key
 
     def _apply_op(self, left: Any, op: str, right: Any) -> bool:
         """Applies the comparison operator, with type coercion for numbers."""
         left, right = self._coerce(left, right)
         
-        if op == "==":
-            return left == right
-        elif op == "!=":
-            return left != right
-        elif op == ">":
-            return left > right
-        elif op == "<":
-            return left < right
-        elif op == ">=":
-            return left >= right
-        elif op == "<=":
-            return left <= right
-        elif op == "in":
+        ops = {
+            "==": lambda l, r: l == r,
+            "!=": lambda l, r: l != r,
+            ">":  lambda l, r: l > r,
+            "<":  lambda l, r: l < r,
+            ">=": lambda l, r: l >= r,
+            "<=": lambda l, r: l <= r,
+            "in": lambda l, r: l in r if isinstance(r, (list, str, dict)) else False,
+        }
+
+        if op in ops:
             try:
-                return left in right
+                return ops[op](left, right)
             except TypeError:
                 return False
         
@@ -191,8 +182,7 @@ class Interpreter:
                     return val
             return val
 
-        l_num = to_num(left)
-        r_num = to_num(right)
+        l_num, r_num = to_num(left), to_num(right)
         
         if isinstance(l_num, float) and isinstance(r_num, float):
             return l_num, r_num
@@ -201,68 +191,56 @@ class Interpreter:
 
     def _cmd_solve(self, args, callback, continuation) -> Generator[dict, Any, None]:
         strategy_name = args[0]
-        if strategy_name not in self.conversation.strategies:
-            if strategy_name not in self.conversation.conversations:
-                self.exit = True
-                self.error = ValueError(f"Unknown strategy {strategy_name}")
-                return
-            else:
-                # Conversation
-                self.stack_.append((self.conversation, self.commands))
-                args=self.conversation.conversations[strategy_name]
-                args['slots']=dict(self.conversation.slots)
-                log.info(f"Starting execution of conversation {strategy_name}")
-                new_conversation=Conversation(**args)
-                self.conversation=new_conversation
-                self.commands=list(new_conversation.commands)
-                self.status = {
-                    'command': 'solve',
-                    'ok': True,
-                }
+        
+        if strategy_name not in self.conversation.strategies and strategy_name not in self.conversation.conversations:
+            self.exit = True
+            self.error = ValueError(f"Unknown strategy or conversation: {strategy_name}")
+            return
+
+        if strategy_name in self.conversation.conversations:
+            # Conversation
+            self.stack_.append((self.conversation, self.commands))
+            conv_args = self.conversation.conversations[strategy_name].copy()
+            conv_args['slots'] = dict(self.conversation.slots)
+            
+            log.info(f"Starting execution of conversation {strategy_name}")
+            self.conversation = Conversation(**conv_args)
+            self.commands = list(self.conversation.commands)
         else:
             # Strategy
-            log.info(f"Starting execution of conversation {self.name}")
             self.stack_.append((self.commands,))
             self.commands = list(self.conversation.strategies[strategy_name])
             log.info(f"Starting execution of strategy {strategy_name}")
-            self.status = {
-                'command': 'solve',
-                'ok': True,
-            }
+            
+        self.status = {'command': 'solve', 'ok': True}
         yield from ()
 
     def _cmd_return(self, args, callback, continuation) -> Generator[dict, Any, None]:
-        slot_name=args[0]
+        slot_name = args[0]
         if slot_name not in self.conversation.slots:
+            self.status = {'command': 'return', 'value': slot_name, 'ok': False}
+        else:
+            self.conversation.return_[slot_name] = self.conversation.slots[slot_name]
             self.status = {
                 'command': 'return',
-                'value': slot_name,
-                'ok': False,
-            }
-            yield from ()
-        else:
-            self.conversation.return_[slot_name]=self.conversation.slots[slot_name]
-            self.status = {
-                'command': 'say',
                 'variable': slot_name,
                 'value': self.conversation.slots[slot_name],
                 'ok': True,
             }
-            yield from ()
+        yield from ()
 
     def _cmd_say(self, args, callback, continuation) -> Generator[dict, Any, None]:
-        key= args[0]
+        key = args[0]
         if key in self.conversation.templates:
             texts = self._resolve_template(key)
         else:
-            text = key.format_map(self.conversation.slots)
-            texts=[text]
+            try:
+                text = key.format_map(self.conversation.slots)
+            except KeyError:
+                text = key  # Fallback if slot is missing
+            texts = [text]
         
-        self.status = {
-            'command': 'say',
-            'value': texts,
-            'ok': True,
-        }
+        self.status = {'command': 'say', 'value': texts, 'ok': True}
         yield {"cmd": "say", "args": texts}
 
     def _cmd_listen(self, args, callback, continuation) -> Generator[dict, Any, None]:
@@ -278,61 +256,77 @@ class Interpreter:
         }
 
     def _cmd_set(self, args, callback, continuation) -> Generator[dict, Any, None]:
-        if len(args) == 0:
-            self.status = {
-                'command': 'exec',
-                'ok': False,
-            }
+        if not args:
+            self.status = {'command': 'set', 'ok': False}
             yield from ()
+            return
 
         variable = str(args[0])
-        if continuation and len(args)==1:
-            value = self.status['value']
+        if continuation and len(args) == 1:
+            value = self.status.get('value')
         else:
             value = args[1:]
 
-        self.conversation.slots[variable]=value
-        self.status = {
-                'command': 'set',
-                'value': value,
-                'variable': variable,
-                'ok': True,
-        }
+        self.conversation.slots[variable] = value
+        self.status = {'command': 'set', 'value': value, 'variable': variable, 'ok': True}
         yield from ()
 
     def _cmd_exec(self, args, callback, continuation) -> Generator[dict, Any, None]:
-        if len(args) == 1:
-            self.status = {
-                'command': 'exec',
-                'ok': False,
-            }
+        if not args:
+            self.status = {'command': 'exec', 'ok': False}
             yield from ()
+            return
 
-        func_name=args[0]
-        args_=[simple_eval(arg, names=self.conversation.slots) for arg in args[1:]]
+        func_name = args[0]
+        
+        eval_context = {**self.conversation._restricted_locals, **self.conversation.slots}
+        
+        try:
+            args_ = [simple_eval(arg, names=eval_context) for arg in args[1:]]
+        except (NameNotDefined, InvalidExpression) as e:
+            self.exit = True
+            self.error = ValueError(f"Exec argument evaluation failed: {e}")
+            self.status = {'command': 'exec', 'ok': False}
+            yield from ()
+            return
 
         if continuation:
-            args_.append(self.status["value"])
+            args_.append(self.status.get("value"))
         
-        restricted_locals=dict(self.conversation._restricted_locals)
-        restricted_locals.update(self.conversation.slots)
+        if func_name not in eval_context:
+            self.exit = True
+            self.error = ValueError(f"Exec function '{func_name}' is not defined.")
+            self.status = {'command': 'exec', 'ok': False}
+            yield from ()
+            return
 
-        output=restricted_locals[func_name](*args_)
-
-        self.status = {
-                'command': 'exec',
-                'value': output,
-                'ok': True,
-        }
+        try:
+            output = eval_context[func_name](*args_)
+            self.status = {'command': 'exec', 'value': output, 'ok': True}
+        except Exception as e:
+            self.exit = True
+            self.error = ValueError(f"Exec function '{func_name}' crashed: {e}")
+            self.status = {'command': 'exec', 'ok': False}
+            
         yield from ()
 
     def _cmd_remember(self, args, callback, continuation) -> Generator[dict, Any, None]:
-        if len(args) == 1:
+        if len(args) >= 2:
+            variable, value = str(args[0]), args[1]
+        elif len(args) == 1:
             variable = str(args[0])
-        elif len(args) == 0:
-            variable = self.status['variable']
-            value = self.status['value']
+            value = self.status.get('value') if continuation else None
+        else:
+            variable = self.status.get('variable')
+            value = self.status.get('value')
+
+        if not variable or value is None:
+            self.status = {'command': 'remember', 'ok': False}
+            yield from ()
+            return
+
         self.conversation.slots[variable] = value
+        
         with get_db_ctx() as db:
             result = db.execute(
                 select(KB).filter_by(
@@ -341,6 +335,7 @@ class Interpreter:
                 )
             )
             kb = result.scalar_one_or_none()
+            
             if not kb:
                 stmt = insert(KB).values(
                     user_id=self.conversation.user_id,
@@ -352,61 +347,76 @@ class Interpreter:
             else:
                 payload = dict(kb.payload)
                 payload.update({variable: value})
-                stmt = update(KB).where(
-                    KB.id == kb.id,
-                ).values(
-                    payload=payload,
-                    updated_at=datetime.now(UTC),
+                stmt = (
+                    update(KB)
+                    .where(KB.id == kb.id)
+                    .values(payload=payload, updated_at=datetime.now(UTC))
                 )
                 db.execute(stmt)
             db.flush()
-        self.status = {
-            'command': 'remember',
-            'value': value,
-            'variable': variable,
-            'ok': True,
-        }
+            
+        self.status = {'command': 'remember', 'value': value, 'variable': variable, 'ok': True}
         yield from ()
 
     def _cmd_info(self, args, callback, continuation) -> Generator[dict, Any, None]:
-        if len(args) == 0:
-            self.status = {
-                'command': 'info',
-                'ok': False,
-            }
-            yield {"cmd": "info", "args": {}}
-        args_=[]
-        for  info_type in args:
-            if info_type.startswith("slots"):
-                args_.append(('slots',self.conversation.slots))
-            if info_type.startswith("name"):
-                args_.append(('name', self.name))
-            if info_type.startswith("status"):
-                args_.append(('status', self.status))
+        info_data = []
+        for info_type in args:
+            info_type=info_type.replace(",","")
+            if info_type == "slots":
+                info_data.append(('slots', self.conversation.slots))
+            elif info_type == "name":
+                info_data.append(('name', self.name))
+            elif info_type == "status":
+                info_data.append(('status', self.status))
+                
         self.status = {
             'command': 'info',
-            'value': args_[-1] if len(args_) else [],
-            'ok': True,
+            'value': info_data[-1] if info_data else [],
+            'ok': bool(info_data), # False if no valid args were passed
         }
 
-        yield {"cmd": "info", "args": args_}
+        yield {"cmd": "info", "args": info_data}
 
+    def _resolve_template(self, name):
+        t = self.conversation.templates[name]
+        eval_context = {**self.conversation._restricted_locals, **self.conversation.slots}
+        
+        try:
+            if 'CASES' in t:
+                val = simple_eval(t['SLOT'], names=eval_context)
+                for case in t['CASES']:
+                    if val in case['VALS']:
+                        res = random.choice(case['MSGS'])
+                        break
+                else:
+                    res = random.choice(t['CASES'][-1]['MSGS']) # Fallback to last case
+            else:
+                res = random.choice(t)
+                
+            # Build f-strings dynamically and evaluate them
+            fmt_strings = []
+            for m in res['MSG']:
+                text = m["TEXT"].strip()
+                if '\n' in text:
+                    fmt_strings.append(f'f"""{text}"""')
+                else:
+                    fmt_strings.append(f'f"{text}"')
+                    
+            return [simple_eval(s, names=eval_context) for s in fmt_strings]
+            
+        except (NameNotDefined, InvalidExpression, KeyError) as e:
+            log.error(f"Failed to resolve template {name}: {e}")
+            return [f"[Error resolving template {name}]"]
 
-    def _resolve_template(self,name):
-        t=self.conversation.templates[name]
-        # Check for cased
-        if 'CASES' in t:
-            val=simple_eval(t['SLOT'],names=self.conversation.slots)
-            for case in t['CASES']:
-                if val in case['VALS']:
-                    res=random.choice(case['MSGS'])
-        else:
-            # TODO: change this for a selector that can take weigths
-            res=random.choice(t)
-        res=[f'f"""{m["TEXT"].strip()}"""' if '\n' in m['TEXT'] else f'f"{m["TEXT"].strip()}"' for m in res['MSG']]
-        return [simple_eval(m,names=self.conversation.slots) for m in res]
-
-    def resolve_prompts(self,name):
-        p=self.conversation.prompts[name]
-        res=[f'f"""{p.strip()}"""' if '\n' in p else f'f"{p.strip()}"']
-        return [simple_eval(m,names=self.conversation.slots) for m in res]
+    def resolve_prompts(self, name):
+        p = self.conversation.prompts[name]
+        eval_context = {**self.conversation._restricted_locals, **self.conversation.slots}
+        
+        text = p.strip()
+        fmt_str = f'f"""{text}"""' if '\n' in text else f'f"{text}"'
+        
+        try:
+            return simple_eval(fmt_str, names=eval_context)
+        except (NameNotDefined, InvalidExpression) as e:
+            log.error(f"Failed to resolve prompt {name}: {e}")
+            return text
