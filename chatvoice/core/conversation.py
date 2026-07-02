@@ -1,5 +1,4 @@
 import yaml
-from rich.console import Console
 import sys
 import os
 
@@ -14,7 +13,6 @@ log = get_logger(__name__)
 class Conversation:
     def __init__(self, project_pathname: str, user_id: int, filename: str = "main.yaml", settings: dict = {}, slots: dict = {}):
         self.project_pathname = project_pathname
-        self.console = Console(record=True)
         self.stacks_ : list[list] = []
         self.commands : list[str] = []
         self.strategies : dict = {}
@@ -40,6 +38,7 @@ class Conversation:
 
         slots = definition.get("slots",{})
         slots.update(slots_)
+        slots.update({"_settings":settings_})
         self.load_slots(slots, filename.endswith('main.yaml'))
 
         settings= definition.get("settings",{})
@@ -67,11 +66,8 @@ class Conversation:
                     for k in template_.keys():
                         if k in self.templates:
                             log.error(f"Template {k} already defined")
-                            console.pint(f"[red]Template {k} already defined, being redifined[/]")
                     self.templates.update(template_)
                 except yaml.YAMLError as exc:
-                    self.console.print(f"Error while reading: {template}, definitions being ignored")
-                    self.console.print(exc)
                     log.error(f"Error while reading: {template}, definitions being ignored")
                     log.error(exec)
                     sys.exit()
@@ -85,12 +81,9 @@ class Conversation:
                     for k in prompts_.keys():
                         if k in self.prompts:
                             log.error(f"Prompt {k} already defined")
-                            self.console.pint(f"[red]Prompt {k} already defined, being redifined[/]")
                     self.prompts.update(prompts_)
                 except yaml.YAMLError as exc:
-                    self.console.print(f"Error while reading: {prompts}, definitions being ignored")
-                    self.console.print(exc)
-                    log.error(f"Error while reading: {prompts}, definitions being ignored")
+                    log.error(f"Error while reading: {prompts}, definitions being ignored [{exc}]")
                     log.error(exec)
                     sys.exit()
 

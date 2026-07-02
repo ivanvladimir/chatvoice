@@ -17,7 +17,7 @@ def console(
         *,
         name: str = "chatvoice",
         logging_json: bool = False,
-        logging_level: str = "debug",
+        logging_level: str = "error",
         logging_file: str = "logs/chatvoice.log",
 ):
     """Runs the chat from the console.
@@ -45,7 +45,7 @@ def console(
 @cli.command
 def server(
     logging_json: bool = False,
-    logging_level: str = "debug",
+    logging_level: str = "error",
     logging_file: str = "logs/chatvoice.log",
 ):
     """Runs the server chat.

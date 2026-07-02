@@ -396,7 +396,7 @@ class Interpreter:
         t=self.conversation.templates[name]
         # Check for cased
         if 'CASES' in t:
-            val=eval(t['SLOT'],self.slots)
+            val=simple_eval(t['SLOT'],names=self.conversation.slots)
             for case in t['CASES']:
                 if val in case['VALS']:
                     res=random.choice(case['MSGS'])
@@ -404,4 +404,9 @@ class Interpreter:
             # TODO: change this for a selector that can take weigths
             res=random.choice(t)
         res=[f'f"""{m["TEXT"].strip()}"""' if '\n' in m['TEXT'] else f'f"{m["TEXT"].strip()}"' for m in res['MSG']]
-        return [simple_eval(m,self.conversation.slots) for m in res]
+        return [simple_eval(m,names=self.conversation.slots) for m in res]
+
+    def resolve_prompts(self,name):
+        p=self.conversation.prompts[name]
+        res=[f'f"""{p.strip()}"""' if '\n' in p else f'f"{p.strip()}"']
+        return [simple_eval(m,names=self.conversation.slots) for m in res]

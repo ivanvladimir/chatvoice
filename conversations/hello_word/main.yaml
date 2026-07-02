@@ -21,6 +21,7 @@ slots:
     mal: bad
 
 script:
+  - info slots
   - say GREET
   - if not name then solve name
   - say "¿como estás hoy, {name}?"

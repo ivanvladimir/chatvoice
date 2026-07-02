@@ -1,5 +1,6 @@
 from typing import Any, Literal, Callable
 from rich.prompt import Prompt
+from rich.markdown import Markdown
 from rich.console import Console as PConsole
 
 from models import User
@@ -25,7 +26,7 @@ class Console():
         if store_type.startswith("memory"):
             self.store = MemoryStateStore()
             self.session_manager = SessionManager(self.store)
-        self.console = PConsole()
+        self.console = PConsole(record=True)
         log.info("Starting console chat")
 
     def authenticate_user(self) -> dict[str, Any] | Literal[False]:
@@ -62,7 +63,8 @@ class Console():
                 return
             if m["cmd"] == "say" and len(m['args']) > 0:
                 for msg in m['args']:
-                    self.console.print(f"[blue]{interpreter.settings['_name_system']}[/]:",msg)
+                    self.console.print(f"[blue]{interpreter.settings['_name_system']}[/]:",end=" ")
+                    self.console.print(Markdown(msg))
             elif m["cmd"] == "listen":
                 input=self.console.input(f"[red]{interpreter.settings['_name_user']}[/]: ")
                 session.send(input)
@@ -70,10 +72,3 @@ class Console():
                 self.console.print("[yellow]INFO: [/]")
                 for label,info in m['args']:
                     self.console.print(f"[cyan]  {label: <10}: {info}[/]")
-
- 
-
-
-
-
-
