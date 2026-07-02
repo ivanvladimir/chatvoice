@@ -3,6 +3,7 @@ from datetime import datetime, UTC
 from sqlalchemy import update, insert, select
 from core.logger import get_logger
 from core.db.database_sync import get_db_ctx
+from utils.llm import llm_client_response
 from models import KB
 import ast
 import random
@@ -19,7 +20,7 @@ log = get_logger(__name__)
 class Interpreter:
     """Runs the execution of commands within a parsed chain."""
 
-    def __init__(self, project_pathname: Path, user_id: int, settings: dict = None, slots: dict = None):
+    def __init__(self, project_pathname: Path, user_id: int, settings: dict = None, slots: dict = None, llm_client = None):
         self.project_pathname = project_pathname
         
         # Path.stem correctly gets the filename without the extension
@@ -29,7 +30,7 @@ class Interpreter:
         self.conversation = Conversation(
             project_pathname, 
             user_id, 
-            settings=settings or {}, 
+            settings=settings or {},
             slots=slots or {}
         )
         self.settings: dict = self.conversation.settings
@@ -37,6 +38,7 @@ class Interpreter:
         self.exit = False
         self.error = None
         self.status: dict = {}
+        self.llm_client = llm_client
 
     def run(self, callback, state: dict = None) -> Generator[dict, Any, None]:
         log.info(f"Starting execution of conversation {self.name}")
@@ -229,18 +231,39 @@ class Interpreter:
             }
         yield from ()
 
-    def _cmd_say(self, args, callback, continuation) -> Generator[dict, Any, None]:
+    def _cmd_llm(self, args, callback, continuation) -> Generator[dict, Any, None]:
         key = args[0]
-        if key in self.conversation.templates:
-            texts = self._resolve_template(key)
+        if key in self.conversation.prompts:
+            prompt = self._resolve_prompt(key)
         else:
             try:
-                text = key.format_map(self.conversation.slots)
+                prompt = key.format_map(self.conversation.slots)
             except KeyError:
-                text = key  # Fallback if slot is missing
-            texts = [text]
-        
-        self.status = {'command': 'say', 'value': texts, 'ok': True}
+                prompt = key  # Fallback if slot is missing
+        response=llm_client_response(self.llm_client, prompt)
+        if len(args)==1:
+            self.status = {'command': 'llm', 'value': [response], 'ok': True}
+        elif len(args)==2:
+            variable = args[1]
+            self.conversation.slots[variable]=response
+            self.status = {'command': 'llm', 'variable': variable, 'value': [response], 'ok': True}
+        yield from ()
+
+    def _cmd_say(self, args, callback, continuation) -> Generator[dict, Any, None]:
+        if len(args)==0 and continuation:
+            texts=self.status['value']
+        elif len(args)==1:
+            key = args[0]
+            if key in self.conversation.templates:
+                texts = self._resolve_template(key)
+            else:
+                try:
+                    text = key.format_map(self.conversation.slots)
+                except KeyError:
+                    text = key  # Fallback if slot is missing
+                texts = [text]
+            
+            self.status = {'command': 'say', 'value': texts, 'ok': True}
         yield {"cmd": "say", "args": texts}
 
     def _cmd_listen(self, args, callback, continuation) -> Generator[dict, Any, None]:
@@ -408,7 +431,7 @@ class Interpreter:
             log.error(f"Failed to resolve template {name}: {e}")
             return [f"[Error resolving template {name}]"]
 
-    def resolve_prompts(self, name):
+    def _resolve_prompt(self, name):
         p = self.conversation.prompts[name]
         eval_context = {**self.conversation._restricted_locals, **self.conversation.slots}
         

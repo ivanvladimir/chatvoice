@@ -10,6 +10,7 @@ dependencies = [
     "cyclopts>=4.10.1",
     "fastapi>=0.135.2",
     "fastcrud>=0.21.0",
+    "google-genai>=2.10.0",
     "pydantic-settings>=2.13.1",
     "pydantic[email]>=2.12.5",
     "python-jose>=3.5.0",

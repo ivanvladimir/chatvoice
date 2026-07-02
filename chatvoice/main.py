@@ -3,9 +3,13 @@ from typing import Annotated
 from pathlib import Path
 from rich import print
 
+from core.config import get_settings
 from core.logger import setup_logging, get_logger
-
 from core.interpreter import Interpreter
+
+from utils.llm import get_llm_client, init_llm_client
+
+settings = get_settings()
 
 cli = cyclopts.App(
     name="chatvoice",
@@ -32,6 +36,8 @@ def console(
     setup_logging(json_output=logging_json, log_file=logging_file, log_level=logging_level)
     log = get_logger(__name__)
 
+    print(f"Initializing LLM client.")
+    llm_client=init_llm_client(settings)
     print(f"Running [yellow]{project_pathname}[/] conversation from the console as [green]{name}[/].")
     console = Console()
     user=console.authenticate_user()
@@ -39,7 +45,13 @@ def console(
         print("[red]Authentication failed. Please check your credentials and try again.[/]")
         return None
 
-    interpreter = Interpreter(project_pathname, user_id = user.id, settings = {"_name_system":name})
+
+    interpreter = Interpreter(
+        project_pathname, 
+        user_id = user.id, 
+        settings = {"_name_system":name},
+        llm_client = llm_client    
+    )
     console.run(user.id, interpreter)
 
 @cli.command

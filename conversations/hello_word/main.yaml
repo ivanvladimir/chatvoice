@@ -7,6 +7,9 @@ plugins:
 templates:
   - messages.yaml
 
+prompts:
+  - prompts.yaml
+
 strategies:
     excelent:
         - say "me da mucho gusto que estés bien"
@@ -23,6 +26,7 @@ slots:
 script:
   - info slots
   - say GREET
+  - llm wheather_opening | say
   - if not name then solve name
   - say "¿como estás hoy, {name}?"
   - listen status | .keyword options | set status

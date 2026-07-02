@@ -1,7 +1,7 @@
 import os
 from enum import Enum
 
-from pydantic import SecretStr, computed_field
+from pydantic import SecretStr, computed_field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from starlette.config import Config
 
@@ -107,6 +107,49 @@ class CORSSettings(BaseSettings):
     CORS_METHODS: list[str] = ["*"]
     CORS_HEADERS: list[str] = ["*"]
 
+class LLMProvider(str, Enum):
+    OPENAI = "openai"
+    ANTHROPIC = "anthropic"
+    GOOGLE = "google"
+    AZURE_OPENAI = "azure_openai"
+    NONE = "none"
+
+class LLMSettings:  # <-- plain class, no BaseSettings here
+    LLM_PROVIDER: LLMProvider = LLMProvider.NONE
+
+    OPENAI_API_KEY: SecretStr | None = None
+    ANTHROPIC_API_KEY: SecretStr | None = None
+    GOOGLE_API_KEY: SecretStr | None = None
+    AZURE_OPENAI_API_KEY: SecretStr | None = None
+    NONE_API_KEY: None = None
+    AZURE_OPENAI_ENDPOINT: str | None = None
+
+    @model_validator(mode="after")
+    def check_active_key_present(self) -> "LLMSettings":
+        key = self.active_api_key
+        if key is None or not key.get_secret_value().strip():
+            raise ValueError(
+                f"LLM_PROVIDER is set to '{self.LLM_PROVIDER.value}' but "
+                f"'{self.LLM_PROVIDER.value.upper()}_API_KEY' is missing or empty in .env"
+            )
+        return self
+
+    @property
+    def active_api_key(self) -> SecretStr | None:
+        mapping = {
+            LLMProvider.OPENAI: self.OPENAI_API_KEY,
+            LLMProvider.ANTHROPIC: self.ANTHROPIC_API_KEY,
+            LLMProvider.GOOGLE: self.GOOGLE_API_KEY,
+            LLMProvider.AZURE_OPENAI: self.AZURE_OPENAI_API_KEY,
+            LLMProvider.NONE: self.NONE_API_KEY,
+        }
+        return mapping[self.LLM_PROVIDER]
+
+    def get_key(self) -> str:
+        key = self.active_api_key
+        assert key is not None
+        return key.get_secret_value()
+
 class Settings(
             AppSettings,
             CryptSettings,
@@ -118,6 +161,7 @@ class Settings(
             EnvironmentSettings,
             CORSSettings,
             BaseSettings,
+            LLMSettings,
         ):
     model_config = SettingsConfigDict(
         env_file=os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", ".env"),
@@ -127,3 +171,6 @@ class Settings(
     )
 
 settings = Settings()
+
+def get_settings() -> Settings:
+    return settings
