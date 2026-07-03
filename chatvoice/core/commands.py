@@ -53,7 +53,7 @@ def cmd_solve(
         # Prepare new conversation, copying current slots
         conv_args = conversations[strategy_name].copy()
         conv_args['slots'] = dict(evaluator.slots) # Get clean slots from evaluator
-        
+       
         log.info(f"Starting execution of conversation {strategy_name}")
         state.conversation = Conversation(**conv_args)
         state.commands = list(state.conversation.commands)
@@ -64,7 +64,7 @@ def cmd_solve(
         log.info(f"Starting execution of strategy {strategy_name}")
         
     # 3. Return status (yielded as the final value of the generator)
-    yield  # Yield once to maintain the Generator pattern, even if no output is sent to user
+    yield from () # Yield once to maintain the Generator pattern, even if no output is sent to user
     return {'command': 'solve', 'ok': True}
 
 def cmd_return(
@@ -184,8 +184,8 @@ def cmd_say(args, context:dict, evaluator: ExpressionEvaluator, callback) -> Gen
         else:
             texts = [key.format_map(evaluator.slots)]
         
-        yield {"cmd": "say", "args": texts}
-        return {'command': 'say', 'value': texts, 'ok': True}
+    yield {"cmd": "say", "args": texts}
+    return {'command': 'say', 'value': texts, 'ok': True}
 
 def cmd_listen(args, context:dict, evaluator: ExpressionEvaluator, callback) -> Generator[dict, Any, None]:
     variable = str(args[0])

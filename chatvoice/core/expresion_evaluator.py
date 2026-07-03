@@ -50,11 +50,12 @@ class ExpressionEvaluator:
         """
         if key in self.slots:
             return self.slots[key]
-        
+       
         try:
             return ast.literal_eval(key)
-        except (ValueError, SyntaxError):
-            # FIX: Original code returned False here, breaking string comparisons
+        except ValueError:
+            return False
+        except SyntaxError:
             return key
 
     def evaluate_condition(self, condition: Condition) -> bool:
