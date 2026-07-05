@@ -25,7 +25,7 @@ class ChatSession:
         # daemon=True means the thread dies automatically when the
         # main process exits — no manual cleanup needed on shutdown.
         self._thread = threading.Thread(
-            target=self._run, args=(interpreter,), daemon=True, name=f"session-{user_id}-{session_id}"
+            target=self._run, args=(interpreter,), daemon=False, name=f"session-{user_id}-{session_id}"
         )
 
     def start(self):

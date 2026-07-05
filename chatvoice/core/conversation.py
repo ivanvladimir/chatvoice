@@ -23,6 +23,7 @@ class Conversation:
         self.slots : dict = {}
         self.return_ : dict = {}
         self.user_id = user_id
+        self.name = os.path.splitext(filename)[-2]
         self._load_conversation(project_pathname, filename, settings, slots)
  
     def _load_conversation(self, project_pathname: str, filename: str = "main.yaml", settings_: dict = {}, slots_ : dict = {}):

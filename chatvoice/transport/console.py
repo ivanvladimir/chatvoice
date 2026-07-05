@@ -65,11 +65,15 @@ class Console():
                 for msg in m['args']:
                     self.console.print(f"[blue]{interpreter.settings['_name_system']}[/]:",end=" ")
                     self.console.print(Markdown(msg))
+                    self.console.file.flush() 
             elif m["cmd"] == "listen":
                 input=self.console.input(f"[red]{interpreter.settings['_name_user']}[/]: ")
                 session.send(input)
                 self.console.print()
+                self.console.file.flush() 
             elif m["cmd"] == "info" and len(m['args']) > 0:
                 self.console.print("[yellow]INFO: [/]")
                 for label,info in m['args']:
                     self.console.print(f"[cyan]  {label: <10}: {info}[/]")
+                self.console.print()
+                self.console.file.flush() 

@@ -76,7 +76,6 @@ class Interpreter:
 
 
         self.ctx = {
-            'strategies': self.conversation.strategies,
             'conversations': self.conversation.conversations,
             'templates': self.conversation.templates,
             'prompts': self.conversation.prompts,
@@ -99,8 +98,6 @@ class Interpreter:
             "info":cmd_info,
         }
 
-
-    
     def run(self, callback, state: dict = None) -> Generator[dict, Any, None]:
         log.info(f"Starting execution of conversation {self.name}")
         
@@ -133,6 +130,7 @@ class Interpreter:
             log.error(f"Execution halted: {e}")
             raise
 
+        yield from ()
         log.info(f"Finishing execution of conversation {self.name}")
  
     def _run_chain(self, chain, callback) -> Generator[dict, Any, None]:
@@ -152,12 +150,13 @@ class Interpreter:
                 )
 
             if c.condition is not None and not self.evaluator.evaluate_condition(c.condition):
+                yield from ()
                 continue
 
             handler = self.command_registry.get(c.name)
             if handler:
                  cmd_ctx = {
-                    **self.ctx,  # Base context (strategies, templates, state, etc.)
+                    **self.ctx,  # Base context(templates, state, etc.)
                     'is_continuation': is_continuation,
                     'prev_status': self.status,
                     'memory_store': self.memory_store
@@ -169,5 +168,6 @@ class Interpreter:
             self.status = yield from handler(c.args, cmd_ctx, self.evaluator, callback)
 
             is_continuation = True
+        yield from ()
     
 

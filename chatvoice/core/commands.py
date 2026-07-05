@@ -37,9 +37,9 @@ def cmd_solve(
     strategy_name = args[0]
     
     # Extract what we need from ctx
-    strategies = ctx['strategies']
-    conversations = ctx['conversations']
     state: 'ExecutionState' = ctx['state']  # Our mutable state object
+    strategies = state.conversation.strategies
+    conversations = state.conversation.conversations
 
     # 1. Validation
     if strategy_name not in strategies and strategy_name not in conversations:
@@ -78,14 +78,14 @@ def cmd_return(
     dictionary so it can be passed back to the parent caller.
     """
     if not args:
-        yield  # Maintain generator pattern
+        yield from ()# Maintain generator pattern
         return {'command': 'return', 'ok': False, 'error': 'Missing slot name'}
 
     slot_name = args[0]
     
     # 1. Check if the variable exists in the evaluator's slots
     if slot_name not in evaluator.slots:
-        yield
+        yield from ()
         # Note: In your original code, ok=False triggers the interpreter to stop.
         # If you prefer it to just silently fail without stopping, change ok to True.
         return {
@@ -102,7 +102,7 @@ def cmd_return(
     ctx['state'].conversation.return_[slot_name] = value
     
     # 4. Yield to maintain generator protocol, then return the status
-    yield
+    yield from ()
     return {
         'command': 'return',
         'variable': slot_name,
@@ -120,7 +120,7 @@ def cmd_llm(
     Resolves a prompt, sends it to the LLM client, and optionally saves the response to a slot.
     """
     if not args:
-        yield
+        yield from ()
         return {'command': 'llm', 'ok': False, 'error': 'Missing prompt key or text'}
 
     key = args[0]
@@ -147,7 +147,7 @@ def cmd_llm(
     # 2. Call the LLM (Extract client from context)
     llm_client = ctx.get('llm_client')
     if not llm_client:
-        yield
+        yield from ()
         return {'command': 'llm', 'ok': False, 'error': 'LLM Client not found in context'}
 
     response = llm_client_response(llm_client, prompt)
@@ -175,6 +175,7 @@ def cmd_llm(
         }
 
 def cmd_say(args, context:dict, evaluator: ExpressionEvaluator, callback) -> Generator[dict, Any, None]:
+    texts=None
     if len(args)==0 and context['is_continuation']:
         texts=context['prev_status']['value']
     elif len(args)==1:
@@ -183,7 +184,6 @@ def cmd_say(args, context:dict, evaluator: ExpressionEvaluator, callback) -> Gen
             texts = resolve_template(key, context, evaluator)
         else:
             texts = [key.format_map(evaluator.slots)]
-        
     yield {"cmd": "say", "args": texts}
     return {'command': 'say', 'value': texts, 'ok': True}
 
@@ -225,7 +225,7 @@ def cmd_exec(
     Evaluates arguments safely, finds a restricted function, and executes it.
     """
     if not args:
-        yield
+        yield from ()
         return {'command': 'exec', 'ok': False, 'error': 'Missing function name'}
 
     func_name = args[0]
@@ -252,7 +252,7 @@ def cmd_exec(
     try:
         output = evaluator.context[func_name](*evaluated_args)
         
-        yield  # Maintain generator protocol
+        yield from () # Maintain generator protocol
         return {
             'command': 'exec',
             'value': output,
@@ -285,7 +285,7 @@ def cmd_remember(
 
     # 2. Validation
     if not variable or value is None:
-        yield
+        yield from ()
         return {'command': 'remember', 'ok': False, 'error': 'Missing variable or value'}
 
     # 3. Update the Evaluator's state (which updates slots)
@@ -310,7 +310,7 @@ def cmd_remember(
         # Let the interpreter catch this and halt execution gracefully
         raise CommandError(f"Database remember failed for '{variable}': {e}")
 
-    yield
+    yield from ()
     return {
         'command': 'remember',
         'value': value,
@@ -339,8 +339,14 @@ def cmd_info(
             
         elif info_type == "name":
             # Fallback to 'unknown' if the interpreter forgot to pass the name in ctx
-            info_data.append(('name', ctx.get('project_name', 'unknown')))
-            
+            state=ctx.get('state')
+            info_data.append(('name', state.conversation.name))
+
+        elif info_type == "strategies":
+            # Fallback to 'unknown' if the interpreter forgot to pass the name in ctx
+            state=ctx.get('state')
+            info_data.append(('strategies', state.conversation.strategies.keys()))
+
         elif info_type == "status":
             # Grab the previous command's status from the context payload
             info_data.append(('status', ctx.get('prev_status', {})))
