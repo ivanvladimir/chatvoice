@@ -29,16 +29,16 @@ class Project(Base):
     __tablename__ = "project"
 
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True, init=False)
-
     name: Mapped[str] = mapped_column(String(100))
-    description: Mapped[str | None] = mapped_column(String, default=None, nullable=True)
+    directory_path: Mapped[str] = mapped_column(String(500), unique=True, index=True)
 
     # The root directory path for this project (e.g., "s3://my-bucket/projects/uuid/" or "/var/www/projects/uuid/")
-    directory_path: Mapped[str] = mapped_column(String(500), unique=True, index=True)
+    is_active: Mapped[bool] = mapped_column(default=True)
+    description: Mapped[str | None] = mapped_column(String, default=None, nullable=True)
 
     # The creator/owner of the project
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, init=False)
-    owner: Mapped["User"] = relationship(back_populates="owned_projects")
+    owner: Mapped["User"] = relationship("User", back_populates="owned_projects", init=False)
 
     uuid: Mapped[uuid_pkg.UUID] = mapped_column(UUID(as_uuid=True), default_factory=uuid7, unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default_factory=lambda: datetime.now(UTC))

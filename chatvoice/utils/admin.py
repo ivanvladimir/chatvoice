@@ -33,7 +33,16 @@ def create_admin_user():
         print(f"[red]User with email '{email}' already exists. Please try again.[/]")
         return False
 
-    admin = User(name=name, email=email, username=username, hashed_password=hashed_password, is_verified=True, is_superuser=True)
+    admin = User(
+        name=name, 
+        email=email, 
+        username=username,
+        profile_image_url="",
+        institution="Administration", 
+        description="Administraror of website",
+        hashed_password=hashed_password,
+        is_verified=True,
+        is_superuser=True)
     with get_db_ctx() as session:
         session.add(admin)
         session.flush()

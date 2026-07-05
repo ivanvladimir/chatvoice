@@ -48,11 +48,11 @@ def console(
 
     interpreter = Interpreter(
         project_pathname, 
-        user_id = users.id, 
+        user_id = user.id, 
         settings = {"_name_system":name},
         llm_client = llm_client    
     )
-    console.run(users.id, interpreter)
+    console.run(user.id, interpreter)
 
 @cli.command
 def server(
