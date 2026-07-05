@@ -9,7 +9,7 @@ class KB(Base):
     __tablename__ = "kb"
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True, init=False)
     user_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False, kw_only=True
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, kw_only=True
     )
     project_path: Mapped[str] = mapped_column(
         String(64), nullable=False, default="", kw_only=True
