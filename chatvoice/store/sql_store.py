@@ -1,8 +1,8 @@
 from sqlalchemy import select, insert, update
 from datetime import datetime, UTC
-from core.db.database_sync import get_db_ctx
-from models import KB
 from typing import Any
+from ..models import KB
+from ..core.db.database_sync import get_db_ctx
 
 class SqlAlchemyMemoryStore:
     def remember(self, user_id: int, project_path: str, variable: str, value: Any):

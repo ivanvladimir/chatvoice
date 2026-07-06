@@ -1,12 +1,12 @@
-# In commands/flow.py
 import logging
-from typing import Generator, Any
-from .parser import Command
-from core.expresion_evaluator import ExpressionEvaluator
-from core.conversation import Conversation
-from simpleeval import simple_eval, NameNotDefined, InvalidExpression
 import random
-from utils.llm import llm_client_response
+from simpleeval import simple_eval, NameNotDefined, InvalidExpression
+from typing import Generator, Any
+
+from ..utils.llm import llm_client_response
+from .parser import Command
+from .expresion_evaluator import ExpressionEvaluator
+from .conversation import Conversation
 
 log = logging.getLogger(__name__)
 

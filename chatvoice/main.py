@@ -7,10 +7,10 @@ from typing import Annotated
 
 from rich import print
 
-from core.config import get_settings
-from core.interpreter import Interpreter
-from core.logger import get_logger, setup_logging
-from utils.llm import init_llm_client
+from .core.config import get_settings
+from .core.interpreter import Interpreter
+from .core.logger import get_logger, setup_logging
+from .utils.llm import init_llm_client
 
 # Default configuration values
 DEFAULT_CONFIG_PATH = Path("config.toml")
@@ -61,7 +61,7 @@ def console(
     name : str
         Name identifier for the chat system.
     """
-    from transport.console import Console
+    from .transport.console import Console
 
     settings = get_settings()  # Moved inside to load after config is processed
 
@@ -94,6 +94,13 @@ def server(
 ) -> None:
     """Run the server chat."""
     log = get_logger(__name__)
+    from fastapi import FastAPI
+    from .api import router
+    from .core.setup import create_application, lifespan_factory
+
+    settings = get_settings()  # Moved inside to load after config is processed
+    app = create_application(router=router, settings=settings, lifespan=lifespan_factory)
+
     print("Running the [yellow]server chat[/].")
     log.info("Starting server chat")
 

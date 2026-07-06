@@ -107,6 +107,18 @@ class CORSSettings(BaseSettings):
     CORS_METHODS: list[str] = ["*"]
     CORS_HEADERS: list[str] = ["*"]
 
+class DefaultRateLimitSettings(BaseSettings):
+    DEFAULT_RATE_LIMIT_LIMIT: int = 10
+    DEFAULT_RATE_LIMIT_PERIOD: int = 3600
+
+class ClientSideCacheSettings(BaseSettings):
+    CLIENT_CACHE_MAX_AGE: int = 60
+
+class EnvironmentOption(str, Enum):
+    LOCAL = "local"
+    STAGING = "staging"
+    PRODUCTION = "production"
+
 class LLMProvider(str, Enum):
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
@@ -160,6 +172,8 @@ class Settings(
             CRUDAdminSettings,
             EnvironmentSettings,
             CORSSettings,
+            DefaultRateLimitSettings,
+            ClientSideCacheSettings,
             BaseSettings,
             LLMSettings,
         ):

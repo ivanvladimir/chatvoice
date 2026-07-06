@@ -1,4 +1,4 @@
-from store.base import BaseStateStore
+from ..store.base import BaseStateStore
 
 class MemoryStateStore(BaseStateStore):
 

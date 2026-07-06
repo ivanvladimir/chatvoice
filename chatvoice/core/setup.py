@@ -19,13 +19,13 @@ from ..middleware.logger_middleware import LoggerMiddleware
 from ..models import *  # noqa: F403
 from .config import (
     AppSettings,
-    # ClientSideCacheSettings,
+    ClientSideCacheSettings,
     CORSSettings,
     DatabaseSettings,
-    # EnvironmentOption,
+    EnvironmentOption,
     EnvironmentSettings,
 )
-from .db.database import Base
+from .db import Base
 from .db.database import async_engine as engine
 
 

@@ -1,5 +1,5 @@
 import queue
-from store.base import BaseStateStore
+from ..store.base import BaseStateStore
 from typing import Callable
 import threading
 

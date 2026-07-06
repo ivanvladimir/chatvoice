@@ -4,8 +4,8 @@ from sqlalchemy import  create_engine
 from sqlalchemy.orm import  sessionmaker
 
 
-from core.db import Base
-from models import *
+from ..db import Base
+from ...models import *
 from ..config import settings, DatabaseOption
 
 if settings.DATABASE == DatabaseOption.SQLITE:

@@ -1,4 +1,4 @@
-from core.config import (
+from ..core.config import (
     LLMSettings,
     LLMProvider,
     Settings

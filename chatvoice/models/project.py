@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid6 import uuid7
 
-from core.db import Base
+from ..core.db import Base
 
 class ProjectMember(Base):
     """Association table to handle Project <-> User with specific permissions."""

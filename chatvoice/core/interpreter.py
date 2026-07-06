@@ -1,20 +1,17 @@
+import ast
 from typing import Generator, Any
 from datetime import datetime, UTC
-from sqlalchemy import update, insert, select
-from core.logger import get_logger
-from core.db.database_sync import get_db_ctx
-from models import KB
-import ast
 from pathlib import Path
-
-from store.sql_store import SqlAlchemyMemoryStore
-
+from sqlalchemy import update, insert, select
 from simpleeval import simple_eval, NameNotDefined, InvalidExpression
 
+from ..models import KB
+from ..store.sql_store import SqlAlchemyMemoryStore
+from .logger import get_logger
+from .db.database_sync import get_db_ctx
 from .parser import Clause, Condition, parse_line, Command
-from .conversation import Conversation
-
 from .expresion_evaluator import ExpressionEvaluator
+from .conversation import Conversation
 
 from .commands import (
     cmd_say,

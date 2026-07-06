@@ -2,11 +2,11 @@ import yaml
 import sys
 import os
 
-from core.logger import get_logger
-
-from models import KB
 from sqlalchemy import select
-from core.db.database_sync import get_db_ctx 
+
+from ..models import KB
+from .db.database_sync import get_db_ctx 
+from .logger import get_logger
 
 log = get_logger(__name__)
 

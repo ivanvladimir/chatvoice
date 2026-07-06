@@ -3,16 +3,16 @@ from rich.prompt import Prompt
 from rich.markdown import Markdown
 from rich.console import Console as PConsole
 
-from models import User
-from schemas.user import UserRead
 from sqlalchemy import select
-from core.db.database_sync import init_db, get_db_ctx 
 import bcrypt
 
-from core.logger import get_logger
+from ..core.logger import get_logger
+from ..core.db.database_sync import init_db, get_db_ctx 
+from ..models import User
+from ..schemas.user import UserRead
 
-from sessions.manager import SessionManager
-from store.memory import MemoryStateStore
+from ..sessions.manager import SessionManager
+from ..store.memory import MemoryStateStore
 
 
 log = get_logger(__name__)
