@@ -20,6 +20,7 @@ dependencies = [
     "sqlalchemy>=2.0.48",
     "structlog>=25.5.0",
     "uuid6>=2025.0.1",
+    "uvicorn>=0.50.2",
 ]
 
 [dependency-groups]

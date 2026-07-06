@@ -17,6 +17,8 @@ DEFAULT_CONFIG_PATH = Path("config.toml")
 DEFAULT_LOG_FILE = "logs/chatvoice.log"
 DEFAULT_LOG_LEVEL = "error"
 DEFAULT_NAME = "chatvoice"
+DEFAULT_HOST = "0.0.0.0"
+DEFAULT_PORT = 9000
 DEFAULT_ROOT_KEYS = ["default"]
 
 def with_logging(func):
@@ -34,6 +36,7 @@ def with_logging(func):
         )
         return func(*args, **kwargs)
     return wrapper
+
 
 
 cli = cyclopts.App(
@@ -88,21 +91,46 @@ def console(
 @cli.command
 @with_logging
 def server(
+    host: str = DEFAULT_HOST,
+    port: int = DEFAULT_PORT,
     logging_json: bool = False,
     logging_level: str = DEFAULT_LOG_LEVEL,
     logging_file: str = DEFAULT_LOG_FILE,
 ) -> None:
     """Run the server chat."""
     log = get_logger(__name__)
+    from collections.abc import AsyncGenerator
+    from contextlib import asynccontextmanager
+
+    import uvicorn
     from fastapi import FastAPI
     from .api import router
     from .core.setup import create_application, lifespan_factory
+    
+    admin=None
+
+    @asynccontextmanager
+    async def lifespan_with_admin(app: FastAPI) -> AsyncGenerator[None, None]:
+        """Custom lifespan that includes admin initialization."""
+        # Get the default lifespan
+        default_lifespan = lifespan_factory(settings)
+
+        # Run the default lifespan initialization and our admin initialization
+        async with default_lifespan(app):
+            # Initialize admin interface if it exists
+            if admin:
+                # Initialize admin database and setup
+                await admin.initialize()
+
+            yield
+
 
     settings = get_settings()  # Moved inside to load after config is processed
-    app = create_application(router=router, settings=settings, lifespan=lifespan_factory)
+    app = create_application(router=router, settings=settings, lifespan=lifespan_with_admin)
 
     print("Running the [yellow]server chat[/].")
     log.info("Starting server chat")
+    uvicorn.run(app, host=host, port=port)
 
 
 @cli.command
