@@ -1,14 +1,13 @@
 from rich.prompt import Prompt
 from rich import print
 
-
 from sqlalchemy import select
 
-from core.security import get_password_hash
-from core.logger import get_logger
-from core.db.database_sync import get_db_ctx, init_db 
+from ..core.security import get_password_hash
+from ..core.logger import get_logger
+from ..core.db.database_sync import get_db_ctx, init_db 
 
-from models import User, Tier
+from ..models import User, Tier
 
 log = get_logger(__name__)
 

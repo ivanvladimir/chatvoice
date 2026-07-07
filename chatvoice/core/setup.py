@@ -11,6 +11,9 @@ from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
+from fastapi.staticfiles import StaticFiles
+
+from fastapi_tailwind import tailwind
 
 from ..api.dependencies import get_current_superuser
 # from ..core.utils.rate_limit import rate_limiter
@@ -109,6 +112,11 @@ def lifespan_factory(
             if create_tables_on_start:
                 await create_tables()
 
+            process = tailwind.compile(
+                static_files.directory + "/output.css",
+                tailwind_stylesheet_path = "chatvoice/resources/input.css"
+            )
+
             initialization_complete.set()
 
             yield
@@ -126,9 +134,12 @@ def lifespan_factory(
 
     return lifespan
 
+static_files = StaticFiles(directory="chatvoice/static")
+
 # -------------- application --------------
 def create_application(
-    router: APIRouter,
+    api_router: APIRouter,
+    front_router: APIRouter,
     settings: (
         DatabaseSettings
         # | RedisCacheSettings
@@ -152,6 +163,9 @@ def create_application(
     ----------
     router : APIRouter
         The APIRouter object containing the routes to be included in the FastAPI application.
+    router : FrontRouter
+        The FrontRouter object containing the routes to be included in the FastAPI application.
+
 
     settings
         An instance representing the settings for configuring the FastAPI application.
@@ -202,7 +216,10 @@ def create_application(
         lifespan = lifespan_factory(settings, create_tables_on_start=create_tables_on_start)
 
     application = FastAPI(lifespan=lifespan, **kwargs)
-    application.include_router(router)
+    application.include_router(api_router)
+    application.include_router(front_router)
+    application.mount("/static", static_files, name="static")
+
 
     if isinstance(settings, ClientSideCacheSettings):
         application.add_middleware(ClientCacheMiddleware, max_age=settings.CLIENT_CACHE_MAX_AGE)

@@ -3,7 +3,7 @@ from __future__ import annotations
 import cyclopts
 from functools import wraps
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 from rich import print
 
@@ -19,7 +19,12 @@ DEFAULT_LOG_LEVEL = "error"
 DEFAULT_NAME = "chatvoice"
 DEFAULT_HOST = "0.0.0.0"
 DEFAULT_PORT = 9000
+DEFAULT_RELOAD = True
+DEFAULT_WORKERS = 1
+DEFAULT_LOG_JSON = False
 DEFAULT_ROOT_KEYS = ["default"]
+
+LogLevel = Literal["critical", "error", "warning", "info", "debug", "trace"]
 
 def with_logging(func):
     """Decorator to setup logging before command execution.
@@ -52,7 +57,7 @@ def console(
     *,
     name: str = DEFAULT_NAME,
     logging_json: bool = False,
-    logging_level: str = DEFAULT_LOG_LEVEL,
+    logging_level: LogLevel = DEFAULT_LOG_LEVEL,
     logging_file: str = DEFAULT_LOG_FILE,
 ) -> None:
     """Run the chat from the console.
@@ -93,44 +98,26 @@ def console(
 def server(
     host: str = DEFAULT_HOST,
     port: int = DEFAULT_PORT,
-    logging_json: bool = False,
-    logging_level: str = DEFAULT_LOG_LEVEL,
+    reload: bool = DEFAULT_RELOAD,
+    workers: int = DEFAULT_WORKERS,
+    logging_json: bool = DEFAULT_LOG_JSON,
+    logging_level: LogLevel = DEFAULT_LOG_LEVEL,
     logging_file: str = DEFAULT_LOG_FILE,
 ) -> None:
     """Run the server chat."""
     log = get_logger(__name__)
-    from collections.abc import AsyncGenerator
-    from contextlib import asynccontextmanager
-
     import uvicorn
-    from fastapi import FastAPI
-    from .api import router
-    from .core.setup import create_application, lifespan_factory
     
-    admin=None
-
-    @asynccontextmanager
-    async def lifespan_with_admin(app: FastAPI) -> AsyncGenerator[None, None]:
-        """Custom lifespan that includes admin initialization."""
-        # Get the default lifespan
-        default_lifespan = lifespan_factory(settings)
-
-        # Run the default lifespan initialization and our admin initialization
-        async with default_lifespan(app):
-            # Initialize admin interface if it exists
-            if admin:
-                # Initialize admin database and setup
-                await admin.initialize()
-
-            yield
-
-
-    settings = get_settings()  # Moved inside to load after config is processed
-    app = create_application(router=router, settings=settings, lifespan=lifespan_with_admin)
-
     print("Running the [yellow]server chat[/].")
     log.info("Starting server chat")
-    uvicorn.run(app, host=host, port=port)
+    uvicorn.run("chatvoice.asgi:create_app",
+                host=host,
+                port=port,
+                reload=reload,
+                workers=workers,
+                #log_level=logging_level, fix behaviour
+                #log_config=None,
+                factory=True)
 
 
 @cli.command
@@ -141,7 +128,7 @@ def create_admin(
     logging_file: str = DEFAULT_LOG_FILE,
 ) -> None:
     """Create an admin user."""
-    from utils.admin import create_admin_user
+    from .utils.admin import create_admin_user
 
     print("About to create [yellow]admin user[/].")
     create_admin_user()

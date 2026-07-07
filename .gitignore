@@ -111,3 +111,5 @@ crudadmin_data/
 logs/
 conversations/**/is.json
 conversations/**/audios
+
+chatvoice/static/output.css
