@@ -16,6 +16,7 @@ dependencies = [
     "markdown>=3.10.2",
     "pydantic-settings>=2.13.1",
     "pydantic[email]>=2.12.5",
+    "pymdown-extensions>=11.0.1",
     "python-jose>=3.5.0",
     "pyyaml>=6.0.3",
     "redis>=7.4.0",

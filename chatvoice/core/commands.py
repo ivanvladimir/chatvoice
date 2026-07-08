@@ -54,14 +54,12 @@ def cmd_solve(
         conv_args = conversations[strategy_name].copy()
         conv_args['slots'] = dict(evaluator.slots) # Get clean slots from evaluator
        
-        log.info(f"Starting execution of conversation {strategy_name}")
         state.conversation = Conversation(**conv_args)
         state.commands = list(state.conversation.commands)
     else:
         # It's a strategy
         state.stack.append((state.commands,))
         state.commands = list(strategies[strategy_name])
-        log.info(f"Starting execution of strategy {strategy_name}")
         
     # 3. Return status (yielded as the final value of the generator)
     yield from () # Yield once to maintain the Generator pattern, even if no output is sent to user

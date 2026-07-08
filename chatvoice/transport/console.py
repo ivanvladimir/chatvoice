@@ -56,7 +56,7 @@ class Console():
     def run(self, user_id: int, interpreter: Callable):
         """ Run the script """
         session = self.session_manager.create(user_id, interpreter)
-        self.console.print(f"\n\n====== Starting conversation with {user_id} =====")
+        self.console.print(f"\n====== Starting conversation =====")
         while True:
             m = session.recv()
             if m is None:
@@ -77,3 +77,4 @@ class Console():
                     self.console.print(f"[cyan]  {label: <10}: {info}[/]")
                 self.console.print()
                 self.console.file.flush() 
+        self.console.print(f"\n====== Conversation finished =====")

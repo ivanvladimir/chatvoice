@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import cyclopts
+import json
+import os
 from functools import wraps
 from pathlib import Path
 from typing import Annotated, Literal
@@ -13,16 +15,18 @@ from .core.logger import get_logger, setup_logging
 from .utils.llm import init_llm_client
 
 # Default configuration values
-DEFAULT_CONFIG_PATH = Path("config.toml")
-DEFAULT_LOG_FILE = "logs/chatvoice.log"
-DEFAULT_LOG_LEVEL = "error"
-DEFAULT_NAME = "chatvoice"
-DEFAULT_HOST = "0.0.0.0"
-DEFAULT_PORT = 9000
-DEFAULT_RELOAD = True
-DEFAULT_WORKERS = 1
-DEFAULT_LOG_JSON = False
-DEFAULT_ROOT_KEYS = ["default"]
+CHATVOICE_CONFIG_PATH = Path("config.toml")
+CHATVOICE_LOG_FILE = "logs/chatvoice.log"
+CHATVOICE_LOG_LEVEL = "error"
+CHATVOICE_NAME = "chatvoice"
+CHATVOICE_HOST = "0.0.0.0"
+CHATVOICE_PORT = 9000
+CHATVOICE_RELOAD = True
+CHATVOICE_WORKERS = 1
+CHATVOICE_LOG_JSON = False
+CHATVOICE_CONTENT_PATH = "chatvoice/content"
+CHATVOICE_TEMPLATES_PATH = "chatvoice/templates"
+CHATVOICE_ROOT_KEYS = ["chatvoice"]
 
 LogLevel = Literal["critical", "error", "warning", "info", "debug", "trace"]
 
@@ -36,8 +40,8 @@ def with_logging(func):
     def wrapper(*args, **kwargs):
         setup_logging(
             json_output=kwargs.pop("logging_json", False),
-            log_file=kwargs.pop("logging_file", DEFAULT_LOG_FILE),
-            log_level=kwargs.pop("logging_level", DEFAULT_LOG_LEVEL),
+            log_file=kwargs.pop("logging_file", CHATVOICE_LOG_FILE),
+            log_level=kwargs.pop("logging_level", CHATVOICE_LOG_LEVEL),
         )
         return func(*args, **kwargs)
     return wrapper
@@ -55,10 +59,10 @@ cli = cyclopts.App(
 def console(
     project_pathname: Annotated[Path, cyclopts.Parameter(validator=cyclopts.validators.Path(exists=True))],
     *,
-    name: str = DEFAULT_NAME,
+    name: str = CHATVOICE_NAME,
     logging_json: bool = False,
-    logging_level: LogLevel = DEFAULT_LOG_LEVEL,
-    logging_file: str = DEFAULT_LOG_FILE,
+    logging_level: LogLevel = CHATVOICE_LOG_LEVEL,
+    logging_file: str = CHATVOICE_LOG_FILE,
 ) -> None:
     """Run the chat from the console.
     
@@ -96,16 +100,26 @@ def console(
 @cli.command
 @with_logging
 def server(
-    host: str = DEFAULT_HOST,
-    port: int = DEFAULT_PORT,
-    reload: bool = DEFAULT_RELOAD,
-    workers: int = DEFAULT_WORKERS,
-    logging_json: bool = DEFAULT_LOG_JSON,
-    logging_level: LogLevel = DEFAULT_LOG_LEVEL,
-    logging_file: str = DEFAULT_LOG_FILE,
+    host: str = CHATVOICE_HOST,
+    port: int = CHATVOICE_PORT,
+    content_path: Path = CHATVOICE_CONTENT_PATH,
+    templates_path: Path = CHATVOICE_TEMPLATES_PATH,
+    reload: bool = CHATVOICE_RELOAD,
+    workers: int = CHATVOICE_WORKERS,
+    logging_json: bool = CHATVOICE_LOG_JSON,
+    logging_level: LogLevel = CHATVOICE_LOG_LEVEL,
+    logging_file: str = CHATVOICE_LOG_FILE,
 ) -> None:
     """Run the server chat."""
     log = get_logger(__name__)
+
+    os.environ["CHATVOICE_RUNTIME_CONFIG"] = json.dumps({
+        "paths":{
+            "content": str(content_path),
+            "templates": str(templates_path)
+        }
+    })
+
     import uvicorn
     
     print("Running the [yellow]server chat[/].")
@@ -115,8 +129,7 @@ def server(
                 port=port,
                 reload=reload,
                 workers=workers,
-                #log_level=logging_level, fix behaviour
-                #log_config=None,
+                log_level=logging_level,
                 factory=True)
 
 
@@ -125,7 +138,7 @@ def server(
 def create_admin(
     logging_json: bool = False,
     logging_level: str = "debug",  # More verbose for admin operations
-    logging_file: str = DEFAULT_LOG_FILE,
+    logging_file: str = CHATVOICE_LOG_FILE,
 ) -> None:
     """Create an admin user."""
     from .utils.admin import create_admin_user
@@ -133,13 +146,12 @@ def create_admin(
     print("About to create [yellow]admin user[/].")
     create_admin_user()
 
-
 @cli.command
 @with_logging
 def create_tier(
     logging_json: bool = False,
     logging_level: str = "debug",  # More verbose for admin operations
-    logging_file: str = DEFAULT_LOG_FILE,
+    logging_file: str = CHATVOICE_LOG_FILE,
 ) -> None:
     """Create a tier."""
     from utils.admin import create_tier
@@ -147,27 +159,41 @@ def create_tier(
     print("About to create a [yellow]tier[/].")
     create_tier()
 
-
 @cli.meta.default
 def meta(
     *tokens: Annotated[str, cyclopts.Parameter(show=False, allow_leading_hyphen=True)],
-    config: Path = DEFAULT_CONFIG_PATH,
+    config: Path = CHATVOICE_CONFIG_PATH,
     root_keys: Annotated[
-        list[str],
-        cyclopts.Parameter(converter=lambda rks: rks.split("."))
-    ] = DEFAULT_ROOT_KEYS,
+        list[str] | None,
+        cyclopts.Parameter(converter=lambda type_, tokens: [
+            k for t in tokens for k in t.value.split(".")
+        ])
+    ] = None,
 ) -> None:
     """Load configuration and run the app."""
-    cli.config = [
-        cyclopts.config.Env("CHATVOICE_"),
+    if root_keys is None:
+        command_name = tokens[0] if tokens else None
+        root_keys = ["chatvoice", command_name] if command_name else ["chatvoice"]
+
+    # Build cascade: most specific -> least specific, always ending at ["chatvoice"]
+    levels = [root_keys[:i] for i in range(len(root_keys), 0, -1)]
+
+    toml_sources = [
         cyclopts.config.Toml(
             config,
-            root_keys=root_keys,
+            root_keys=level,
             search_parents=True,
-        ),
+            use_commands_as_keys=False,
+            allow_unknown=True,
+        )
+        for level in levels
+    ]
+
+    cli.config = [
+        cyclopts.config.Env("CHATVOICE_"),
+        *toml_sources,
     ]
     cli(tokens)
-
 
 if __name__ == "__main__":
     cli.meta()

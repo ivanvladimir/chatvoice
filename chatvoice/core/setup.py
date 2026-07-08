@@ -215,11 +215,11 @@ def create_application(
     if lifespan is None:
         lifespan = lifespan_factory(settings, create_tables_on_start=create_tables_on_start)
 
+
     application = FastAPI(lifespan=lifespan, **kwargs)
     application.include_router(api_router)
     application.include_router(front_router)
     application.mount("/static", static_files, name="static")
-
 
     if isinstance(settings, ClientSideCacheSettings):
         application.add_middleware(ClientCacheMiddleware, max_age=settings.CLIENT_CACHE_MAX_AGE)
@@ -232,7 +232,9 @@ def create_application(
             allow_methods=settings.CORS_METHODS,
             allow_headers=settings.CORS_HEADERS,
         )
+
     application.add_middleware(LoggerMiddleware)
+
     if isinstance(settings, EnvironmentSettings):
         if settings.ENVIRONMENT != EnvironmentOption.PRODUCTION:
             docs_router = APIRouter()

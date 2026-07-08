@@ -1,9 +1,20 @@
-# Exmpla configuration for chatvoice
-[default.console]
+# Exemplo configuration for chatvoice
+[chatvoice]
 name="🤖"
 logging_json="False"
-logging_level="INFO" # DEBUG, INFO, WARNING, ERROR, CRITICAL
+logging_level="info" # DEBUG, INFO, WARNING, ERROR, CRITICAL
 logging_file="logs/chatvoice.log"
 
-[colors]
-name="Magical color"
+[chatvoice.console]
+logging_file="logs/chatvoice.console.log"
+
+[chatvoice.server]
+logging_file="logs/chatvoice.server.log"
+port=9000
+host="0.0.0.0"
+content_path="chatvoice/content"
+templates_path="chatvoice/front/templates"
+
+[chatvoice.server.hello_world]
+content_path="conversations/hello_world/content"
+templates_path="conversations/hello_world/templates"
