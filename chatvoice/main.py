@@ -24,8 +24,9 @@ CHATVOICE_PORT = 9000
 CHATVOICE_RELOAD = True
 CHATVOICE_WORKERS = 1
 CHATVOICE_LOG_JSON = False
+CHATVOICE_TEMPLATES_PATH = "chatvoice/front/templates"
 CHATVOICE_CONTENT_PATH = "chatvoice/content"
-CHATVOICE_TEMPLATES_PATH = "chatvoice/templates"
+CHATVOICE_STATIC_PATH = "chatvoice/static"
 CHATVOICE_ROOT_KEYS = ["chatvoice"]
 
 LogLevel = Literal["critical", "error", "warning", "info", "debug", "trace"]
@@ -104,6 +105,7 @@ def server(
     port: int = CHATVOICE_PORT,
     content_path: Path = CHATVOICE_CONTENT_PATH,
     templates_path: Path = CHATVOICE_TEMPLATES_PATH,
+    static_path: Path = CHATVOICE_STATIC_PATH,
     reload: bool = CHATVOICE_RELOAD,
     workers: int = CHATVOICE_WORKERS,
     logging_json: bool = CHATVOICE_LOG_JSON,
@@ -116,7 +118,8 @@ def server(
     os.environ["CHATVOICE_RUNTIME_CONFIG"] = json.dumps({
         "paths":{
             "content": str(content_path),
-            "templates": str(templates_path)
+            "templates": str(templates_path),
+            "static": str(static_path)
         }
     })
 
@@ -129,7 +132,7 @@ def server(
                 port=port,
                 reload=reload,
                 workers=workers,
-                log_level=logging_level,
+#                log_level=logging_level,
                 factory=True)
 
 

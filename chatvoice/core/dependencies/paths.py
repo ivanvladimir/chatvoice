@@ -12,11 +12,12 @@ from fastapi.templating import Jinja2Templates
 class PathsConfig(BaseModel):
     templates: Path
     content: Path
+    static: Path
 
 class AppSettings(BaseModel):
     paths: PathsConfig
 
-def get_settings() -> AppSettings:
+def get_runtime_settings() -> AppSettings:
     """Fetches the env var, parses JSON, and validates it into an AppSettings object."""
     config_str = os.getenv("CHATVOICE_RUNTIME_CONFIG")
     if not config_str:
@@ -36,6 +37,7 @@ def get_settings() -> AppSettings:
     # Resolve to absolute paths immediately
     settings.paths.templates = settings.paths.templates.resolve()
     settings.paths.content = settings.paths.content.resolve()
+    settings.paths.static = settings.paths.static.resolve()
     
     return settings
 
@@ -45,7 +47,7 @@ class RuntimeContext(BaseModel):
     content_path: Path
     templates_engine: Any  # Jinja2Templates doesn't have a strict type, so we use Any
 
-def get_runtime_context(settings: AppSettings = Depends(get_settings)) -> RuntimeContext:
+def get_runtime_context(settings: AppSettings = Depends(get_runtime_settings)) -> RuntimeContext:
     """Initializes the template engine and packages it with the content path."""
     return RuntimeContext(
         content_path=settings.paths.content,

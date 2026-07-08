@@ -3,108 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}My App{% endblock %}</title>
+    <title>{% block title %}Home{% endblock %} | Chatvoice</title>
 
-    <!-- Tailwind CSS + DaisyUI + Typography plugin -->
+    <!-- Tailwind CSS + DaisyUI -->
     <link rel="stylesheet" href="{{ url_for('static', path='output.css') }}" />
+
+    <link rel="icon" type="image/png" href="{{ url_for('static', path='favicon-96x96.png') }}" sizes='96x96' />
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', path='favicon.svg') }}" />
+    <link rel="shortcut icon" href="{{ url_for('static', path='favicon.ico') }}" />
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', path='apple-touch-icon.png') }}" />
+    <meta name="apple-mobile-web-app-title" content="Chatvoice" />
+    <link rel="manifest" href="{{ url_for('static', path='site.webmanifest') }}" />
 
     <!-- HTMX -->
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js" 
           integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
           crossorigin="anonymous"></script>
 
-    <!-- Hyperscript -->
-    <script src="https://cdn.jsdelivr.net/npm/hyperscript.org@0.9.93/dist/_hyperscript.min.js"
-      integrity="sha384-/6HsqTiz02YfFBUhzTwlH/yxe68DhfnkdHiWytM3nxAzs/yvG+3FZY0f4KLnNoov"
-      crossorigin="anonymous"></script>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <style>
-        .prose {
-            --tw-prose-body: oklch(var(--bc) / 0.8);
-            --tw-prose-headings: oklch(var(--bc));
-            --tw-prose-links: oklch(var(--p));
-            --tw-prose-bold: oklch(var(--bc));
-            --tw-prose-code: oklch(var(--p));
-            --tw-prose-quotes: oklch(var(--bc) / 0.9);
-            --tw-prose-quote-borders: oklch(var(--p) / 0.5);
-            --tw-prose-hr: oklch(var(--bc) / 0.2);
+        [x-cloak] { display: none !important; }
+        .fade-enter { animation: fadeIn 0.3s ease-out; }
+        .fade-leave { animation: fadeOut 0.2s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+        .btn-loading::after {
+            content: '';
+            display: inline-block;
+            width: 1em;
+            height: 1em;
+            border: 2px solid currentColor;
+            border-right-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+            margin-left: 0.5em;
         }
-
-        .prose :where(code):not(:where(pre *)) {
-            background: oklch(var(--b2));
-            padding: 0.15em 0.4em;
-            border-radius: 0.25rem;
-            font-size: 0.875em;
-        }
-
-        .prose pre {
-            background: oklch(var(--b2));
-            border: 1px solid oklch(var(--bc) / 0.1);
-            border-radius: 0.75rem;
-        }
-
-        .prose pre code {
-            background: transparent;
-            padding: 0;
-        }
-
-        .prose blockquote {
-            border-left-color: oklch(var(--p) / 0.5);
-            background: oklch(var(--b2));
-            padding: 0.75rem 1rem;
-            border-radius: 0 0.5rem 0.5rem 0;
-        }
-
-        .prose table {
-            width: 100%;
-        }
-
-        .prose thead {
-            border-bottom-color: oklch(var(--bc) / 0.2);
-        }
-
-        .prose tbody tr {
-            border-bottom-color: oklch(var(--bc) / 0.1);
-        }
-
-        .prose tbody tr:hover {
-            background: oklch(var(--b2));
-        }
-
-        .prose a {
-            text-decoration: underline;
-            text-underline-offset: 3px;
-        }
-
-        .prose a:hover {
-            color: oklch(var(--pf));
-        }
-
-        .prose img {
-            border-radius: 0.75rem;
-            border: 1px solid oklch(var(--bc) / 0.1);
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 
     {% block head %}{% endblock %}
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col" x-data="authApp()" x-init="init()">
 
     <!-- Navbar -->
     <nav class="navbar bg-base-100 shadow-sm">
         <div class="navbar-start">
             <div class="dropdown">
                 <div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
-                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"/>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" />
                     </svg>
                 </div>
                 <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
                     <li><a href="/">Home</a></li>
                     <li><a href="/about">About</a></li>
+                    <li><a href="/contact">Contact</a></li>
                 </ul>
             </div>
-            <a href="/" class="btn btn-ghost text-xl">MyApp</a>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="40" height="40">
+                <path d="M 62 82 C 50 70, 42 58, 43 46 C 44 38, 51 32, 59 34 C 66 36, 70 43, 65 48 C 62 51, 57 50, 58 46"
+                    fill="none" stroke="#000000" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
+            </svg>
+            <a href="/" class="btn btn-ghost text-xl">Chatvoice</a>
         </div>
 
         <div class="navbar-center hidden lg:flex">
@@ -115,23 +77,415 @@
             </ul>
         </div>
 
+        <!-- Auth Section -->
         <div class="navbar-end">
-            {% block navbar_end %}
-            <a href="/login" class="btn">Login</a>
-            {% endblock %}
+            
+            <!-- Login Button (not authenticated) -->
+            <template x-if="!isAuthenticated">
+                <button class="btn btn-primary" @click="showLoginModal = true">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                    </svg>
+                    Login
+                </button>
+            </template>
+
+            <!-- User Menu (authenticated) -->
+            <template x-if="isAuthenticated">
+                <div class="dropdown dropdown-end">
+                    <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar placeholder">
+                        <div class="bg-primary text-primary-content rounded-full w-10">
+                            <span class="text-sm font-bold" x-text="username?.charAt(0).toUpperCase()"></span>
+                        </div>
+                    </div>
+                    <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+                        <li class="menu-title">
+                            <span x-text="username"></span>
+                        </li>
+                        <li><a href="#">Profile</a></li>
+                        <li><a href="#">Settings</a></li>
+                        <li><hr class="my-1"></li>
+                        <li>
+                            <a href="#" class="text-error" @click.prevent="logout()">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                </svg>
+                                Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </template>
         </div>
     </nav>
 
     <!-- Main Content -->
     <main class="flex-1 container mx-auto px-4 py-8">
-        {% block public_content %}{% endblock %}
+        
+        <!-- Public Content (not authenticated) -->
+        <div x-show="!isAuthenticated" x-cloak x-transition:enter="fade-enter">
+            {% block public_content %}
+            <div class="hero min-h-[60vh]">
+                <div class="hero-content text-center">
+                    <div class="max-w-md">
+                        <h1 class="text-5xl font-bold">Welcome to Chatvoice</h1>
+                        <p class="py-6">Login to access your dashboard, messages, and voice notes.</p>
+                        <button class="btn btn-primary btn-lg" @click="showLoginModal = true">
+                            Get Started
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endblock %}
+        </div>
+
+        <!-- Protected Content (authenticated) -->
+        <div x-show="isAuthenticated" x-cloak x-transition:enter="fade-enter">
+            <!-- Loading state -->
+            <div x-show="loadingProtected" class="flex justify-center items-center py-20">
+                <span class="loading loading-spinner loading-lg text-primary"></span>
+            </div>
+            
+            <!-- Actual protected content loaded via HTMX -->
+            <div x-show="!loadingProtected" id="protected-content" 
+                 x-html="protectedContent">
+            </div>
+        </div>
+
+        {% block extra_content %}{% endblock %}
     </main>
 
-    <!-- Toast Container for HTMX responses -->
-    <div id="toast-container" class="toast toast-top toast-end z-50"></div>
+    <!-- Login Modal -->
+    <dialog x-ref="loginModal" 
+            class="modal" 
+            :class="{ 'modal-open': showLoginModal }"
+            @click.self="closeLoginModal()">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                Sign In
+            </h3>
+            <p class="py-2 text-base-content/60">Enter your credentials to continue</p>
+            
+            <form @submit.prevent="handleLogin()">
+                <div class="form-control w-full">
+                    <label class="label">
+                        <span class="label-text font-medium">Username</span>
+                    </label>
+                    <input type="text" 
+                           x-model="loginForm.username"
+                           placeholder="Enter your username" 
+                           class="input input-bordered w-full" 
+                           autocomplete="username"
+                           required />
+                </div>
+                
+                <div class="form-control w-full mt-4">
+                    <label class="label">
+                        <span class="label-text font-medium">Password</span>
+                    </label>
+                    <input type="password" 
+                           x-model="loginForm.password"
+                           placeholder="Enter your password" 
+                           class="input input-bordered w-full" 
+                           autocomplete="current-password"
+                           required />
+                </div>
+                
+                <!-- Error message -->
+                <div x-show="loginError" x-cloak class="mt-4">
+                    <div class="alert alert-error">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span x-text="loginError"></span>
+                    </div>
+                </div>
+                
+                <div class="modal-action">
+                    <button type="button" 
+                            class="btn" 
+                            @click="closeLoginModal()"
+                            :disabled="loginLoading">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="btn btn-primary"
+                            :class="{ 'btn-loading': loginLoading }"
+                            :disabled="loginLoading">
+                        Sign In
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <!-- Session Expired Modal -->
+    <dialog x-ref="sessionModal" 
+            class="modal" 
+            :class="{ 'modal-open': showSessionExpired }">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg text-warning flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                Session Expired
+            </h3>
+            <p class="py-4">Your session has expired. Please sign in again to continue.</p>
+            <div class="modal-action">
+                <button class="btn btn-primary" @click="showSessionExpired = false; showLoginModal = true">
+                    Sign In Again
+                </button>
+            </div>
+            <form method="dialog" class="modal-backdrop">
+                <button @click="showSessionExpired = false">close</button>
+            </form>
+        </div>
+    </dialog>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast toast-top toast-end z-50">
+        <template x-for="toast in toasts" :key="toast.id">
+            <div class="alert shadow-lg" :class="`alert-${toast.type}`" x-text="toast.message"
+                 x-show="toast.show"
+                 x-transition:enter="fade-enter"
+                 x-transition:leave="fade-leave">
+            </div>
+        </template>
+    </div>
 
     <!-- Footer -->
     {% include "footer.html" %}
+
+    <!-- Alpine.js Auth Component -->
+    <script>
+        function authApp() {
+            return {
+                // State
+                isAuthenticated: false,
+                username: null,
+                accessToken: localStorage.getItem('accessToken') || null,
+                
+                // UI State
+                showLoginModal: false,
+                showSessionExpired: false,
+                loadingProtected: false,
+                protectedContent: '',
+                
+                // Login Form
+                loginForm: {
+                    username: '',
+                    password: ''
+                },
+                loginError: '',
+                loginLoading: false,
+                
+                // Toasts
+                toasts: [],
+                
+                // Initialize
+                async init() {
+                    this.setupHtmxInterceptors();
+                    
+                    if (this.accessToken) {
+                        await this.checkAuth();
+                    }
+                },
+                
+                // Setup HTMX to include auth header
+                setupHtmxInterceptors() {
+                    document.addEventListener('htmx:configRequest', (event) => {
+                        if (this.accessToken) {
+                            event.detail.headers['Authorization'] = `Bearer ${this.accessToken}`;
+                        }
+                    });
+
+                    document.addEventListener('htmx:responseError', (event) => {
+                        if (event.detail.xhr.status === 401) {
+                            const url = event.detail.xhr.responseURL;
+                            if (!url.includes('/api/auth/')) {
+                                this.handleUnauthorized();
+                            }
+                        }
+                    });
+                },
+                
+                // Check authentication status
+                async checkAuth() {
+                    if (!this.accessToken) {
+                        this.clearAuth();
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch('/api/auth/me', {
+                            headers: { 'Authorization': `Bearer ${this.accessToken}` }
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.setAuth(data.username, this.accessToken);
+                            return;
+                        }
+                    } catch (e) {
+                        console.error('Auth check failed:', e);
+                    }
+
+                    // Try refresh
+                    const refreshed = await this.refreshAccessToken();
+                    if (!refreshed) {
+                        this.clearAuth();
+                    }
+                },
+                
+                // Handle login form submit
+                async handleLogin() {
+                    // Validate
+                    if (!this.loginForm.username || !this.loginForm.password) {
+                        this.loginError = 'Please fill in all fields';
+                        return;
+                    }
+
+                    this.loginLoading = true;
+                    this.loginError = '';
+
+                    try {
+                        const response = await fetch('/api/auth/login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.loginForm),
+                            credentials: 'same-origin'
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.setAuth(data.username, data.access_token);
+                            this.closeLoginModal();
+                            this.showToast('Successfully logged in!', 'success');
+                        } else {
+                            this.loginError = 'Invalid username or password';
+                        }
+                    } catch (e) {
+                        this.loginError = 'An error occurred. Please try again.';
+                    } finally {
+                        this.loginLoading = false;
+                    }
+                },
+                
+                // Logout
+                async logout() {
+                    try {
+                        await fetch('/api/auth/logout', {
+                            method: 'POST',
+                            credentials: 'same-origin'
+                        });
+                    } catch (e) {
+                        console.error('Logout failed:', e);
+                    }
+                    
+                    this.clearAuth();
+                    this.showToast('Successfully logged out', 'info');
+                },
+                
+                // Refresh access token
+                async refreshAccessToken() {
+                    try {
+                        const response = await fetch('/api/auth/refresh', {
+                            method: 'POST',
+                            credentials: 'same-origin'
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.setAuth(data.username, data.access_token);
+                            return true;
+                        }
+                        return false;
+                    } catch (e) {
+                        console.error('Token refresh failed:', e);
+                        return false;
+                    }
+                },
+                
+                // Handle unauthorized response
+                async handleUnauthorized() {
+                    const refreshed = await this.refreshAccessToken();
+                    if (!refreshed) {
+                        this.clearAuth();
+                        this.showSessionExpired = true;
+                    }
+                },
+                
+                // Set authenticated state
+                setAuth(username, accessToken) {
+                    this.username = username;
+                    this.accessToken = accessToken;
+                    this.isAuthenticated = true;
+                    
+                    localStorage.setItem('accessToken', accessToken);
+                    localStorage.setItem('username', username);
+                    
+                    this.loadProtectedContent();
+                },
+                
+                // Clear auth state
+                clearAuth() {
+                    this.username = null;
+                    this.accessToken = null;
+                    this.isAuthenticated = false;
+                    this.protectedContent = '';
+                    this.loadingProtected = false;
+                    
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('username');
+                },
+                
+                // Load protected content via HTMX
+                loadProtectedContent() {
+                    this.loadingProtected = true;
+                    this.protectedContent = '';
+                    
+                    htmx.ajax('GET', '/api/protected-content', {
+                        target: '#protected-content',
+                        swap: 'innerHTML',
+                        headers: {
+                            'Authorization': `Bearer ${this.accessToken}`
+                        }
+                    }).then(() => {
+                        this.loadingProtected = false;
+                        this.protectedContent = document.getElementById('protected-content').innerHTML;
+                    }).catch(() => {
+                        this.loadingProtected = false;
+                    });
+                },
+                
+                // Close login modal and reset form
+                closeLoginModal() {
+                    this.showLoginModal = false;
+                    this.loginForm = { username: '', password: '' };
+                    this.loginError = '';
+                    this.loginLoading = false;
+                },
+                
+                // Show toast notification
+                showToast(message, type = 'info') {
+                    const id = Date.now();
+                    this.toasts.push({ id, message, type, show: true });
+                    
+                    setTimeout(() => {
+                        const toast = this.toasts.find(t => t.id === id);
+                        if (toast) toast.show = false;
+                        
+                        setTimeout(() => {
+                            this.toasts = this.toasts.filter(t => t.id !== id);
+                        }, 300);
+                    }, 3000);
+                }
+            }
+        }
+    </script>
 
     {% block scripts %}{% endblock %}
 </body>

@@ -2,6 +2,7 @@ from collections.abc import AsyncGenerator, Callable
 from contextlib import _AsyncGeneratorContextManager, asynccontextmanager
 from typing import Any
 
+from pathlib import Path
 import anyio
 import fastapi
 # import redis.asyncio as redis
@@ -30,6 +31,7 @@ from .config import (
 )
 from .db import Base
 from .db.database import async_engine as engine
+from .dependencies.paths import get_runtime_settings
 
 
 # -------------- database --------------
@@ -112,10 +114,11 @@ def lifespan_factory(
             if create_tables_on_start:
                 await create_tables()
 
+            runtime_settings=get_runtime_settings() 
             process = tailwind.compile(
-                static_files.directory + "/output.css",
-                tailwind_stylesheet_path = "chatvoice/resources/input.css"
-            )
+                    runtime_settings.paths.static / "output.css",
+                    tailwind_stylesheet_path=Path("chatvoice/resources/input.css")
+                )
 
             initialization_complete.set()
 
@@ -134,7 +137,6 @@ def lifespan_factory(
 
     return lifespan
 
-static_files = StaticFiles(directory="chatvoice/static")
 
 # -------------- application --------------
 def create_application(
@@ -215,7 +217,9 @@ def create_application(
     if lifespan is None:
         lifespan = lifespan_factory(settings, create_tables_on_start=create_tables_on_start)
 
+    runtime_settings=get_runtime_settings() 
 
+    static_files = StaticFiles(directory=runtime_settings.paths.static)
     application = FastAPI(lifespan=lifespan, **kwargs)
     application.include_router(api_router)
     application.include_router(front_router)

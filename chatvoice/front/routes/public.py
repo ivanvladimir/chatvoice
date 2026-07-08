@@ -11,7 +11,6 @@ async def main(
     ctx: RuntimeContext = Depends(get_runtime_context) # Single injection
 ) -> HTMLResponse:
     """Principal"""
-    print(ctx)
     return render_markdown_page("main", request, ctx, is_main=True)
 
 

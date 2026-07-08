@@ -13,8 +13,10 @@ logging_file="logs/chatvoice.server.log"
 port=9000
 host="0.0.0.0"
 content_path="chatvoice/content"
+static_path="chatvoice/static"
 templates_path="chatvoice/front/templates"
 
 [chatvoice.server.hello_world]
+static_path="conversations/hello_world/static"
 content_path="conversations/hello_world/content"
 templates_path="conversations/hello_world/templates"
