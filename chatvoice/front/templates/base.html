@@ -261,231 +261,224 @@
 
     <!-- Alpine.js Auth Component -->
     <script>
-        function authApp() {
-            return {
-                // State
-                isAuthenticated: false,
-                username: null,
-                accessToken: localStorage.getItem('accessToken') || null,
-                
-                // UI State
-                showLoginModal: false,
-                showSessionExpired: false,
-                loadingProtected: false,
-                protectedContent: '',
-                
-                // Login Form
-                loginForm: {
-                    username: '',
-                    password: ''
-                },
-                loginError: '',
-                loginLoading: false,
-                
-                // Toasts
-                toasts: [],
-                
-                // Initialize
-                async init() {
-                    this.setupHtmxInterceptors();
-                    
-                    if (this.accessToken) {
-                        await this.checkAuth();
-                    }
-                },
-                
-                // Setup HTMX to include auth header
-                setupHtmxInterceptors() {
-                    document.addEventListener('htmx:configRequest', (event) => {
-                        if (this.accessToken) {
-                            event.detail.headers['Authorization'] = `Bearer ${this.accessToken}`;
-                        }
-                    });
-
-                    document.addEventListener('htmx:responseError', (event) => {
-                        if (event.detail.xhr.status === 401) {
-                            const url = event.detail.xhr.responseURL;
-                            if (!url.includes('/api/auth/')) {
-                                this.handleUnauthorized();
-                            }
-                        }
-                    });
-                },
-                
-                // Check authentication status
-                async checkAuth() {
-                    if (!this.accessToken) {
-                        this.clearAuth();
-                        return;
-                    }
-
-                    try {
-                        const response = await fetch('/api/auth/me', {
-                            headers: { 'Authorization': `Bearer ${this.accessToken}` }
-                        });
-
-                        if (response.ok) {
-                            const data = await response.json();
-                            this.setAuth(data.username, this.accessToken);
-                            return;
-                        }
-                    } catch (e) {
-                        console.error('Auth check failed:', e);
-                    }
-
-                    // Try refresh
-                    const refreshed = await this.refreshAccessToken();
-                    if (!refreshed) {
-                        this.clearAuth();
-                    }
-                },
-                
-                // Handle login form submit
-                async handleLogin() {
-                    // Validate
-                    if (!this.loginForm.username || !this.loginForm.password) {
-                        this.loginError = 'Please fill in all fields';
-                        return;
-                    }
-
-                    this.loginLoading = true;
-                    this.loginError = '';
-
-                    try {
-                        const response = await fetch('/api/auth/login', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(this.loginForm),
-                            credentials: 'same-origin'
-                        });
-
-                        if (response.ok) {
-                            const data = await response.json();
-                            this.setAuth(data.username, data.access_token);
-                            this.closeLoginModal();
-                            this.showToast('Successfully logged in!', 'success');
-                        } else {
-                            this.loginError = 'Invalid username or password';
-                        }
-                    } catch (e) {
-                        this.loginError = 'An error occurred. Please try again.';
-                    } finally {
-                        this.loginLoading = false;
-                    }
-                },
-                
-                // Logout
-                async logout() {
-                    try {
-                        await fetch('/api/auth/logout', {
-                            method: 'POST',
-                            credentials: 'same-origin'
-                        });
-                    } catch (e) {
-                        console.error('Logout failed:', e);
-                    }
-                    
-                    this.clearAuth();
-                    this.showToast('Successfully logged out', 'info');
-                },
-                
-                // Refresh access token
-                async refreshAccessToken() {
-                    try {
-                        const response = await fetch('/api/auth/refresh', {
-                            method: 'POST',
-                            credentials: 'same-origin'
-                        });
-
-                        if (response.ok) {
-                            const data = await response.json();
-                            this.setAuth(data.username, data.access_token);
-                            return true;
-                        }
-                        return false;
-                    } catch (e) {
-                        console.error('Token refresh failed:', e);
-                        return false;
-                    }
-                },
-                
-                // Handle unauthorized response
-                async handleUnauthorized() {
-                    const refreshed = await this.refreshAccessToken();
-                    if (!refreshed) {
-                        this.clearAuth();
-                        this.showSessionExpired = true;
-                    }
-                },
-                
-                // Set authenticated state
-                setAuth(username, accessToken) {
-                    this.username = username;
-                    this.accessToken = accessToken;
-                    this.isAuthenticated = true;
-                    
-                    localStorage.setItem('accessToken', accessToken);
-                    localStorage.setItem('username', username);
-                    
-                    this.loadProtectedContent();
-                },
-                
-                // Clear auth state
-                clearAuth() {
-                    this.username = null;
-                    this.accessToken = null;
-                    this.isAuthenticated = false;
-                    this.protectedContent = '';
-                    this.loadingProtected = false;
-                    
-                    localStorage.removeItem('accessToken');
-                    localStorage.removeItem('username');
-                },
-                
-                // Load protected content via HTMX
-                loadProtectedContent() {
-                    this.loadingProtected = true;
-                    this.protectedContent = '';
-                    
-                    htmx.ajax('GET', '/api/protected-content', {
-                        target: '#protected-content',
-                        swap: 'innerHTML',
-                        headers: {
-                            'Authorization': `Bearer ${this.accessToken}`
-                        }
-                    }).then(() => {
-                        this.loadingProtected = false;
-                        this.protectedContent = document.getElementById('protected-content').innerHTML;
-                    }).catch(() => {
-                        this.loadingProtected = false;
-                    });
-                },
-                
-                // Close login modal and reset form
-                closeLoginModal() {
-                    this.showLoginModal = false;
-                    this.loginForm = { username: '', password: '' };
-                    this.loginError = '';
-                    this.loginLoading = false;
-                },
-                
-                // Show toast notification
-                showToast(message, type = 'info') {
-                    const id = Date.now();
-                    this.toasts.push({ id, message, type, show: true });
-                    
-                    setTimeout(() => {
-                        const toast = this.toasts.find(t => t.id === id);
-                        if (toast) toast.show = false;
-                        
-                        setTimeout(() => {
-                            this.toasts = this.toasts.filter(t => t.id !== id);
-                        }, 300);
-                    }, 3000);
-                }
+function authApp() {
+    return {
+        // State
+        isAuthenticated: false,
+        username: null,
+        name: null,
+        accessToken: localStorage.getItem('accessToken') || null,
+        
+        // UI State
+        showLoginModal: false,
+        showSessionExpired: false,
+        loadingProtected: false,
+        protectedContent: '',
+        
+        // Login Form
+        loginForm: { username: '', password: '' },
+        loginError: '',
+        loginLoading: false,
+        
+        // Toasts
+        toasts: [],
+        
+        // Initialize
+        async init() {
+            this.setupHtmxInterceptors();
+            if (this.accessToken) {
+                await this.checkAuth();
             }
+        },
+        
+        setupHtmxInterceptors() {
+            document.addEventListener('htmx:configRequest', (event) => {
+                if (this.accessToken) {
+                    event.detail.headers['Authorization'] = `Bearer ${this.accessToken}`;
+                }
+            });
+
+            document.addEventListener('htmx:responseError', (event) => {
+                if (event.detail.xhr.status === 401) {
+                    const url = event.detail.xhr.responseURL;
+                    if (!url.includes('/api/auth/')) {
+                        this.handleUnauthorized();
+                    }
+                }
+            });
+        },
+        
+        async checkAuth() {
+            if (!this.accessToken) {
+                this.clearAuth();
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${this.accessToken}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    this.setAuth(data.name, data.username, this.accessToken);
+                    return;
+                }
+            } catch (e) {
+                console.error('Auth check failed:', e);
+            }
+
+            const refreshed = await this.refreshAccessToken();
+            if (!refreshed) {
+                this.clearAuth();
+            }
+        },
+        
+        async handleLogin() {
+            if (!this.loginForm.username || !this.loginForm.password) {
+                this.loginError = 'Por favor complete todos los campos';
+                return;
+            }
+
+            this.loginLoading = true;
+            this.loginError = '';
+
+            try {
+              const response = await fetch('{{ url_for("login_json") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.loginForm),
+                    credentials: 'same-origin'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    this.setAuth(data.name, data.username, data.access_token);
+                    this.closeLoginModal();
+                    this.showToast('¡Inicio de sesión exitoso!', 'success');
+                } else {
+                    this.loginError = data.detail || 'Error al iniciar sesión';
+                }
+            } catch (e) {
+                this.loginError = 'Error de conexión. Intente nuevamente.';
+            } finally {
+                this.loginLoading = false;
+            }
+        },
+        
+        async logout() {
+            try {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                });
+            } catch (e) {
+                console.error('Logout failed:', e);
+            }
+            
+            this.clearAuth();
+            this.showToast('Sesión cerrada correctamente', 'info');
+        },
+        
+        async refreshAccessToken() {
+            try {
+                const response = await fetch('/api/auth/refresh', {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // Need to get user info for name
+                    const meResponse = await fetch('/api/auth/me', {
+                        headers: { 'Authorization': `Bearer ${data.access_token}` }
+                    });
+                    if (meResponse.ok) {
+                        const meData = await meResponse.json();
+                        this.setAuth(meData.name, meData.username, data.access_token);
+                    }
+                    return true;
+                }
+                return false;
+            } catch (e) {
+                console.error('Token refresh failed:', e);
+                return false;
+            }
+        },
+        
+        async handleUnauthorized() {
+            const refreshed = await this.refreshAccessToken();
+            if (!refreshed) {
+                this.clearAuth();
+                this.showSessionExpired = true;
+            }
+        },
+        
+        setAuth(name, username, accessToken) {
+            this.name = name;
+            this.username = username;
+            this.accessToken = accessToken;
+            this.isAuthenticated = true;
+            
+            localStorage.setItem('accessToken', accessToken);
+            localStorage.setItem('username', username);
+            localStorage.setItem('name', name);
+            
+            this.loadProtectedContent();
+        },
+        
+        clearAuth() {
+            this.name = null;
+            this.username = null;
+            this.accessToken = null;
+            this.isAuthenticated = false;
+            this.protectedContent = '';
+            this.loadingProtected = false;
+            
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('username');
+            localStorage.removeItem('name');
+        },
+        
+        loadProtectedContent() {
+            this.loadingProtected = true;
+            this.protectedContent = '';
+            
+            htmx.ajax('GET', '/api/protected-content', {
+                target: '#protected-content',
+                swap: 'innerHTML',
+                headers: { 'Authorization': `Bearer ${this.accessToken}` }
+            }).then(() => {
+                this.loadingProtected = false;
+                this.protectedContent = document.getElementById('protected-content').innerHTML;
+            }).catch(() => {
+                this.loadingProtected = false;
+            });
+        },
+        
+        closeLoginModal() {
+            this.showLoginModal = false;
+            this.loginForm = { username: '', password: '' };
+            this.loginError = '';
+            this.loginLoading = false;
+        },
+        
+        showToast(message, type = 'info') {
+            const id = Date.now();
+            this.toasts.push({ id, message, type, show: true });
+            
+            setTimeout(() => {
+                const toast = this.toasts.find(t => t.id === id);
+                if (toast) toast.show = false;
+                setTimeout(() => {
+                    this.toasts = this.toasts.filter(t => t.id !== id);
+                }, 300);
+            }, 3000);
         }
-    </script>
+    }
+}
+</script>
 
     {% block scripts %}{% endblock %}
 </body>
