@@ -10,6 +10,7 @@ from ..core.dependencies.paths import RuntimeContext
 
 def render_markdown_page(
     view_name: str, 
+    template_file: Path,
     request: Request, 
     ctx: RuntimeContext,  # We now pass the single aggregate object
     is_main: bool = False
@@ -44,6 +45,6 @@ def render_markdown_page(
 
     return ctx.templates_engine.TemplateResponse(
         request=request,
-        name="public/page.html",
+        name=template_file,
         context=context,
     )

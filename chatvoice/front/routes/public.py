@@ -11,8 +11,7 @@ async def main(
     ctx: RuntimeContext = Depends(get_runtime_context) # Single injection
 ) -> HTMLResponse:
     """Principal"""
-    return render_markdown_page("main", request, ctx, is_main=True)
-
+    return render_markdown_page("main", "public/main.html", request, ctx, is_main=True)
 
 @router.get("/page/{view}", response_class=HTMLResponse)
 async def page(
@@ -21,4 +20,4 @@ async def page(
     ctx: RuntimeContext = Depends(get_runtime_context) # Single injection
 ) -> HTMLResponse:
     """Páginas de contenido"""
-    return render_markdown_page(view, request, ctx)
+    return render_markdown_page(view, "public/page.html", request, ctx)

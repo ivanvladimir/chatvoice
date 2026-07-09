@@ -86,7 +86,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                     </svg>
-                    Login
+                    Entrar
                 </button>
             </template>
 
@@ -102,15 +102,15 @@
                         <li class="menu-title">
                             <span x-text="username"></span>
                         </li>
-                        <li><a href="#">Profile</a></li>
-                        <li><a href="#">Settings</a></li>
+                        <li><a href="#">Perfil</a></li>
+                        <li><a href="#">Configuración</a></li>
                         <li><hr class="my-1"></li>
                         <li>
                             <a href="#" class="text-error" @click.prevent="logout()">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                                 </svg>
-                                Logout
+                                Salir
                             </a>
                         </li>
                     </ul>
@@ -122,34 +122,16 @@
     <!-- Main Content -->
     <main class="flex-1 container mx-auto px-4 py-8">
         
+        {% block general_content %} {% endblock %}
+
         <!-- Public Content (not authenticated) -->
         <div x-show="!isAuthenticated" x-cloak x-transition:enter="fade-enter">
-            {% block public_content %}
-            <div class="hero min-h-[60vh]">
-                <div class="hero-content text-center">
-                    <div class="max-w-md">
-                        <h1 class="text-5xl font-bold">Welcome to Chatvoice</h1>
-                        <p class="py-6">Login to access your dashboard, messages, and voice notes.</p>
-                        <button class="btn btn-primary btn-lg" @click="showLoginModal = true">
-                            Get Started
-                        </button>
-                    </div>
-                </div>
-            </div>
-            {% endblock %}
+        {% block notlogged_content %} {% endblock %}
         </div>
 
         <!-- Protected Content (authenticated) -->
         <div x-show="isAuthenticated" x-cloak x-transition:enter="fade-enter">
-            <!-- Loading state -->
-            <div x-show="loadingProtected" class="flex justify-center items-center py-20">
-                <span class="loading loading-spinner loading-lg text-primary"></span>
-            </div>
-            
-            <!-- Actual protected content loaded via HTMX -->
-            <div x-show="!loadingProtected" id="protected-content" 
-                 x-html="protectedContent">
-            </div>
+            {% block protected_content %} {% endblock %}
         </div>
 
         {% block extra_content %}{% endblock %}
@@ -369,7 +351,7 @@ function authApp() {
         
         async logout() {
             try {
-                await fetch('/api/auth/logout', {
+                await fetch('{{ url_for("logout") }}', {
                     method: 'POST',
                     credentials: 'same-origin'
                 });
@@ -383,7 +365,7 @@ function authApp() {
         
         async refreshAccessToken() {
             try {
-                const response = await fetch('/api/auth/refresh', {
+                const response = await fetch('{{ url_for("refresh_access_token") }}', {
                     method: 'POST',
                     credentials: 'same-origin'
                 });
@@ -391,7 +373,7 @@ function authApp() {
                 if (response.ok) {
                     const data = await response.json();
                     // Need to get user info for name
-                    const meResponse = await fetch('/api/auth/me', {
+                    const meResponse = await fetch('{{ url_for("get_current_user_info") }}', {
                         headers: { 'Authorization': `Bearer ${data.access_token}` }
                     });
                     if (meResponse.ok) {

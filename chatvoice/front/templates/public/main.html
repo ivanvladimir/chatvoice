@@ -2,9 +2,8 @@
 
 {% block title %}{{metadata.title[0] | string }}{% endblock %}
 
-{% block general_content %}
+{% block notlogged_content %}
 <article class="prose max-w-none">
     {{content | safe}}
 </article>
-
 {% endblock %}
