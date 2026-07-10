@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import Annotated
+from typing import Annotated, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
@@ -45,7 +45,6 @@ class UserRead(BaseModel):
 
 class UserCreate(UserBase):
     model_config = ConfigDict(extra="forbid")
-
     password: Annotated[str, Field(pattern=r"^.{8,}|[0-9]+|[A-Z]+|[a-z]+|[^a-zA-Z0-9]+$", examples=["Str1ngst!"])]
     
     @model_validator(mode="after")
@@ -56,36 +55,34 @@ class UserCreate(UserBase):
 
 
 class UserCreateInternal(UserBase):
-    hashed_password: str
+    hashed_password: str | None = None
     profile_image_url: str | None = None
 
 
 class UserUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    name: Annotated[str | None, Field(min_length=2, max_length=30, examples=["User Userberg"], default=None)]
-    role: UserRole
-    
-    institution: Annotated[str | None, Field(default=None)]
-    description: Annotated[str | None, Field(default=None)]
-    
+    name: Annotated[str | None, Field(min_length=2, max_length=30, examples=["User Userson"], default=None)]
+
     username: Annotated[
         str | None, Field(min_length=2, max_length=20, pattern=r"^[a-z0-9]+$", examples=["userberg"], default=None)
     ]
     email: Annotated[EmailStr | None, Field(examples=["user.userberg@example.com"], default=None)]
+    role: UserRole = UserRole.user
+    
+    institution: Annotated[str | None, Field(default=None)]
+    description: Annotated[str | None, Field(default=None)]
+    password:  Annotated[str | None, Field(default=None)]
     
     profile_image_url: Annotated[
         str | None,
-        Field(
-            pattern=r"^(https?|ftp)://[^\s/$.?#].[^\s]*$", examples=["https://www.profileimageurl.com"], default=None
-        ),
+        Field(default=None),
     ]
     is_verified: bool | None = None
 
-
 class UserUpdateInternal(UserUpdate):
+    hashed_password: str 
     updated_at: datetime
-
 
 class UserRoleUpdate(BaseModel):
     """Used by admins to update a user's role."""
