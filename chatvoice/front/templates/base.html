@@ -147,18 +147,18 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
-                Sign In
+                Entrar
             </h3>
-            <p class="py-2 text-base-content/60">Enter your credentials to continue</p>
+            <p class="py-2 text-base-content/60">Ingresa tu usuario y contraseña para entrar</p>
             
             <form @submit.prevent="handleLogin()">
                 <div class="form-control w-full">
                     <label class="label">
-                        <span class="label-text font-medium">Username</span>
+                        <span class="label-text font-medium">Usuario</span>
                     </label>
                     <input type="text" 
                            x-model="loginForm.username"
-                           placeholder="Enter your username" 
+                           placeholder="Teclea tu usuario" 
                            class="input input-bordered w-full" 
                            autocomplete="username"
                            required />
@@ -166,11 +166,11 @@
                 
                 <div class="form-control w-full mt-4">
                     <label class="label">
-                        <span class="label-text font-medium">Password</span>
+                        <span class="label-text font-medium">Contraseña</span>
                     </label>
                     <input type="password" 
                            x-model="loginForm.password"
-                           placeholder="Enter your password" 
+                           placeholder="Teclea tu contraseña" 
                            class="input input-bordered w-full" 
                            autocomplete="current-password"
                            required />
@@ -191,13 +191,13 @@
                             class="btn" 
                             @click="closeLoginModal()"
                             :disabled="loginLoading">
-                        Cancel
+                        Cancelar
                     </button>
                     <button type="submit" 
                             class="btn btn-primary"
                             :class="{ 'btn-loading': loginLoading }"
                             :disabled="loginLoading">
-                        Sign In
+                        Entrar
                     </button>
                 </div>
             </form>
@@ -254,7 +254,6 @@ function authApp() {
         // UI State
         showLoginModal: false,
         showSessionExpired: false,
-        loadingProtected: false,
         protectedContent: '',
         
         // Login Form
@@ -297,7 +296,7 @@ function authApp() {
             }
 
             try {
-                const response = await fetch('/api/auth/me', {
+              const response = await fetch('{{ url_for("get_current_user_info") }}', {
                     headers: { 'Authorization': `Bearer ${this.accessToken}` }
                 });
 
@@ -406,8 +405,6 @@ function authApp() {
             localStorage.setItem('accessToken', accessToken);
             localStorage.setItem('username', username);
             localStorage.setItem('name', name);
-            
-            this.loadProtectedContent();
         },
         
         clearAuth() {
@@ -415,28 +412,10 @@ function authApp() {
             this.username = null;
             this.accessToken = null;
             this.isAuthenticated = false;
-            this.protectedContent = '';
-            this.loadingProtected = false;
             
             localStorage.removeItem('accessToken');
             localStorage.removeItem('username');
             localStorage.removeItem('name');
-        },
-        
-        loadProtectedContent() {
-            this.loadingProtected = true;
-            this.protectedContent = '';
-            
-            htmx.ajax('GET', '/api/protected-content', {
-                target: '#protected-content',
-                swap: 'innerHTML',
-                headers: { 'Authorization': `Bearer ${this.accessToken}` }
-            }).then(() => {
-                this.loadingProtected = false;
-                this.protectedContent = document.getElementById('protected-content').innerHTML;
-            }).catch(() => {
-                this.loadingProtected = false;
-            });
         },
         
         closeLoginModal() {

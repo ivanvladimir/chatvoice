@@ -8,7 +8,7 @@ title: Principal
             <h1 class="text-5xl font-bold">Bienvenido a Chatvoice</h1>
             <p class="py-6">Entra para tener una conversación.</p>
             <button class="btn btn-primary btn-lg" @click="showLoginModal = true">
-                Comienza ahora
+                Comenzar ahora
             </button>
         </div>
     </div>

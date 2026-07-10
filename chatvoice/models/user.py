@@ -1,11 +1,13 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, func
+from sqlalchemy import DateTime, ForeignKey, String, func, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid6 import uuid7
 
 from ..core.db import Base
+from ..core.types import UserRole
+
 
 class User(Base):
     __tablename__ = "users"
@@ -14,14 +16,18 @@ class User(Base):
 
     name: Mapped[str] = mapped_column(String(30))
     username: Mapped[str] = mapped_column(String(20), unique=True, index=True)
-    email: Mapped[str] = mapped_column(String(254), unique=True, index=True) # Increased to 254
-    hashed_password: Mapped[str] = mapped_column(String(255)) # Added explicit length
-
-    profile_image_url: Mapped[str | None] = mapped_column(String, nullable=True) 
-    institution: Mapped[str | None] = mapped_column(String, nullable=True) # Removed redundant default=None
+    email: Mapped[str] = mapped_column(String(254), unique=True, index=True)
+    hashed_password: Mapped[str] = mapped_column(String(255))
+    profile_image_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    institution: Mapped[str | None] = mapped_column(String, nullable=True)
     description: Mapped[str | None] = mapped_column(String, nullable=True)
-
     uuid: Mapped[uuid7] = mapped_column(UUID(as_uuid=True), default_factory=uuid7, unique=True)
+
+    role: Mapped[UserRole] = mapped_column(
+        Enum(UserRole, native_enum=False),
+        default=UserRole.user,
+        index=True
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), 

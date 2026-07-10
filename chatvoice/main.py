@@ -14,6 +14,7 @@ from .core.interpreter import Interpreter
 from .core.logger import get_logger, setup_logging
 from .utils.llm import init_llm_client
 
+
 # Default configuration values
 CHATVOICE_CONFIG_PATH = Path("config.toml")
 CHATVOICE_LOG_FILE = "logs/chatvoice.log"
@@ -125,8 +126,8 @@ def server(
 
     import uvicorn
     
-    print("Running the [yellow]server chat[/].")
     log.info("Starting server chat")
+    print("Running the [yellow]server chat[/].")
     uvicorn.run("chatvoice.asgi:create_app",
                 host=host,
                 port=port,
@@ -134,20 +135,29 @@ def server(
                 workers=workers,
 #                log_level=logging_level,
                 factory=True)
+    log.info("Ending server chat")
 
 
 @cli.command
 @with_logging
-def create_admin(
+def create_user(
     logging_json: bool = False,
     logging_level: str = "debug",  # More verbose for admin operations
     logging_file: str = CHATVOICE_LOG_FILE,
 ) -> None:
     """Create an admin user."""
-    from .utils.admin import create_admin_user
+    log = get_logger(__name__)
+    from .utils.user import create_user
 
     print("About to create [yellow]admin user[/].")
-    create_admin_user()
+    username,role = create_user()
+    if role:
+        log.info(f"User '{username}' created successfully with role '{role}'.")
+        print(f"[green]User '{username}' created successfully with role '{role}'.[/]")
+    else:
+        log.info(f"User '{username}' was not created.")
+        print(f"[red]User '{username}' was not created.[/]")
+
 
 @cli.command
 @with_logging

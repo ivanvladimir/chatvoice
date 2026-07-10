@@ -31,8 +31,9 @@ from ...core.security import (
     verify_token,
     get_password_hash,
 )
+from ...core.types import UserRole
 
-router = APIRouter(tags=["auth"])
+router = APIRouter(prefix="/auth",tags=["auth"])
 
 
 # =============================================================================
@@ -60,7 +61,7 @@ class UserResponse(BaseModel):
     name: str
     email: str
     is_verified: bool
-    is_superuser: bool
+    role: UserRole
 
 
 class RegisterRequest(BaseModel):
@@ -68,10 +69,11 @@ class RegisterRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     username: str = Field(..., min_length=3, max_length=50, pattern=r"^[a-zA-Z0-9_]+$")
     email: EmailStr
+    role: UserRole
     password: str = Field(..., min_length=8, max_length=100)
     institution: Optional[str] = Field(None, max_length=200)
     description: Optional[str] = Field(None, max_length=500)
-
+ 
     @validator("password")
     def validate_password(cls, v):
         if len(v) < 8:
@@ -236,6 +238,7 @@ async def register_user_json(
         name=data.name,
         username=data.username,
         email=data.email,
+        role=data.role,
         password=data.password,
         institution=data.institution,
         description=data.description,
@@ -249,6 +252,7 @@ async def register_user_form(
     name: str = Form(...),
     username: str = Form(...),
     email: str = Form(...),
+    role: str = Form(...),
     password: str = Form(...),
     institution: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
@@ -259,6 +263,7 @@ async def register_user_form(
         request=request,
         name=name,
         username=username,
+        role=role,
         email=email,
         password=password,
         institution=institution,
@@ -271,6 +276,7 @@ async def _register_user(
     request: Request,
     name: str,
     username: str,
+    role: UserRole,
     email: str,
     password: str,
     institution: Optional[str],
@@ -282,6 +288,7 @@ async def _register_user(
             name=name,
             username=username,
             email=email,
+            role=role,
             password=password,
             institution=institution,
             description=description,
@@ -347,6 +354,7 @@ async def _register_user(
             "user": {
                 "id": created_user.id,
                 "name": user.name,
+                "role": user.role,
                 "username": user.username,
                 "email": user.email,
             },
