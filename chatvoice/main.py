@@ -145,7 +145,7 @@ def create_user(
     logging_level: str = "debug",  # More verbose for admin operations
     logging_file: str = CHATVOICE_LOG_FILE,
 ) -> None:
-    """Create an admin user."""
+    """Create user."""
     log = get_logger(__name__)
     from .utils.user import create_user
 
@@ -157,6 +157,28 @@ def create_user(
     else:
         log.info(f"User '{username}' was not created.")
         print(f"[red]User '{username}' was not created.[/]")
+
+
+@cli.command
+@with_logging
+def create_admin(
+    logging_json: bool = False,
+    logging_level: str = "debug",  # More verbose for admin operations
+    logging_file: str = CHATVOICE_LOG_FILE,
+) -> None:
+    """Create an admin user."""
+    log = get_logger(__name__)
+    from .utils.user import create_admin_user
+
+    print("About to create [yellow]admin user[/].")
+    username, status = create_admin_user()
+    if status:
+        log.info(f"Admin '{username}' created successfully.")
+        print(f"[green]Admin '{username}' created successfully.[/]")
+    else:
+        log.info(f"Admin '{username}' was not created.")
+        print(f"[red]Admin '{username}' was not created.[/]")
+
 
 
 @cli.command

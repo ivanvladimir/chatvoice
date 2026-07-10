@@ -113,3 +113,4 @@ conversations/**/is.json
 conversations/**/audios
 
 chatvoice/static/output.css
+crudadmin_data/

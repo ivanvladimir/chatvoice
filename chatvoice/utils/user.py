@@ -10,12 +10,54 @@ from ..schemas.user import UserRole, UserCreate, UserCreateInternal
 from ..core.security import get_password_hash
 from ..core.db.database_sync import get_db_ctx, init_db
 
+import asyncio
+
+def create_admin_user():
+    """Create admin with a selectable role via CLI."""
+    username = Prompt.ask("Enter your username", default="admin")
+    passwd = Prompt.ask("Enter your password", password=True)
+    passwd_ = Prompt.ask("Confirm your password", password=True)
+    
+    if passwd != passwd_:
+        print("[red]Passwords do not match. Please try again.[/]")
+        return (name, None)
+
+    return asyncio.run(_create_admin_user_async(username, passwd))
+
+
+async def _create_admin_user_async(username: str, password: str):
+    """Internal async function to handle database operations."""
+    from crudadmin.admin_user.schemas import AdminUserCreateInternal
+    from ..admin.initialize import create_admin_interface
+
+    admin = create_admin_interface()
+    
+    async for admin_session in admin.db_config.get_admin_db():
+        try:
+            hashed_password = admin.admin_user_service.get_password_hash(password)
+            internal_data = AdminUserCreateInternal(
+                username=username,
+                hashed_password=hashed_password,
+            )
+
+            await admin.initialize()
+            await admin.db_config.crud_users.create(
+                admin_session, object=internal_data
+            )
+            await admin_session.commit()
+            return username, True
+
+        except Exception as e:
+            print(f"[red]Error creating admin {username}: {e}.[/]")
+            await admin_session.rollback()
+        return username, False
+
 
 def create_user():
     """Create a user with a selectable role via CLI."""
     name = Prompt.ask("Enter your name", default="IVMR")
-    username = Prompt.ask("Enter your username", default="admin")
-    email = Prompt.ask("Enter your email", default="admin@ejemplo.com")
+    username = Prompt.ask("Enter your username", default="user")
+    email = Prompt.ask("Enter your email", default="user@ejemplo.com")
     institution = Prompt.ask("Enter the name of your institution", default="")
     description = Prompt.ask("Enter a brief description of yourself", default="")
     

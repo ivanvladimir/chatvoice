@@ -29,9 +29,9 @@ async def get_current_user(
         raise UnauthorizedException("User not authenticated.")
 
     if "@" in token_data.username_or_email:
-        user = await crud_users.get(db=db, email=token_data.username_or_email, is_deleted=False)
+        user = await crud_users.get(db=db, email=token_data.username_or_email, is_deleted=False, is_verified = True)
     else:
-        user = await crud_users.get(db=db, username=token_data.username_or_email, is_deleted=False)
+        user = await crud_users.get(db=db, username=token_data.username_or_email, is_deleted=False, is_verified = True)
 
     if user:
         return user
@@ -66,11 +66,22 @@ async def get_optional_user(request: Request, db: AsyncSession = Depends(async_g
 
 
 async def get_current_superuser(current_user: Annotated[dict, Depends(get_current_user)]) -> dict:
-    if not current_user["is_superuser"]:
+    if not current_user["role"] == "superuser":
         raise ForbiddenException("You do not have enough privileges.")
 
     return current_user
 
+async def get_current_admin(current_user: Annotated[dict, Depends(get_current_user)]) -> dict:
+    if not current_user["role"] == "admin":
+        raise ForbiddenException("You do not have enough privileges.")
+
+    return current_user
+
+async def get_current_editor(current_editor: Annotated[dict, Depends(get_current_user)]) -> dict:
+    if not current_user["role"] == "editor":
+        raise ForbiddenException("You do not have enough privileges.")
+
+    return current_user
 
 async def rate_limiter_dependency(
     request: Request, db: Annotated[AsyncSession, Depends(async_get_db)], user: dict | None = Depends(get_optional_user)
