@@ -17,12 +17,12 @@ class UserBase(BaseModel):
     role: Annotated[UserRole, Field(default=UserRole.user)]
     institution: Annotated[str | None, Field(default=None)]
     description: Annotated[str | None, Field(default=None)]
+    is_verified: bool = False
     
 
 class User(TimestampSchema, UserBase, UUIDSchema, PersistentDeletion):
     profile_image_url: Annotated[str | None, Field(default=None)]
     hashed_password: str
-    is_verified: bool = False
     tier_id: int | None = None
 
 class UserRead(BaseModel):
@@ -53,11 +53,9 @@ class UserCreate(UserBase):
         self.role = UserRole.user
         return self
 
-
 class UserCreateInternal(UserBase):
     hashed_password: str | None = None
     profile_image_url: str | None = None
-
 
 class UserUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -72,13 +70,13 @@ class UserUpdate(BaseModel):
     
     institution: Annotated[str | None, Field(default=None)]
     description: Annotated[str | None, Field(default=None)]
-    password:  Annotated[str | None, Field(default=None)]
+    password:  Annotated[str | None, Field(pattern=r"^.{8,}|[0-9]+|[A-Z]+|[a-z]+|[^a-zA-Z0-9]+$", examples=["Str1ngst!"], default=None)]
     
     profile_image_url: Annotated[
         str | None,
         Field(default=None),
     ]
-    is_verified: bool | None = None
+    is_verified: Annotated[ bool | None, Field(default=False, description="True if user is verified")]
 
 class UserUpdateInternal(UserUpdate):
     hashed_password: str 

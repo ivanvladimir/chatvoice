@@ -70,9 +70,9 @@ async def authenticate_user(
     Returns user dict if valid credentials, None otherwise.
     """
     if "@" in username_or_email:
-        db_user = await crud_users.get(db=db, email=username_or_email, is_deleted=False)
+        db_user = await crud_users.get(db=db, email=username_or_email, is_deleted=False, is_verified=True)
     else:
-        db_user = await crud_users.get(db=db, username=username_or_email, is_deleted=False)
+        db_user = await crud_users.get(db=db, username=username_or_email, is_deleted=False, is_verified=True)
 
     if not db_user:
         return None
