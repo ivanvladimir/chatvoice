@@ -180,6 +180,18 @@ def create_admin(
         log.info(f"Admin '{username}' was not created.")
         print(f"[red]Admin '{username}' was not created.[/]")
 
+@cli.command
+@with_logging
+def audit_admin_users(
+    logging_json: bool = False,
+    logging_level: str = "debug",  # More verbose for admin operations
+    logging_file: str = CHATVOICE_LOG_FILE,
+) -> None:
+    """Create an admin user."""
+    log = get_logger(__name__)
+    from .utils.user import audit_admin_users
+
+    audit_admin_users()
 
 
 @cli.command

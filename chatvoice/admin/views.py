@@ -9,7 +9,7 @@ from ..core.security import get_password_hash
 from ..models.tier import Tier
 from ..models.user import User
 from ..models.kb import KB
-from ..models.project import Projrot
+from ..models.project import Project
 #from ..schemas.task import TaskUpdate, TaskCreate, TaskCreateInternal
 from ..schemas.tier import TierCreate, TierUpdate
 from ..schemas.user import UserCreate, UserUpdateInternal, UserUpdate

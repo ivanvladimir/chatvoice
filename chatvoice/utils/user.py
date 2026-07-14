@@ -12,6 +12,30 @@ from ..core.db.database_sync import get_db_ctx, init_db
 
 import asyncio
 
+async def _audit_admin_users_async():
+    from crudadmin.admin_user.schemas import AdminUserRead
+    from ..admin.initialize import create_admin_interface
+
+    admin = create_admin_interface()
+
+    async for admin_session in admin.db_config.get_admin_db():
+        result = await admin.db_config.crud_users.get_multi(admin_session)
+        
+        # Access the actual list of users
+        users = result['data']
+
+        print("Admin Users Audit:")
+        print("-" * 50)
+        for user in users:
+            user=AdminUserRead(**user)
+            print(f"Username: {user.username}")
+            print(f"Superuser: {user.is_superuser}")
+            print("-" * 30)
+
+def audit_admin_users():
+    return asyncio.run(_audit_admin_users_async())
+
+
 def create_admin_user():
     """Create admin with a selectable role via CLI."""
     username = Prompt.ask("Enter your username", default="admin")
@@ -23,6 +47,8 @@ def create_admin_user():
         return (name, None)
 
     return asyncio.run(_create_admin_user_async(username, passwd))
+
+
 
 
 async def _create_admin_user_async(username: str, password: str):
