@@ -3,7 +3,11 @@ from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+from enum import Enum
 
+class ProjectPermission(str, Enum):
+    VIEW = "view"
+    EDIT = "edit"
 
 # =============================================================================
 # Project Member Schemas
@@ -95,6 +99,9 @@ class ProjectUpdate(BaseModel):
     is_active: bool | None = Field(default=None)
 
 
+class ProjectUpdateInternal(ProjectUpdate):
+    udated_at: datetime
+
 class ProjectRead(BaseModel):
     """Schema for returning project data (without relationships)."""
     model_config = ConfigDict(from_attributes=True)
@@ -142,37 +149,4 @@ class ProjectDetailWithUsers(ProjectDetail):
     member_links: list[ProjectMemberReadWithUser] = Field(default_factory=list)
 
 
-# =============================================================================
-# Bulk/Collection Schemas
-# =============================================================================
 
-class ProjectMemberBulkCreate(BaseModel):
-    """Schema for adding multiple members at once."""
-    members: list[ProjectMemberCreate] = Field(
-        ...,
-        min_length=1,
-        max_length=100
-    )
-
-
-class ProjectListResponse(BaseModel):
-    """Paginated list response for projects."""
-    items: list[ProjectListItem]
-    total: int
-    page: int
-    page_size: int
-    total_pages: int
-
-
-# =============================================================================
-# Optional: Enum for permissions (cleaner than Literal)
-# =============================================================================
-
-from enum import Enum
-
-class ProjectPermission(str, Enum):
-    VIEW = "view"
-    EDIT = "edit"
-
-# Then use in schemas:
-# permission: ProjectPermission = ProjectPermission.VIEW
