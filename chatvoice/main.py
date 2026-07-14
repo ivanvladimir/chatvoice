@@ -133,6 +133,7 @@ def server(
                 port=port,
                 reload=reload,
                 workers=workers,
+                reload_dirs=["chatvoice/"],
 #                log_level=logging_level,
                 factory=True)
     log.info("Ending server chat")

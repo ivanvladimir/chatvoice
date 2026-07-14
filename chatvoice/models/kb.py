@@ -21,8 +21,9 @@ class KB(Base):
     user: Mapped["User"] = relationship(
         "User", back_populates="kbs", default=None, kw_only=True, init=False
     )
+    is_deleted: Mapped[bool] = mapped_column(default=False, index=True)
 
     def __repr__(self) -> str:
         return (
-            f"<kb id={self.id!r} user_id={self.user_id!r} project_path={self.project_path!r}>"
+            f"<kb id={self.id!r} user_id={self.user_id!r} project_path={self.project_path!r} is_deleted={self.is_deleted}>"
         )

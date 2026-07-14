@@ -8,9 +8,11 @@ from ..core.security import get_password_hash
 #from ..models.task import Task
 from ..models.tier import Tier
 from ..models.user import User
+from ..models.kb import KB
 #from ..schemas.task import TaskUpdate, TaskCreate, TaskCreateInternal
 from ..schemas.tier import TierCreate, TierUpdate
-from ..schemas.user import UserCreate, UserCreateInternal, UserUpdate
+from ..schemas.user import UserCreate, UserUpdateInternal, UserUpdate
+from ..schemas.kb import KBCreate, KBUpdateInternal, KBUpdate
 
 from enum import Enum as PyEnum
 
@@ -44,8 +46,16 @@ def register_admin_views(admin: CRUDAdmin) -> None:
         model=User,
         create_schema=UserCreate,
         update_schema=UserUpdate,
-        update_internal_schema=UserCreateInternal,
+        update_internal_schema=UserUpdateInternal,
         password_transformer=password_transformer,
+        allowed_actions={"view", "create", "update","delete"},
+    )
+
+    admin.add_view(
+        model=KB,
+        create_schema=KBCreate,
+        update_schema=KBUpdate,
+        update_internal_schema=KBUpdateInternal,
         allowed_actions={"view", "create", "update","delete"},
     )
 

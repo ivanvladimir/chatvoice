@@ -11,6 +11,7 @@ class SqlAlchemyMemoryStore:
                 select(KB).filter_by(
                     user_id=user_id,
                     project_path=project_path,
+                    is_deleted=False,
                 )
             )
             kb = result.scalar_one_or_none()

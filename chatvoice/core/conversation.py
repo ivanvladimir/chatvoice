@@ -115,6 +115,7 @@ class Conversation:
                     select(KB).filter_by(
                         user_id=self.user_id,
                         project_path=str(self.project_pathname),
+                        is_deleted=False,
                     )
                 )
                 kb = result.scalar_one_or_none()
