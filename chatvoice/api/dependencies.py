@@ -1,6 +1,7 @@
 from typing import Annotated, Any
 
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, HTTPException, Request, Cookie, WebSocket
+from fastapi.exceptions import WebSocketException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.config import settings
@@ -38,6 +39,15 @@ async def get_current_user(
 
     raise UnauthorizedException("User not authenticated.")
 
+
+async def get_ws_user(websocket: WebSocket, ws_session: str | None = Cookie(default=None)):
+    if not ws_session or ws_session not in active_sessions:
+        # Raising WebSocketException automatically prevents the connection 
+        # and sends a close frame to the client with the specified code.
+        raise WebSocketException(code=1008, reason="Invalid or missing session cookie")
+    
+    username = active_sessions[ws_session]
+    return username
 
 async def get_optional_user(request: Request, db: AsyncSession = Depends(async_get_db)) -> dict | None:
     token = request.headers.get("Authorization")

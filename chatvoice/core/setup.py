@@ -33,6 +33,8 @@ from .db import Base
 from .db.database import async_engine as engine
 from .dependencies.paths import get_runtime_settings
 
+from ..transport.ws import WS
+from ..utils.llm import init_llm_client
 
 # -------------- database --------------
 async def create_tables() -> None:
@@ -80,7 +82,7 @@ async def set_threadpool_tokens(number_of_tokens: int = 100) -> None:
 def lifespan_factory(
     settings: (
         DatabaseSettings
-        # | RedisCacheSettings
+    # | RedisCacheSettings
         | AppSettings
         # | ClientSideCacheSettings
         | CORSSettings
@@ -102,6 +104,11 @@ def lifespan_factory(
         # await set_threadpool_tokens()
 
         try:
+            llm_client = init_llm_client(settings)
+            app.state.llm_client=llm_client
+            ws=WS()
+            app.state.transport=ws
+
             # if isinstance(settings, RedisCacheSettings):
             #     await create_redis_cache_pool()
             #

@@ -12,7 +12,6 @@ from rich import print
 from .core.config import get_settings
 from .core.interpreter import Interpreter
 from .core.logger import get_logger, setup_logging
-from .utils.llm import init_llm_client
 
 
 # Default configuration values
@@ -76,6 +75,7 @@ def console(
         Name identifier for the chat system.
     """
     from .transport.console import Console
+    from .utils.llm import init_llm_client
 
     settings = get_settings()  # Moved inside to load after config is processed
 
