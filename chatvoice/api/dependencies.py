@@ -16,6 +16,8 @@ from ..crud.users import crud_users
 from ..schemas.rate_limit import RateLimitRead, sanitize_path
 from ..schemas.tier import TierRead
 
+from ..transport.ws import WS
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_LIMIT = settings.DEFAULT_RATE_LIMIT_LIMIT
@@ -39,15 +41,43 @@ async def get_current_user(
 
     raise UnauthorizedException("User not authenticated.")
 
+def get_session_transport(websocket: WebSocket) -> WS:
+    # FastAPI injects the 'websocket' object automatically here
+    return websocket.app.state.transport
 
-async def get_ws_user(websocket: WebSocket, ws_session: str | None = Cookie(default=None)):
-    if not ws_session or ws_session not in active_sessions:
-        # Raising WebSocketException automatically prevents the connection 
-        # and sends a close frame to the client with the specified code.
-        raise WebSocketException(code=1008, reason="Invalid or missing session cookie")
+async def get_ws_user(
+    ws_session: str | None = Cookie(default=None),
+    # FastAPI resolves get_session_manager first, then passes the manager here
+    transport: WS = Depends(get_session_transport) 
+):
+    if not ws_session:
+        raise WebSocketException(code=1008, reason="Missing session cookie")
+        
+    # Now you can use 'manager' just like you would anywhere else!
+    username = transport.validate(ws_session)
     
-    username = active_sessions[ws_session]
+    if not username:
+        raise WebSocketException(code=1008, reason="Invalid or expired session")
+        
     return username
+
+async def get_ws_session(
+    ws_session: str | None = Cookie(default=None),
+    # FastAPI resolves get_session_manager first, then passes the manager here
+    transport: WS = Depends(get_session_transport) 
+):
+    if not ws_session:
+        raise WebSocketException(code=1008, reason="Missing session cookie")
+        
+    # Now you can use 'manager' just like you would anywhere else!
+    session = transport.get_session(ws_session)
+    
+    if not session:
+        raise WebSocketException(code=1008, reason="Invalid or expired session")
+        
+    return session
+
+
 
 async def get_optional_user(request: Request, db: AsyncSession = Depends(async_get_db)) -> dict | None:
     token = request.headers.get("Authorization")

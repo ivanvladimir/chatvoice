@@ -32,3 +32,16 @@ class WS():
         """ Run the script """
         session = self.session_manager.create(user_id, interpreter)
         return session
+
+    def validate(self,ws_sesssion: str = None):
+        if ws_sesssion == None:
+            return 
+        session= self.session_manager.get(ws_sesssion)
+        if session:
+            return session.user_id
+
+    def get_session(self,ws_sesssion: str = None):
+        if ws_sesssion == None:
+            return 
+        return self.session_manager.get(ws_sesssion)
+

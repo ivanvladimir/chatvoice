@@ -136,13 +136,25 @@
 
         {% block extra_content %}{% endblock %}
 
- <!-- STEP 3: Chat UI (Hidden initially) -->
-    <div id="chat-box" class="box">
-        <div id="messages"></div>
-        <input type="text" id="messageText" placeholder="Type a message..." disabled>
-        <button onclick="sendMessage()" id="sendBtn" disabled>Send</button>
-    </div>
+    <!-- STEP 3: Chat UI (Hidden initially) -->
+<div id="chat-box" class="card bg-base-100 shadow-xl w-full max-w-md mx-auto">
+    <div class="card-body">
+        <div id="messages" class="flex flex-col gap-2 h-80 overflow-y-auto p-2 bg-base-200 rounded-box"></div>
 
+        <div class="join w-full mt-4">
+            <input
+                type="text"
+                id="messageText"
+                placeholder="Type a message..."
+                disabled
+                class="input input-bordered join-item w-full"
+            >
+            <button onclick="sendMessage()" id="sendBtn" disabled class="btn btn-primary join-item">
+                Send
+            </button>
+        </div>
+    </div>
+</div>
 
     </main>
 
@@ -268,10 +280,6 @@
                 // We no longer need the JWT in JavaScript memory.
                 console.log("Session cookie set. Connecting to WebSocket...");
                 
-                // Update UI
-                document.getElementById("login-box").style.display = "none";
-                document.getElementById("chat-box").style.display = "block";
-                
                 // Move to final step
                 connectWebSocket();
 
@@ -286,7 +294,7 @@
         function connectWebSocket() {
             // Notice the URL is completely clean! 
             // The browser automatically attaches the httpOnly cookie we just received.
-            const wsUrl = `ws://${window.location.host}/ws`;
+            const wsUrl = `ws://${window.location.host}/api/v1/ws/hello_world`;
             ws = new WebSocket(wsUrl);
 
             ws.onopen = () => {

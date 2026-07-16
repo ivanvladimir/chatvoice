@@ -8,8 +8,9 @@ from pathlib import Path
 
 from typing import Annotated, Optional
 
-from ..dependencies import get_current_user, get_ws_user
+from ..dependencies import get_current_user, get_ws_user, get_ws_session
 from ...core.interpreter import Interpreter
+from ...sessions.session import ChatSession
 
 router = APIRouter(tags=["health"])
 
@@ -29,8 +30,6 @@ async def create_ws_session(
     script: str,
     current_user: Annotated[dict, Depends(get_current_user)],
 ) -> JSONResponse:
-
-    print(current_user)
 
     interpreter = Interpreter(
         Path(f"conversations/{script}"),
@@ -55,15 +54,27 @@ async def create_ws_session(
 async def websocket_endpoint(
     websocket: WebSocket,
     script: str,
-    username: str = Depends(get_ws_user) # Inject the dependency
+    session: ChatSession = Depends(get_ws_session) # Inject the dependency
 ):
     # If we reach this line, Depends() succeeded. NOW we accept the connection.
     await websocket.accept()
     
     try:
         while True:
-            data = await websocket.receive_text()
-            await websocket.send_json({"user": username, "message": data})
+            m = session.recv()
+            if m is None:
+                return
+            if m["cmd"] == "say" and len(m['args']) > 0:
+                for msg in m['args']:
+                    await websocket.send_json({"user_id": user_id, "message": msg})
+            elif m["cmd"] == "listen":
+                pass
+                #input=self.console.input(f"[red]{interpreter.settings['_name_user']}[/]: ")
+                #session.send(input)
+            elif m["cmd"] == "info" and len(m['args']) > 0:
+                for label,info in m['args']:
+                    await websocket.send_json({"user_id": 1, "message": f"{label: <10}: {info}"})
+ 
             
     except WebSocketDisconnect:
         # Optional: Clean up session on disconnect if you want it to be single-use

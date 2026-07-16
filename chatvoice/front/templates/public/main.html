@@ -3,7 +3,17 @@
 {% block title %}{{metadata.title[0] | string }}{% endblock %}
 
 {% block notlogged_content %}
+{% if notlogged_content %}
 <article class="prose max-w-none">
     {{content | safe}}
 </article>
+{%endif%}
+{% endblock %}
+
+{% block protected_content %}
+{% if protected_content %}
+<article class="prose max-w-none">
+    {{content_protected | safe}}
+</article>
+{%endif%}
 {% endblock %}
