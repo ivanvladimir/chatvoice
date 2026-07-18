@@ -22,10 +22,16 @@ def llm_client_response(llm_client: tuple = ("none", None), input: str = ""):
     if not llm_client:
         return ""
     if t == "google":
-        interaction = llm_client.interactions.create(
-            model="gemini-3.1-flash-lite", input=input, store=False
-        )
-        return interaction.output_text
+        try: 
+            interaction = llm_client.interactions.create(
+                model="gemini-3.1-flash-lite", input=input, store=False
+            )
+        except e:
+            interaction = None
+        if interaction:
+            return interaction.output_text
+        else: 
+            return "mmm ..."
 
 
 def get_llm_client():
