@@ -68,7 +68,7 @@ class Conversation:
                         if k in self.templates:
                             log.error(f"Template {k} already defined")
                     self.templates.update(template_)
-                except yaml.YAMLError as exc:
+                except yaml.YAMLError:
                     log.error(f"Error while reading: {template}, definitions being ignored")
                     log.error(exec)
                     sys.exit()
@@ -101,7 +101,6 @@ class Conversation:
         restricted_globals = {'__builtins__': safe_builtins}
         restricted_locals = self._restricted_locals
         for filename in plugins_:
-            plugin_name= os.path.splitext(filename)[-2]
             plugin_path = os.path.join(self.project_pathname,"plugins",filename)
             with open(plugin_path, 'r') as f:
                 code = f.read()

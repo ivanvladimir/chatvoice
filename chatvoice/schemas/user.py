@@ -1,11 +1,9 @@
 from datetime import datetime
-from enum import Enum
-from typing import Annotated, Optional
+from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 from ..core.schemas import PersistentDeletion, TimestampSchema, UUIDSchema
-from ..models.user import UserRole
 
 from ..core.types import UserRole
 

@@ -20,6 +20,7 @@ from .schemas import TokenBlacklistCreate, TokenData
 SECRET_KEY: SecretStr = settings.SECRET_KEY
 ALGORITHM: str = settings.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES: int = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+WS_SESSION_EXPIRE_MINUTES: int = settings.WS_SESSION_EXPIRE_MINUTES
 REFRESH_TOKEN_EXPIRE_DAYS: int = settings.REFRESH_TOKEN_EXPIRE_DAYS
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/login")

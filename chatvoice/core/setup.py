@@ -122,7 +122,7 @@ def lifespan_factory(
                 await create_tables()
 
             runtime_settings=get_runtime_settings() 
-            process = tailwind.compile(
+            tailwind.compile(
                     runtime_settings.paths.static / "output.css",
                     tailwind_stylesheet_path=Path("chatvoice/resources/input.css")
                 )

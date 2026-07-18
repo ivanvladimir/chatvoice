@@ -2,9 +2,8 @@ import time
 from pathlib import Path
 import markdown
 
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import Request, HTTPException
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 
 from ..core.dependencies.paths import RuntimeContext
 

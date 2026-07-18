@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.config import settings
 from ..core.db.database import async_get_db
-from ..core.exceptions.http_exceptions import ForbiddenException, RateLimitException, UnauthorizedException
 from ..core.logger import logging
 from ..core.security import TokenType, oauth2_scheme, verify_token, decode_ws_token
 from ..core.utils.rate_limit import rate_limiter
@@ -18,6 +17,11 @@ from ..schemas.tier import TierRead
 
 from ..transport.ws import WS
 
+from ..core.exceptions.http_exceptions import (
+    ForbiddenException,
+    RateLimitException,
+    UnauthorizedException,
+)
 logger = logging.getLogger(__name__)
 
 DEFAULT_LIMIT = settings.DEFAULT_RATE_LIMIT_LIMIT
@@ -107,10 +111,10 @@ async def get_current_admin(current_user: Annotated[dict, Depends(get_current_us
     return current_user
 
 async def get_current_editor(current_editor: Annotated[dict, Depends(get_current_user)]) -> dict:
-    if not current_user["role"] == "editor":
+    if not current_editor["role"] == "editor":
         raise ForbiddenException("You do not have enough privileges.")
 
-    return current_user
+    return current_editor
 
 async def rate_limiter_dependency(
     request: Request, db: Annotated[AsyncSession, Depends(async_get_db)], user: dict | None = Depends(get_optional_user)

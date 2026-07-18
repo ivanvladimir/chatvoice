@@ -4,7 +4,6 @@ from simpleeval import simple_eval, NameNotDefined, InvalidExpression
 from typing import Generator, Any
 
 from ..utils.llm import llm_client_response
-from .parser import Command
 from .expresion_evaluator import ExpressionEvaluator
 from .conversation import Conversation
 
@@ -132,7 +131,7 @@ def cmd_llm(
         
         try:
             prompt = evaluator.eval_expression(fmt_str)
-        except Exception as e:
+        except Exception:
             # If simpleeval fails, fall back to the raw text
             prompt = raw_prompt 
     else:

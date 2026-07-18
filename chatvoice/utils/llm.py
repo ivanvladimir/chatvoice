@@ -23,11 +23,6 @@ def llm_client_response(llm_client:tuple = ('none',None), input:str=""):
     if not llm_client:
         return ""
     if t == "google":
-        history = [
-        {
-            "type": "user_input",
-            "content": [{"type": "text", "text": input}]
-        }]
         interaction = llm_client.interactions.create(
             model="gemini-3.1-flash-lite",
             input=input,

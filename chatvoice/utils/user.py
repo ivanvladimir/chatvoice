@@ -1,11 +1,10 @@
 from sqlalchemy import select
 
-from enum import Enum
 
 from rich.prompt import Prompt, IntPrompt
 from rich import print
 
-from ..models import User
+from ..models import User, Tier
 from ..schemas.user import UserRole, UserCreate, UserCreateInternal
 from ..core.security import get_password_hash
 from ..core.db.database_sync import get_db_ctx, init_db
@@ -44,11 +43,9 @@ def create_admin_user():
     
     if passwd != passwd_:
         print("[red]Passwords do not match. Please try again.[/]")
-        return (name, None)
+        return (username, None)
 
     return asyncio.run(_create_admin_user_async(username, passwd))
-
-
 
 
 async def _create_admin_user_async(username: str, password: str):
@@ -152,10 +149,10 @@ def create_user():
         session.add(new_user)
         session.flush()
         # Capture values while session is active
-        user_name = new_user.name
-        user_role = new_user.role.value
+        username = new_user.name
+        userrole = new_user.role.value
 
-    return name, user_role
+    return username, userrole
     
 def create_tier():
     tiername = Prompt.ask("Enter the tier name", default="free")
@@ -174,4 +171,4 @@ def create_tier():
         session.add(Tier(name=tiername))
         session.commit()
 
-    log.info(f"Tiername '{tiername}' created successfully.")
+    print(f"Tiername '{tiername}' created successfully.")

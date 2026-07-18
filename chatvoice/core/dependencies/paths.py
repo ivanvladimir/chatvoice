@@ -3,9 +3,8 @@ import os
 from pathlib import Path
 from typing import Any
 
-import markdown
 from pydantic import BaseModel, ValidationError
-from fastapi import HTTPException, Depends
+from fastapi import Depends
 from fastapi.templating import Jinja2Templates
 
 

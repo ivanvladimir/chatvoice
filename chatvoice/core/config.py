@@ -1,7 +1,7 @@
 import os
 from enum import Enum
 
-from pydantic import SecretStr, computed_field, field_validator, model_validator
+from pydantic import SecretStr, computed_field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from starlette.config import Config
 
@@ -22,6 +22,7 @@ class CryptSettings:
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    WS_SESSION_EXPIRE_MINUTES: int = 15
 
 class DatabaseOption(str,Enum):
     SQLITE: str = "sqlite"

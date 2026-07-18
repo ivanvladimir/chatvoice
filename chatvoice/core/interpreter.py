@@ -1,22 +1,15 @@
-import ast
 from typing import Generator, Any
-from datetime import datetime, UTC
 from pathlib import Path
-from sqlalchemy import update, insert, select
-from simpleeval import simple_eval, NameNotDefined, InvalidExpression
 
-from ..models import KB
 from ..store.sql_store import SqlAlchemyMemoryStore
 from .logger import get_logger
-from .db.database_sync import get_db_ctx
-from .parser import Clause, Condition, parse_line, Command
+from .parser import parse_line, Command
 from .expresion_evaluator import ExpressionEvaluator
 from .conversation import Conversation
 
 from .commands import (
     cmd_say,
     cmd_listen,
-    cmd_set,
     cmd_solve,
     cmd_return,
     cmd_llm,
@@ -89,7 +82,6 @@ class Interpreter:
             "solve":cmd_solve,
             "return":cmd_return,
             "llm":cmd_llm,
-            "set":cmd_set,
             "exec":cmd_exec,
             "remember":cmd_remember,
             "info":cmd_info,

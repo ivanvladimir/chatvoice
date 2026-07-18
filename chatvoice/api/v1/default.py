@@ -1,18 +1,11 @@
 
-from fastapi import APIRouter, Depends, Request, Response, Form, HTTPException, status
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 
-from ...api.dependencies import get_current_user, get_current_superuser
-from ...core.exceptions.http_exceptions import (
-    UnauthorizedException,
-    DuplicateValueException,
-    ForbiddenException,
-    NotFoundException,
-    CustomException,
-)
+from ...api.dependencies import get_current_user
 from fastapi.templating import Jinja2Templates
 
-from typing import Annotated, Optional
+from typing import Annotated
 
 router = APIRouter(tags=["default"])
 

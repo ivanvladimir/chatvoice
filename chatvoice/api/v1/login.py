@@ -1,7 +1,7 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, Request, Response, Form, HTTPException, status
+from fastapi import APIRouter, Depends, Request, Response, Form, status
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, EmailStr, Field, validator, ValidationError
@@ -9,11 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.config import settings
 from ...core.db.database import async_get_db
-from ...api.dependencies import get_current_user, get_current_superuser
+from ...api.dependencies import get_current_user
 from ...core.exceptions.http_exceptions import (
     UnauthorizedException,
     DuplicateValueException,
-    ForbiddenException,
     NotFoundException,
     CustomException,
 )
@@ -173,7 +172,6 @@ async def login_form(
 
     access_token = await create_access_token(
         data={"sub": user["username"]},
-        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     )
     refresh_token = await create_refresh_token(data={"sub": user["username"]})
 
@@ -327,7 +325,7 @@ async def _register_user(
     )
     
     verification_url = str(request.url_for("email_verification")) + f"?token={verification_token}"
-    
+    verification_url 
     #job = await queue.pool.enqueue_job(
     #    "send_email_task",
     #    "Verificación de cuenta - AATI",
@@ -342,9 +340,9 @@ async def _register_user(
     #    """,
     #)
 
-    if not job:
+    #if not job:
         # User was created but email failed - log this, don't fail the request
-        pass  # Consider adding logging here
+    #    pass  # Consider adding logging here
 
     return JSONResponse(
         status_code=status.HTTP_201_CREATED,
@@ -463,23 +461,23 @@ async def _request_reset_password(
         expires_delta=timedelta(minutes=settings.VERIFICATION_TOKEN_EXPIRE_MINUTES), # Required now
     )
     reset_url = str(request.url_for("reset_password")) + f"?token={reset_token}"
+    reset_url
+    #job = await queue.pool.enqueue_job(
+    #    "send_email_task",
+    #    "Solicitud de cambio de contraseña - AATI",
+    #    [user.email],
+    #    f"""
+    #    <p>Se ha solicitado cambiar la contraseña para la cuenta asociada a <strong>{user.email}</strong> en AATI.</p>
+    #    
+    #    <p>Si reconoce esta solicitud, haga clic en el siguiente enlace:</p>
+    #    <p><a href="{reset_url}" style="padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px;">Cambiar contraseña</a></p>
+    #    
+    #    <p style="margin-top: 20px; color: #666;">Si usted no hizo esta solicitud, por favor ignore este correo.</p>
+    #    """,
+    #)
 
-    job = await queue.pool.enqueue_job(
-        "send_email_task",
-        "Solicitud de cambio de contraseña - AATI",
-        [user.email],
-        f"""
-        <p>Se ha solicitado cambiar la contraseña para la cuenta asociada a <strong>{user.email}</strong> en AATI.</p>
-        
-        <p>Si reconoce esta solicitud, haga clic en el siguiente enlace:</p>
-        <p><a href="{reset_url}" style="padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px;">Cambiar contraseña</a></p>
-        
-        <p style="margin-top: 20px; color: #666;">Si usted no hizo esta solicitud, por favor ignore este correo.</p>
-        """,
-    )
-
-    if not job:
-        raise CustomException(status_code=500, detail="Error al enviar el correo. Contacte al administrador.")
+    #if not job:
+    #    raise CustomException(status_code=500, detail="Error al enviar el correo. Contacte al administrador.")
 
     return MessageResponse(message="Si el email está registrado, recibirá un correo para restablecer la contraseña.")
 

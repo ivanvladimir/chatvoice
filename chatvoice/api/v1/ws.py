@@ -1,15 +1,13 @@
-from fastapi import APIRouter, FastAPI, WebSocket, WebSocketDisconnect, Query, Depends, Request, Response
-from fastapi.responses import HTMLResponse, JSONResponse
-from jose import JWTError, jwt
-from datetime import datetime, timedelta
-import json
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Request, Response
+from fastapi.responses import JSONResponse
+from datetime import timedelta
 from pathlib import Path
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
 
 
-from typing import Annotated, Optional
+from typing import Annotated
 
 from ..dependencies import get_current_user, get_ws_session
 from ...core.interpreter import Interpreter
