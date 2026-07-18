@@ -10,17 +10,23 @@ from ...core.exceptions.http_exceptions import (
     NotFoundException,
     CustomException,
 )
+from fastapi.templating import Jinja2Templates
 from typing import Annotated, Optional
 
-router = APIRouter(tags=["content"])
+router = APIRouter(tags=["chatbot"])
 
-@router.get("/page/{view}")
-async def get_current_user_info(
-    view: str
+templates = Jinja2Templates(directory="chatvoice/api/templates")
+
+
+@router.post("/chatbot")
+async def chatbot_interface(
+    request: Request,
     current_user: Annotated[dict, Depends(get_current_user)],
-    ctx: RuntimeContext = Depends(get_runtime_context) # Single injection
 ) -> HTMLResponse:
-    """Get current authenticated user info."""
-    return render_markdown_page(view, "public/page.html", request, ctx)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="user/chatbot_interface.html",
+    )
 
 

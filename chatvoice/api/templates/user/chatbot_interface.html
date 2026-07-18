@@ -1,0 +1,186 @@
+{# partials/chat_session.html #}
+<div x-data="chatbotApp()" x-init="init()">
+    <div class="flex flex-col h-[calc(100vh-12rem)] max-w-3xl mx-auto w-full">
+        
+        {# ─── Chat Header ─── #}
+        <div class="flex items-center justify-between px-4 py-3 border-b border-base-300 bg-base-200/50 rounded-t-2xl">
+            <div class="flex items-center gap-3">
+                <div class="avatar placeholder">
+                    <div class="bg-primary text-primary-content w-10 rounded-full">
+                        <span class="text-lg">💬</span>
+                    </div>
+                </div>
+                <div>
+                    <h2 class="font-semibold text-sm">Chat Room</h2>
+                    <div class="flex items-center gap-1.5">
+                        <div class="w-2 h-2 rounded-full"
+                             :class="isConnected ? 'bg-success' : 'bg-error'"></div>
+                        <span class="text-xs text-base-content/60"
+                              x-text="isConnected ? 'Conectado' : 'Desconectado'"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-1">
+                {# Clear chat #}
+                <button class="btn btn-ghost btn-sm btn-square" 
+                        @click="clearChat()"
+                        title="Limpiar chat">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+                
+                {# Export chat #}
+                <button class="btn btn-ghost btn-sm btn-square" 
+                        @click="exportChat()"
+                        title="Exportar chat">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        {# ─── Messages Area ─── #}
+        <div x-ref="chatMessages"
+             class="flex-1 overflow-y-auto p-4 space-y-4 chat-scroll bg-base-100">
+            
+            {# Welcome message when empty #}
+            <template x-if="messages.length === 0">
+                <div class="flex flex-col items-center justify-center h-full text-center px-4">
+                    <div class="mb-6">
+                        <div class="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span class="text-4xl">💬</span>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">¡Hola!</h3>
+                        <p class="text-base-content/60 max-w-md">
+                            Tu conexión segura está lista. Envía un mensaje para empezar a chatear.
+                        </p>
+                    </div>
+                </div>
+            </template>
+            
+            {# Message list #}
+            <template x-for="msg in messages" :key="msg.id">
+                <div class="msg-enter">
+                    
+                    {# System message #}
+                    <template x-if="msg.role === 'system'">
+                        <div class="flex justify-center">
+                            <div class="alert py-1.5 px-4 text-xs"
+                                 :class="{
+                                    'alert-info': msg.type === 'info',
+                                    'alert-warning': msg.type === 'warning',
+                                    'alert-error': msg.type === 'error'
+                                 }">
+                                <span x-text="msg.content"></span>
+                            </div>
+                        </div>
+                    </template>
+                    
+                    {# User message (Right side) #}
+                    <template x-if="msg.role === 'user'">
+                        <div class="chat chat-end">
+                            <div class="chat-header opacity-50 text-xs mb-1">
+                                <time x-text="msg.timestamp" class="text-xs opacity-50"></time>
+                                <span>Tú</span>
+                            </div>
+                            <div class="chat-bubble chat-bubble-primary">
+                                <p class="whitespace-pre-wrap" x-text="msg.content"></p>
+                            </div>
+                            <div class="chat-footer opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button class="btn btn-ghost btn-xs" @click="copyMessage(msg.content)" title="Copiar">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                    
+                    {# Other user/bot message (Left side) #}
+                    <template x-if="msg.role === 'other'">
+                        <div class="chat chat-start group">
+                            <div class="chat-image avatar placeholder">
+                                <div class="bg-neutral text-neutral-content w-8 rounded-full">
+                                    <span class="text-xs font-bold" x-text="msg.user?.charAt(0).toUpperCase() || '?'"></span>
+                                </div>
+                            </div>
+                            <div class="chat-header opacity-50 text-xs mb-1">
+                                <span x-text="msg.user || 'Otro'"></span>
+                                <time x-text="msg.timestamp" class="text-xs opacity-50"></time>
+                            </div>
+                            <div class="chat-bubble">
+                                <p class="whitespace-pre-wrap break-words" x-text="msg.content"></p>
+                            </div>
+                            <div class="chat-footer opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button class="btn btn-ghost btn-xs" @click="copyMessage(msg.content)" title="Copiar">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                    
+                </div>
+            </template>
+            
+        </div>
+        
+        {# ─── Input Area ─── #}
+        <div class="border-t border-base-300 p-3 bg-base-200/50 rounded-b-2xl">
+            <div class="flex items-end gap-2">
+                
+                {# Emoji picker toggle #}
+                <div class="dropdown dropdown-top dropdown-end">
+                    <div tabindex="0" role="button" 
+                         class="btn btn-ghost btn-circle btn-sm"
+                         :class="{ 'btn-primary': showEmojiPicker }">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <ul tabindex="0" class="dropdown-content z-[1] p-2 shadow-lg bg-base-100 rounded-box w-64 grid grid-cols-6 gap-1"
+                        @click.away="showEmojiPicker = false">
+                        <template x-for="emoji in getEmojis()" :key="emoji">
+                            <button class="btn btn-ghost btn-sm text-xl p-0 w-10 h-10"
+                                    @click="insertEmoji(emoji)"
+                                    x-text="emoji">
+                            </button>
+                        </template>
+                    </ul>
+                </div>
+                
+                {# Text input #}
+                <div class="flex-1 relative">
+                    <textarea x-ref="chatInput"
+                              x-model="inputText"
+                              @keydown="handleKeyDown($event)"
+                              placeholder="Escribe tu mensaje..."
+                              class="chat-input textarea textarea-bordered w-full rounded-xl pr-12"
+                              rows="1"
+                              :disabled="!isConnected"
+                              :class="{ 'textarea-primary': inputText.length > 0 }">
+                    </textarea>
+                </div>
+                
+                {# Send button #}
+                <button class="btn btn-primary btn-circle"
+                        @click="sendMessage()"
+                        :disabled="!inputText.trim() || !isConnected">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                </button>
+            </div>
+            
+            {# Footer hint #}
+            <p class="text-center text-[10px] text-base-content/40 mt-2">
+                Enter para enviar · Shift+Enter para nueva línea
+            </p>
+        </div>
+    </div>
+</div>
+

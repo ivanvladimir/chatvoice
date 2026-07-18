@@ -1,18 +1,23 @@
-from fastapi import APIRouter, FastAPI, WebSocket, WebSocketDisconnect, Query, Depends, Request
+from fastapi import APIRouter, FastAPI, WebSocket, WebSocketDisconnect, Query, Depends, Request, Response
 from fastapi.responses import HTMLResponse, JSONResponse
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 import json
 from pathlib import Path
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+
 
 
 from typing import Annotated, Optional
 
-from ..dependencies import get_current_user, get_ws_user, get_ws_session
+from ..dependencies import get_current_user, get_ws_session
 from ...core.interpreter import Interpreter
+from ...core.security import create_ws_session_token, TokenType
 from ...sessions.session import ChatSession
 
 router = APIRouter(tags=["health"])
+
 
 # --- 1. JWT Configuration 
 SECRET_KEY = "YOUR_SUPER_SECRET_KEY_CHANGE_THIS_IN_PRODUCTION"  # Use env vars in production!
@@ -25,58 +30,79 @@ fake_users_db = {
 }
 
 @router.post("/ws-session/{script}")
-async def create_ws_session(
-    request: Request,
+async def establish_ws_session(
     script: str,
-    current_user: Annotated[dict, Depends(get_current_user)],
-) -> JSONResponse:
-
+    request: Request,
+    response: Response,
+    current_user: Annotated[dict, Depends(get_current_user)]
+):
+    # 1. Generate your token
     interpreter = Interpreter(
         Path(f"conversations/{script}"),
         user_id=current_user['id'],
         settings={"_name_system": "hola"},
         llm_client=request.app.state.llm_client,
     )
+
     session=request.app.state.transport.create_session(current_user['id'], interpreter)
-    
-    response = JSONResponse({"message": "Session created"})
-    # Set the opaque token as an httpOnly cookie
+    ws_token = create_ws_session_token(
+        data={
+            "sub": session.session_id,     # User's ID
+            "username": current_user["username"],
+            "type": TokenType.WS_SESSION             # Prevent using this token for normal API routes
+        },
+        expires_delta=timedelta(minutes=15) # Short lifespan!
+    )
+ 
+    response = JSONResponse({"message": "Session created", "status":"ok"})
+ 
+    # 2. Set the cookie with path="/" !!!
     response.set_cookie(
-        key="ws_session", 
-        value=session.session_id, 
-        httponly=True, 
-        samesite="strict",
+        key="ws_session",  # Whatever your cookie key is
+        value=ws_token, 
+        path="/",         # <--- THIS IS THE CRITICAL FIX
+        httponly=True,
+        samesite="lax",
         secure=False # Set to True in production with HTTPS
     )
+
     return response
+
+
+# Create a thread pool outside the endpoint
+executor = ThreadPoolExecutor(max_workers=4)
 
 @router.websocket("/ws/{script}")
 async def websocket_endpoint(
     websocket: WebSocket,
     script: str,
-    session: ChatSession = Depends(get_ws_session) # Inject the dependency
+    session: ChatSession = Depends(get_ws_session)
 ):
-    # If we reach this line, Depends() succeeded. NOW we accept the connection.
     await websocket.accept()
     
     try:
         while True:
-            m = session.recv()
+            # Run the synchronous blocking function in a thread
+            m = await asyncio.get_event_loop().run_in_executor(executor, session.recv)
+            
             if m is None:
-                return
+                break
+                
             if m["cmd"] == "say" and len(m['args']) > 0:
                 for msg in m['args']:
-                    await websocket.send_json({"user_id": user_id, "message": msg})
-            elif m["cmd"] == "listen":
-                pass
-                #input=self.console.input(f"[red]{interpreter.settings['_name_user']}[/]: ")
-                #session.send(input)
-            elif m["cmd"] == "info" and len(m['args']) > 0:
-                for label,info in m['args']:
-                    await websocket.send_json({"user_id": 1, "message": f"{label: <10}: {info}"})
- 
+                    await websocket.send_json({"user":"hola","message": msg})
             
+            elif m["cmd"] == "listen":
+                # If you need to wait for user input, you MUST use asyncio.wait_for
+                # or websocket.receive_text() here, NOT a synchronous input()
+                try:
+                    data = await asyncio.wait_for(websocket.receive_text(), timeout=60.0)
+                    session.send(data)
+                except asyncio.TimeoutError:
+                    pass
+                    
     except WebSocketDisconnect:
-        # Optional: Clean up session on disconnect if you want it to be single-use
-        # del active_sessions[ws_session] 
+        pass
+    finally:
+        # Clean up the session if needed
         pass

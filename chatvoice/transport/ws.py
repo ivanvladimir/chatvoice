@@ -40,8 +40,8 @@ class WS():
         if session:
             return session.user_id
 
-    def get_session(self,ws_sesssion: str = None):
-        if ws_sesssion == None:
+    def get_session(self,ws_session: str = None):
+        if ws_session == None:
             return 
-        return self.session_manager.get(ws_sesssion)
+        return self.session_manager.get(ws_session)
 

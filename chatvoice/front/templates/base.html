@@ -22,26 +22,7 @@
 
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-
-    <style>
-        [x-cloak] { display: none !important; }
-        .fade-enter { animation: fadeIn 0.3s ease-out; }
-        .fade-leave { animation: fadeOut 0.2s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
-        .btn-loading::after {
-            content: '';
-            display: inline-block;
-            width: 1em;
-            height: 1em;
-            border: 2px solid currentColor;
-            border-right-color: transparent;
-            border-radius: 50%;
-            animation: spin 0.75s linear infinite;
-            margin-left: 0.5em;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-    </style>
+    <script src="{{ url_for('static', path='js/chatbot.js') }}"></script>
 
     {% block head %}{% endblock %}
 </head>
@@ -126,36 +107,41 @@
 
         <!-- Public Content (not authenticated) -->
         <div x-show="!isAuthenticated" x-cloak x-transition:enter="fade-enter">
-        {% block notlogged_content %} {% endblock %}
+            {% block notlogged_content %} {% endblock %}
         </div>
 
         <!-- Protected Content (authenticated) -->
-        <div x-show="isAuthenticated" x-cloak x-transition:enter="fade-enter">
-            {% block protected_content %} {% endblock %}
+        <div x-show="isAuthenticated" x-cloak x-transition:enter="fade-enter"
+             x-ref="protectedZone">
+            
+            {# ─── PROTECTED HTMX LOADER ─── #}
+            {# Child templates override: protected_endpoint, protected_trigger, protected_swap #}
+            <div id="protected-content"
+                 {% block protected_htmx_config %}
+                 hx-post="{{ protected_endpoint | default(url_for('protected_default_load')) }}"
+                 hx-trigger="{{ protected_trigger | default('load-protected') }}"
+                 hx-swap="{{ protected_swap | default('innerHTML') }}"
+                 hx-target="this"
+                 hx-indicator="#protected-loading"
+                 hx-disabled-elt="#protected-disabled-overlay"
+                 {% endblock %}>
+                
+                {# Loading indicator - shown during HTMX request #}
+                <div id="protected-loading" class="flex flex-col items-center justify-center py-12 gap-4">
+                    <span class="loading loading-spinner loading-lg text-primary"></span>
+                    <span class="text-base-content/50 text-sm">Cargando contenido...</span>
+                </div>
+                
+                {# Disabled overlay for preventing interaction during load #}
+                <div id="protected-disabled-overlay" class="hidden"></div>
+
+                {# Child templates define fallback/initial content here #}
+                {% block protected_content %} {% endblock %}
+            </div>
+
         </div>
 
         {% block extra_content %}{% endblock %}
-
-    <!-- STEP 3: Chat UI (Hidden initially) -->
-<div id="chat-box" class="card bg-base-100 shadow-xl w-full max-w-md mx-auto">
-    <div class="card-body">
-        <div id="messages" class="flex flex-col gap-2 h-80 overflow-y-auto p-2 bg-base-200 rounded-box"></div>
-
-        <div class="join w-full mt-4">
-            <input
-                type="text"
-                id="messageText"
-                placeholder="Type a message..."
-                disabled
-                class="input input-bordered join-item w-full"
-            >
-            <button onclick="sendMessage()" id="sendBtn" disabled class="btn btn-primary join-item">
-                Send
-            </button>
-        </div>
-    </div>
-</div>
-
     </main>
 
     <!-- Login Modal -->
@@ -264,303 +250,249 @@
 
     <!-- Alpine.js Auth Component -->
     <script>
-        // STEP 2: Trade JWT for an HttpOnly Cookie
-        // ==========================================
-        async function establishWsSession(jwtToken) {
-            try {
-                // We send the JWT in the header. The server will reply by setting a cookie.
-                const res = await fetch('/api/v1/ws-session/hello_world', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${jwtToken}` }
-                });
-
-                if (!res.ok) throw new Error("Failed to establish WebSocket session");
-
-                // The browser has now automatically stored the httpOnly cookie.
-                // We no longer need the JWT in JavaScript memory.
-                console.log("Session cookie set. Connecting to WebSocket...");
+        function authApp() {
+            return {
+                // State
+                isAuthenticated: false,
+                username: null,
+                name: null,
+                accessToken: localStorage.getItem('accessToken') || null,
                 
-                // Move to final step
-                connectWebSocket();
-
-            } catch (error) {
-                alert(error.message);
-            }
-        }
-
-        // ==========================================
-        // STEP 3: Connect to WebSocket
-        // ==========================================
-        function connectWebSocket() {
-            // Notice the URL is completely clean! 
-            // The browser automatically attaches the httpOnly cookie we just received.
-            const wsUrl = `ws://${window.location.host}/api/v1/ws/hello_world`;
-            ws = new WebSocket(wsUrl);
-
-            ws.onopen = () => {
-                document.getElementById("messageText").disabled = false;
-                document.getElementById("sendBtn").disabled = false;
-                addSystemMessage("Connected to chat securely!");
-            };
-
-            ws.onmessage = (event) => {
-                const msg = JSON.parse(event.data);
-                addChatMessage(msg.user, msg.message);
-            };
-
-            ws.onclose = (event) => {
-                document.getElementById("messageText").disabled = true;
-                document.getElementById("sendBtn").disabled = true;
+                // UI State
+                showLoginModal: false,
+                showSessionExpired: false,
+                protectedLoaded: false,  // NEW: Track if protected content was loaded
                 
-                // Code 1008 means Policy Violation (Auth failed)
-                if (event.code === 1008) {
-                    addSystemMessage(`Disconnected: ${event.reason}`);
-                } else {
-                    addSystemMessage("Disconnected from server.");
-                }
-            };
-
-            ws.onerror = () => {
-                addSystemMessage("Error connecting to WebSocket.");
-            };
-        }
-
-        // ==========================================
-        // Chat Helpers
-        // ==========================================
-        function sendMessage() {
-            const input = document.getElementById("messageText");
-            if (ws && ws.readyState === WebSocket.OPEN && input.value) {
-                ws.send(input.value);
-                input.value = '';
-            }
-        }
-
-        function addChatMessage(user, text) {
-            const div = document.createElement("div");
-            div.innerText = `${user}: ${text}`;
-            document.getElementById("messages").appendChild(div);
-            scrollChat();
-        }
-
-        function addSystemMessage(text) {
-            const div = document.createElement("div");
-            div.className = "system-msg";
-            div.innerText = `* ${text}`;
-            document.getElementById("messages").appendChild(div);
-            scrollChat();
-        }
-
-        function scrollChat() {
-            const container = document.getElementById("messages");
-            container.scrollTop = container.scrollHeight;
-        }
-
-        // Allow pressing "Enter" to send
-        document.getElementById("messageText").addEventListener("keypress", function(e) {
-            if (e.key === "Enter") sendMessage();
-        });
- 
-
-function authApp() {
-    return {
-        // State
-        isAuthenticated: false,
-        username: null,
-        name: null,
-        accessToken: localStorage.getItem('accessToken') || null,
-        
-        // UI State
-        showLoginModal: false,
-        showSessionExpired: false,
-        protectedContent: '',
-        
-        // Login Form
-        loginForm: { username: '', password: '' },
-        loginError: '',
-        loginLoading: false,
-        
-        // Toasts
-        toasts: [],
-        
-        // Initialize
-        async init() {
-            this.setupHtmxInterceptors();
-            if (this.accessToken) {
-                await this.checkAuth();
-            }
-        },
-        
-        setupHtmxInterceptors() {
-            document.addEventListener('htmx:configRequest', (event) => {
-                if (this.accessToken) {
-                    event.detail.headers['Authorization'] = `Bearer ${this.accessToken}`;
-                }
-            });
-
-            document.addEventListener('htmx:responseError', (event) => {
-                if (event.detail.xhr.status === 401) {
-                    const url = event.detail.xhr.responseURL;
-                    if (!url.includes('/api/auth/')) {
-                        this.handleUnauthorized();
+                // Login Form
+                loginForm: { username: '', password: '' },
+                loginError: '',
+                loginLoading: false,
+                
+                // Toasts
+                toasts: [],
+                
+                // Initialize
+                async init() {
+                    this.setupHtmxInterceptors();
+                    this.setupProtectedEvents();
+                    if (this.accessToken) {
+                        await this.checkAuth();
                     }
-                }
-            });
-        },
-        
-        async checkAuth() {
-            if (!this.accessToken) {
-                this.clearAuth();
-                return;
-            }
-
-            try {
-              const response = await fetch('{{ url_for("get_current_user_info") }}', {
-                    headers: { 'Authorization': `Bearer ${this.accessToken}` }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    this.setAuth(data.name, data.username, this.accessToken);
-                    establishWsSession(this.accessToken);
-                    return;
-                }
-            } catch (e) {
-                console.error('Auth check failed:', e);
-            }
-
-            const refreshed = await this.refreshAccessToken();
-            if (!refreshed) {
-                this.clearAuth();
-            }
-        },
-        
-        async handleLogin() {
-            if (!this.loginForm.username || !this.loginForm.password) {
-                this.loginError = 'Por favor complete todos los campos';
-                return;
-            }
-
-            this.loginLoading = true;
-            this.loginError = '';
-
-            try {
-              const response = await fetch('{{ url_for("login_json") }}', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(this.loginForm),
-                    credentials: 'same-origin'
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    this.setAuth(data.name, data.username, data.access_token);
-                    this.closeLoginModal();
-                    this.showToast('¡Inicio de sesión exitoso!', 'success');
-                } else {
-                    this.loginError = data.detail || 'Error al iniciar sesión';
-                }
-            } catch (e) {
-                this.loginError = 'Error de conexión. Intente nuevamente.';
-            } finally {
-                this.loginLoading = false;
-            }
-        },
-        
-        async logout() {
-            try {
-                await fetch('{{ url_for("logout") }}', {
-                    method: 'POST',
-                    credentials: 'same-origin'
-                });
-            } catch (e) {
-                console.error('Logout failed:', e);
-            }
-            
-            this.clearAuth();
-            this.showToast('Sesión cerrada correctamente', 'info');
-        },
-        
-        async refreshAccessToken() {
-            try {
-                const response = await fetch('{{ url_for("refresh_access_token") }}', {
-                    method: 'POST',
-                    credentials: 'same-origin'
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    // Need to get user info for name
-                    const meResponse = await fetch('{{ url_for("get_current_user_info") }}', {
-                        headers: { 'Authorization': `Bearer ${data.access_token}` }
+                },
+                
+                // ─── CONTROL MECHANISM: HTMX Interceptors ───
+                setupHtmxInterceptors() {
+                    // Add auth header to ALL HTMX requests
+                    document.addEventListener('htmx:configRequest', (event) => {
+                        if (this.accessToken) {
+                            event.detail.headers['Authorization'] = `Bearer ${this.accessToken}`;
+                        }
+                        // Add request timestamp for replay protection
+                        event.detail.headers['X-Request-Timestamp'] = Date.now().toString();
                     });
-                    if (meResponse.ok) {
-                        const meData = await meResponse.json();
-                        this.setAuth(meData.name, meData.username, data.access_token);
+
+                    // Handle auth errors on ALL HTMX requests
+                    document.addEventListener('htmx:responseError', (event) => {
+                        if (event.detail.xhr.status === 401) {
+                            const url = event.detail.xhr.responseURL;
+                            // Skip if it's an auth endpoint itself
+                            if (!url.includes('/api/auth/')) {
+                                this.handleUnauthorized();
+                            }
+                        }
+                    });
+
+                    // Handle successful protected content load
+                    document.addEventListener('htmx:afterOnLoad', (event) => {
+                        if (event.detail.target?.id === 'protected-content') {
+                            this.protectedLoaded = true;
+                        }
+                    });
+                },
+                
+                // ─── NEW: Protected Content Events ───
+                setupProtectedEvents() {
+                    // Listen for custom event to reload protected content
+                    document.addEventListener('reload-protected', () => {
+                        this.loadProtectedContent();
+                    });
+                },
+                
+                // ─── NEW: Trigger Protected Content Load ───
+                loadProtectedContent() {
+                    this.$nextTick(() => {
+                        const protectedEl = document.getElementById('protected-content');
+                        if (protectedEl && this.isAuthenticated) {
+                            // Reset loading state
+                            this.protectedLoaded = false;
+                            // Trigger the HTMX request
+                            htmx.trigger('#protected-content', 'load-protected');
+                        }
+                    });
+                },
+                
+                async checkAuth() {
+                    if (!this.accessToken) {
+                        this.clearAuth();
+                        return;
                     }
-                    return true;
+
+                    try {
+                        const response = await fetch('{{ url_for("get_current_user_info") }}', {
+                            headers: { 'Authorization': `Bearer ${this.accessToken}` }
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.setAuth(data.name, data.username, this.accessToken);
+                            return;
+                        }
+                    } catch (e) {
+                        console.error('Auth check failed:', e);
+                    }
+
+                    const refreshed = await this.refreshAccessToken();
+                    if (!refreshed) {
+                        this.clearAuth();
+                    }
+                },
+                
+                async handleLogin() {
+                    if (!this.loginForm.username || !this.loginForm.password) {
+                        this.loginError = 'Por favor complete todos los campos';
+                        return;
+                    }
+
+                    this.loginLoading = true;
+                    this.loginError = '';
+
+                    try {
+                        const response = await fetch('{{ url_for("login_json") }}', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.loginForm),
+                            credentials: 'same-origin'
+                        });
+
+                        const data = await response.json();
+
+                        if (response.ok) {
+                            this.setAuth(data.name, data.username, data.access_token);
+                            this.closeLoginModal();
+                            this.showToast('¡Inicio de sesión exitoso!', 'success');
+                        } else {
+                            this.loginError = data.detail || 'Error al iniciar sesión';
+                        }
+                    } catch (e) {
+                        this.loginError = 'Error de conexión. Intente nuevamente.';
+                    } finally {
+                        this.loginLoading = false;
+                    }
+                },
+                
+                async logout() {
+                    try {
+                        await fetch('{{ url_for("logout") }}', {
+                            method: 'POST',
+                            credentials: 'same-origin'
+                        });
+                    } catch (e) {
+                        console.error('Logout failed:', e);
+                    }
+                    
+                    this.clearAuth();
+                    this.showToast('Sesión cerrada correctamente', 'info');
+                },
+                
+                async refreshAccessToken() {
+                    try {
+                        const response = await fetch('{{ url_for("refresh_access_token") }}', {
+                            method: 'POST',
+                            credentials: 'same-origin'
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            const meResponse = await fetch('{{ url_for("get_current_user_info") }}', {
+                                headers: { 'Authorization': `Bearer ${data.access_token}` }
+                            });
+                            if (meResponse.ok) {
+                                const meData = await meResponse.json();
+                                this.setAuth(meData.name, meData.username, data.access_token);
+                            }
+                            return true;
+                        }
+                        return false;
+                    } catch (e) {
+                        console.error('Token refresh failed:', e);
+                        return false;
+                    }
+                },
+                
+                async handleUnauthorized() {
+                    const refreshed = await this.refreshAccessToken();
+                    if (!refreshed) {
+                        this.clearAuth();
+                        this.showSessionExpired = true;
+                    } else {
+                        // Retry the protected content load after refresh
+                        this.loadProtectedContent();
+                    }
+                },
+                
+                setAuth(name, username, accessToken) {
+                    const wasAuthenticated = this.isAuthenticated;
+                    
+                    this.name = name;
+                    this.username = username;
+                    this.accessToken = accessToken;
+                    this.isAuthenticated = true;
+                    
+                    localStorage.setItem('accessToken', accessToken);
+                    localStorage.setItem('username', username);
+                    localStorage.setItem('name', name);
+
+                    if (!wasAuthenticated) {
+                        this.loadProtectedContent();
+                    }
+                },
+                
+                clearAuth() {
+                    this.name = null;
+                    this.username = null;
+                    this.accessToken = null;
+                    this.isAuthenticated = false;
+                    this.protectedLoaded = false;
+                    
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('username');
+                    localStorage.removeItem('name');
+                },
+                
+                closeLoginModal() {
+                    this.showLoginModal = false;
+                    this.loginForm = { username: '', password: '' };
+                    this.loginError = '';
+                    this.loginLoading = false;
+                },
+                
+                showToast(message, type = 'info') {
+                    const id = Date.now();
+                    this.toasts.push({ id, message, type, show: true });
+                    
+                    setTimeout(() => {
+                        const toast = this.toasts.find(t => t.id === id);
+                        if (toast) toast.show = false;
+                        setTimeout(() => {
+                            this.toasts = this.toasts.filter(t => t.id !== id);
+                        }, 300);
+                    }, 3000);
                 }
-                return false;
-            } catch (e) {
-                console.error('Token refresh failed:', e);
-                return false;
             }
-        },
-        
-        async handleUnauthorized() {
-            const refreshed = await this.refreshAccessToken();
-            if (!refreshed) {
-                this.clearAuth();
-                this.showSessionExpired = true;
-            }
-        },
-        
-        setAuth(name, username, accessToken) {
-            this.name = name;
-            this.username = username;
-            this.accessToken = accessToken;
-            this.isAuthenticated = true;
-            
-            localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('username', username);
-            localStorage.setItem('name', name);
-        },
-        
-        clearAuth() {
-            this.name = null;
-            this.username = null;
-            this.accessToken = null;
-            this.isAuthenticated = false;
-            
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('username');
-            localStorage.removeItem('name');
-        },
-        
-        closeLoginModal() {
-            this.showLoginModal = false;
-            this.loginForm = { username: '', password: '' };
-            this.loginError = '';
-            this.loginLoading = false;
-        },
-        
-        showToast(message, type = 'info') {
-            const id = Date.now();
-            this.toasts.push({ id, message, type, show: true });
-            
-            setTimeout(() => {
-                const toast = this.toasts.find(t => t.id === id);
-                if (toast) toast.show = false;
-                setTimeout(() => {
-                    this.toasts = this.toasts.filter(t => t.id !== id);
-                }, 300);
-            }, 3000);
         }
-    }
-}
-</script>
+    </script>
 
     {% block scripts %}{% endblock %}
 </body>
 </html>
+

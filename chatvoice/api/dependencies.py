@@ -8,7 +8,7 @@ from ..core.config import settings
 from ..core.db.database import async_get_db
 from ..core.exceptions.http_exceptions import ForbiddenException, RateLimitException, UnauthorizedException
 from ..core.logger import logging
-from ..core.security import TokenType, oauth2_scheme, verify_token
+from ..core.security import TokenType, oauth2_scheme, verify_token, decode_ws_token
 from ..core.utils.rate_limit import rate_limiter
 from ..crud.rate_limit import crud_rate_limits
 from ..crud.tier import crud_tiers
@@ -45,32 +45,21 @@ def get_session_transport(websocket: WebSocket) -> WS:
     # FastAPI injects the 'websocket' object automatically here
     return websocket.app.state.transport
 
-async def get_ws_user(
-    ws_session: str | None = Cookie(default=None),
-    # FastAPI resolves get_session_manager first, then passes the manager here
-    transport: WS = Depends(get_session_transport) 
-):
-    if not ws_session:
-        raise WebSocketException(code=1008, reason="Missing session cookie")
-        
-    # Now you can use 'manager' just like you would anywhere else!
-    username = transport.validate(ws_session)
-    
-    if not username:
-        raise WebSocketException(code=1008, reason="Invalid or expired session")
-        
-    return username
 
 async def get_ws_session(
+    websocket: WebSocket,  # 1. ADD WEBSOCKET HERE
     ws_session: str | None = Cookie(default=None),
-    # FastAPI resolves get_session_manager first, then passes the manager here
     transport: WS = Depends(get_session_transport) 
 ):
     if not ws_session:
         raise WebSocketException(code=1008, reason="Missing session cookie")
-        
-    # Now you can use 'manager' just like you would anywhere else!
-    session = transport.get_session(ws_session)
+    
+    payload = decode_ws_token(ws_session)
+    if not payload:
+        raise WebSocketException(code=1008, reason="Invalid or expired token")
+
+    session_id = payload.get("sub")
+    session = transport.get_session(session_id)
     
     if not session:
         raise WebSocketException(code=1008, reason="Invalid or expired session")

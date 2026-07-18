@@ -1,8 +1,8 @@
+
 from fastapi import APIRouter, Depends, Request, Response, Form, HTTPException, status
 from fastapi.responses import HTMLResponse
 
 from ...api.dependencies import get_current_user, get_current_superuser
-from ...core.dependencies.paths import RuntimeContext, get_runtime_context
 from ...core.exceptions.http_exceptions import (
     UnauthorizedException,
     DuplicateValueException,
@@ -10,17 +10,23 @@ from ...core.exceptions.http_exceptions import (
     NotFoundException,
     CustomException,
 )
+from fastapi.templating import Jinja2Templates
+
 from typing import Annotated, Optional
 
-router = APIRouter(tags=["content"])
+router = APIRouter(tags=["default"])
 
-@router.get("/page/{view}")
-async def get_current_user_info(
-    view: str
+templates = Jinja2Templates(directory="chatvoice/api/templates")
+
+@router.post("/default_protected_load")
+async def protected_default_load(
+    request: Request,
     current_user: Annotated[dict, Depends(get_current_user)],
-    ctx: RuntimeContext = Depends(get_runtime_context) # Single injection
 ) -> HTMLResponse:
-    """Get current authenticated user info."""
-    return render_markdown_page(view, "public/page.html", request, ctx)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="public/default_protected_load.html",
+    )
 
 
