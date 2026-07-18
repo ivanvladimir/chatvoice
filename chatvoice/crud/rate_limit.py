@@ -10,6 +10,11 @@ from ..schemas.rate_limit import (
 )
 
 CRUDRateLimit = FastCRUD[
-    RateLimit, RateLimitCreateInternal, RateLimitUpdate, RateLimitUpdateInternal, RateLimitDelete, RateLimitRead
+    RateLimit,
+    RateLimitCreateInternal,
+    RateLimitUpdate,
+    RateLimitUpdateInternal,
+    RateLimitDelete,
+    RateLimitRead,
 ]
 crud_rate_limits = CRUDRateLimit(RateLimit)

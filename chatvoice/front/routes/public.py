@@ -5,14 +5,15 @@ from ...utils.markdown import markdown_page, render_markdown_page
 
 router = APIRouter()
 
+
 @router.get("/", response_class=HTMLResponse)
 async def main(
     request: Request,
-    ctx: RuntimeContext = Depends(get_runtime_context) # Single injection
+    ctx: RuntimeContext = Depends(get_runtime_context),  # Single injection
 ) -> HTMLResponse:
     """Principal"""
-    md, notlogged_content=markdown_page("main_notlogged", ctx)
-    _, protected_content=markdown_page("main_protected", ctx)
+    md, notlogged_content = markdown_page("main_notlogged", ctx)
+    _, protected_content = markdown_page("main_protected", ctx)
 
     context = {
         "notlogged_content": notlogged_content,
@@ -29,11 +30,12 @@ async def main(
         context=context,
     )
 
+
 @router.get("/page/{view}", response_class=HTMLResponse)
 async def page(
     view: str,
     request: Request,
-    ctx: RuntimeContext = Depends(get_runtime_context) # Single injection
+    ctx: RuntimeContext = Depends(get_runtime_context),  # Single injection
 ) -> HTMLResponse:
     """Páginas de contenido"""
     return render_markdown_page(view, "public/page.html", request, ctx)

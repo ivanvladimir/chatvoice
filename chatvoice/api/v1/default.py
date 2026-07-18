@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 
@@ -11,6 +10,7 @@ router = APIRouter(tags=["default"])
 
 templates = Jinja2Templates(directory="chatvoice/api/templates")
 
+
 @router.post("/default_protected_load")
 async def protected_default_load(
     request: Request,
@@ -21,5 +21,3 @@ async def protected_default_load(
         request=request,
         name="public/default_protected_load.html",
     )
-
-

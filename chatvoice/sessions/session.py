@@ -3,16 +3,25 @@ from ..store.base import BaseStateStore
 from typing import Callable
 import threading
 
+
 def global_thread_exception_hook(args):
     print(f"Thread {args.thread.name} crashed: {args.exc_value}")
 
+
 threading.excepthook = global_thread_exception_hook
 
+
 class ChatSession:
-    def __init__(self, user_id: int, session_id: str, interpreter: Callable, store: BaseStateStore):
+    def __init__(
+        self,
+        user_id: int,
+        session_id: str,
+        interpreter: Callable,
+        store: BaseStateStore,
+    ):
         self.user_id = user_id
         self.session_id = session_id
-        self.interpreter_name=interpreter.name
+        self.interpreter_name = interpreter.name
         self.store = store
 
         # Two queues act as the communication bridge between
@@ -25,7 +34,10 @@ class ChatSession:
         # daemon=True means the thread dies automatically when the
         # main process exits — no manual cleanup needed on shutdown.
         self._thread = threading.Thread(
-            target=self._run, args=(interpreter,), daemon=True, name=f"session-{user_id}-{session_id}"
+            target=self._run,
+            args=(interpreter,),
+            daemon=True,
+            name=f"session-{user_id}-{session_id}",
         )
 
     def start(self):
@@ -68,7 +80,7 @@ class ChatSession:
         # Build the generator, passing in the two interaction primitives.
         # The script never touches queues or threads directly —
         # it only calls recv() and yields strings.
-        gen = interpreter.run(self._recv_from_user,state)
+        gen = interpreter.run(self._recv_from_user, state)
 
         # Each yield from the script is a bot message.
         # We forward it to the outbox so the WebSocket handler can send it.

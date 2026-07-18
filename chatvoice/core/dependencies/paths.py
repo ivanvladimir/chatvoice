@@ -13,15 +13,17 @@ class PathsConfig(BaseModel):
     content: Path
     static: Path
 
+
 class AppSettings(BaseModel):
     paths: PathsConfig
+
 
 def get_runtime_settings() -> AppSettings:
     """Fetches the env var, parses JSON, and validates it into an AppSettings object."""
     config_str = os.getenv("CHATVOICE_RUNTIME_CONFIG")
     if not config_str:
         raise RuntimeError("CHATVOICE_RUNTIME_CONFIG environment variable is not set.")
-    
+
     try:
         raw_data = json.loads(config_str)
     except json.JSONDecodeError as e:
@@ -37,19 +39,22 @@ def get_runtime_settings() -> AppSettings:
     settings.paths.templates = settings.paths.templates.resolve()
     settings.paths.content = settings.paths.content.resolve()
     settings.paths.static = settings.paths.static.resolve()
-    
+
     return settings
 
 
 class RuntimeContext(BaseModel):
     """The Aggregate Dependency: Groups everything the routes need."""
+
     content_path: Path
     templates_engine: Any  # Jinja2Templates doesn't have a strict type, so we use Any
 
-def get_runtime_context(settings: AppSettings = Depends(get_runtime_settings)) -> RuntimeContext:
+
+def get_runtime_context(
+    settings: AppSettings = Depends(get_runtime_settings),
+) -> RuntimeContext:
     """Initializes the template engine and packages it with the content path."""
     return RuntimeContext(
         content_path=settings.paths.content,
-        templates_engine=Jinja2Templates(directory=str(settings.paths.templates))
+        templates_engine=Jinja2Templates(directory=str(settings.paths.templates)),
     )
-

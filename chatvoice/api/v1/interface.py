@@ -20,5 +20,3 @@ async def chatbot_interface(
         request=request,
         name="user/chatbot_interface.html",
     )
-
-

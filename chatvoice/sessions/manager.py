@@ -25,7 +25,7 @@ class SessionManager:
     def get(self, session_id: str) -> ChatSession | None:
         key = session_id
         with self._lock:
-            session=self._sessions.get(key, None)
+            session = self._sessions.get(key, None)
             if session:
                 return session
 

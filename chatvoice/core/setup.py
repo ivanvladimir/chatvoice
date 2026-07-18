@@ -5,6 +5,7 @@ from typing import Any
 from pathlib import Path
 import anyio
 import fastapi
+
 # import redis.asyncio as redis
 # from arq import create_pool
 # from arq.connections import RedisSettings
@@ -17,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi_tailwind import tailwind
 
 from ..api.dependencies import get_current_superuser
+
 # from ..core.utils.rate_limit import rate_limiter
 from ..middleware.client_cache_middleware import ClientCacheMiddleware
 from ..middleware.logger_middleware import LoggerMiddleware
@@ -35,6 +37,7 @@ from .dependencies.paths import get_runtime_settings
 
 from ..transport.ws import WS
 from ..utils.llm import init_llm_client
+
 
 # -------------- database --------------
 async def create_tables() -> None:
@@ -73,6 +76,7 @@ async def create_tables() -> None:
 #         await rate_limiter.client.aclose()  # type: ignore
 #
 
+
 # -------------- application --------------
 async def set_threadpool_tokens(number_of_tokens: int = 100) -> None:
     limiter = anyio.to_thread.current_default_thread_limiter()
@@ -82,7 +86,7 @@ async def set_threadpool_tokens(number_of_tokens: int = 100) -> None:
 def lifespan_factory(
     settings: (
         DatabaseSettings
-    # | RedisCacheSettings
+        # | RedisCacheSettings
         | AppSettings
         # | ClientSideCacheSettings
         | CORSSettings
@@ -105,9 +109,9 @@ def lifespan_factory(
 
         try:
             llm_client = init_llm_client(settings)
-            app.state.llm_client=llm_client
-            ws=WS()
-            app.state.transport=ws
+            app.state.llm_client = llm_client
+            ws = WS()
+            app.state.transport = ws
 
             # if isinstance(settings, RedisCacheSettings):
             #     await create_redis_cache_pool()
@@ -121,11 +125,11 @@ def lifespan_factory(
             if create_tables_on_start:
                 await create_tables()
 
-            runtime_settings=get_runtime_settings() 
+            runtime_settings = get_runtime_settings()
             tailwind.compile(
-                    runtime_settings.paths.static / "output.css",
-                    tailwind_stylesheet_path=Path("chatvoice/resources/input.css")
-                )
+                runtime_settings.paths.static / "output.css",
+                tailwind_stylesheet_path=Path("chatvoice/resources/input.css"),
+            )
 
             initialization_complete.set()
 
@@ -222,9 +226,11 @@ def create_application(
 
     # Use custom lifespan if provided, otherwise use default factory
     if lifespan is None:
-        lifespan = lifespan_factory(settings, create_tables_on_start=create_tables_on_start)
+        lifespan = lifespan_factory(
+            settings, create_tables_on_start=create_tables_on_start
+        )
 
-    runtime_settings=get_runtime_settings() 
+    runtime_settings = get_runtime_settings()
 
     static_files = StaticFiles(directory=runtime_settings.paths.static)
     application = FastAPI(lifespan=lifespan, **kwargs)
@@ -233,7 +239,9 @@ def create_application(
     application.mount("/static", static_files, name="static")
 
     if isinstance(settings, ClientSideCacheSettings):
-        application.add_middleware(ClientCacheMiddleware, max_age=settings.CLIENT_CACHE_MAX_AGE)
+        application.add_middleware(
+            ClientCacheMiddleware, max_age=settings.CLIENT_CACHE_MAX_AGE
+        )
 
     if isinstance(settings, CORSSettings):
         application.add_middleware(
@@ -262,7 +270,11 @@ def create_application(
 
             @docs_router.get("/openapi.json", include_in_schema=False)
             async def openapi() -> dict[str, Any]:
-                out: dict = get_openapi(title=application.title, version=application.version, routes=application.routes)
+                out: dict = get_openapi(
+                    title=application.title,
+                    version=application.version,
+                    routes=application.routes,
+                )
                 return out
 
             application.include_router(docs_router)

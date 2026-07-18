@@ -29,10 +29,10 @@ def setup_logging(
         ]
 
     root_logger = logging.getLogger()
-    root_logger.setLevel(level)                          # ← set on root logger
+    root_logger.setLevel(level)  # ← set on root logger
 
     stdout_handler = logging.StreamHandler()
-    stdout_handler.setLevel(level)                       # ← set on each handler
+    stdout_handler.setLevel(level)  # ← set on each handler
     root_logger.addHandler(stdout_handler)
 
     if log_file:
@@ -43,7 +43,7 @@ def setup_logging(
             backupCount=5,
             encoding="utf-8",
         )
-        file_handler.setLevel(level)                     # ← and on the file handler
+        file_handler.setLevel(level)  # ← and on the file handler
         root_logger.addHandler(file_handler)
 
     structlog.configure(
@@ -53,6 +53,7 @@ def setup_logging(
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
+
 
 def get_logger(name: str):
     return structlog.get_logger(name)

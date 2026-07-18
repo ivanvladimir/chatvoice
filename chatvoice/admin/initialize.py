@@ -21,7 +21,9 @@ def create_admin_interface() -> Optional[CRUDAdmin]:
             "host": settings.CRUD_ADMIN_REDIS_HOST,
             "port": settings.CRUD_ADMIN_REDIS_PORT,
             "db": settings.CRUD_ADMIN_REDIS_DB,
-            "password": settings.CRUD_ADMIN_REDIS_PASSWORD if settings.CRUD_ADMIN_REDIS_PASSWORD != "None" else None,
+            "password": settings.CRUD_ADMIN_REDIS_PASSWORD
+            if settings.CRUD_ADMIN_REDIS_PASSWORD != "None"
+            else None,
             "ssl": settings.CRUD_ADMIN_REDIS_SSL,
         }
 
@@ -31,7 +33,9 @@ def create_admin_interface() -> Optional[CRUDAdmin]:
         mount_path=settings.CRUD_ADMIN_MOUNT_PATH,
         session_backend=session_backend,
         redis_config=redis_config,
-        allowed_ips=settings.CRUD_ADMIN_ALLOWED_IPS_LIST if settings.CRUD_ADMIN_ALLOWED_IPS_LIST else None,
+        allowed_ips=settings.CRUD_ADMIN_ALLOWED_IPS_LIST
+        if settings.CRUD_ADMIN_ALLOWED_IPS_LIST
+        else None,
         allowed_networks=settings.CRUD_ADMIN_ALLOWED_NETWORKS_LIST
         if settings.CRUD_ADMIN_ALLOWED_NETWORKS_LIST
         else None,
@@ -41,7 +45,7 @@ def create_admin_interface() -> Optional[CRUDAdmin]:
         enforce_https=settings.ENVIRONMENT == EnvironmentOption.PRODUCTION,
         track_events=settings.CRUD_ADMIN_TRACK_EVENTS,
         track_sessions_in_db=settings.CRUD_ADMIN_TRACK_SESSIONS,
-        initial_admin=None
+        initial_admin=None,
     )
 
     register_admin_views(admin)

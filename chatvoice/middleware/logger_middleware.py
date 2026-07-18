@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
 
+
 class LoggerMiddleware(BaseHTTPMiddleware):
     """Middleware to add request ID to the context variables.
 
@@ -17,7 +18,9 @@ class LoggerMiddleware(BaseHTTPMiddleware):
     def __init__(self, app: FastAPI) -> None:
         super().__init__(app)
 
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
         """
         Add request ID to the context variables.
         """

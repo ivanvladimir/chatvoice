@@ -1,5 +1,7 @@
 class CacheIdentificationInferenceError(Exception):
-    def __init__(self, message: str = "Could not infer id for resource being cached.") -> None:
+    def __init__(
+        self, message: str = "Could not infer id for resource being cached."
+    ) -> None:
         self.message = message
         super().__init__(self.message)
 

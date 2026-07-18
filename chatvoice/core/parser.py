@@ -23,9 +23,11 @@ from typing import Optional, Literal, List
 # Data model
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class Clause:
     """A single boolean clause: [not] left [op right]."""
+
     left: str
     negate: bool = False
     op: Optional[str] = None
@@ -42,6 +44,7 @@ class Clause:
 @dataclass(frozen=True)
 class Condition:
     """One or more clauses joined by OR."""
+
     clauses: tuple[Clause, ...]
 
     def __str__(self) -> str:
@@ -59,6 +62,7 @@ class Command:
     ``condition_type`` tells you *which* keyword introduced the guard:
     ``"if"``, ``"while"`` or ``None`` (unguarded command).
     """
+
     name: str
     _command: str
     args: tuple[str, ...] = field(default_factory=tuple)
@@ -69,6 +73,7 @@ class Command:
 @dataclass(frozen=True)
 class Chain:
     """A sequence of commands on one line, separated by '|'."""
+
     commands: List[Command, ...]
 
     def __str__(self) -> str:
@@ -126,6 +131,7 @@ def _split_pipe(line: str) -> list[str]:
 # Condition / clause parsers
 # ---------------------------------------------------------------------------
 
+
 def _parse_clause(text: str) -> Clause:
     """Parse a single clause such as ``not status == "good"``."""
     text = text.strip()
@@ -137,7 +143,7 @@ def _parse_clause(text: str) -> Clause:
     if match:
         op = match.group()
         left = text[: match.start()].strip()
-        right = text[match.end():].strip()
+        right = text[match.end() :].strip()
         return Clause(left=left, negate=negate, op=op, right=right)
 
     return Clause(left=text.strip(), negate=negate)
@@ -153,6 +159,7 @@ def _parse_condition(text: str) -> Condition:
 # ---------------------------------------------------------------------------
 # Command parser
 # ---------------------------------------------------------------------------
+
 
 def _parse_command(text: str) -> Command:
     """Parse one command segment (no ``|`` characters)."""
@@ -188,6 +195,7 @@ def _parse_command(text: str) -> Command:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def parse_line(line: str) -> Line:
     """Parse one source line into a :class:`Chain` of commands."""

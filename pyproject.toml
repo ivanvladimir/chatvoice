@@ -37,3 +37,14 @@ dev = [
     "pytest>=9.0.2",
     "ruff>=0.15.8",
 ]
+
+[tool.ruff]
+line-length = 88    # same default as black
+
+[tool.ruff.format]
+quote-style = "double"          # black default
+indent-style = "space"          # black default
+skip-magic-trailing-comma = false
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]        # pycodestyle, pyflakes, isort

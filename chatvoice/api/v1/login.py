@@ -16,7 +16,8 @@ from ...core.exceptions.http_exceptions import (
     NotFoundException,
     CustomException,
 )
-#from ...core.utils import queue
+
+# from ...core.utils import queue
 from ...core.schemas import Token
 from ...schemas.user import UserCreate, UserRead, UserCreateInternal
 from ...crud.users import crud_users
@@ -32,21 +33,24 @@ from ...core.security import (
 )
 from ...core.types import UserRole
 
-router = APIRouter(prefix="/auth",tags=["auth"])
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 # =============================================================================
 # Pydantic Models
 # =============================================================================
 
+
 class LoginRequest(BaseModel):
     """JSON login request body for HTMX/Alpine.js frontend."""
+
     username: str = Field(..., min_length=1, description="Username or email")
     password: str = Field(..., min_length=1, description="User password")
 
 
 class LoginResponse(BaseModel):
     """Login response with access token and user info."""
+
     access_token: str
     token_type: str = "bearer"
     username: str
@@ -55,6 +59,7 @@ class LoginResponse(BaseModel):
 
 class UserResponse(BaseModel):
     """Current user info response."""
+
     id: int
     username: str
     name: str
@@ -65,6 +70,7 @@ class UserResponse(BaseModel):
 
 class RegisterRequest(BaseModel):
     """JSON registration request body."""
+
     name: str = Field(..., min_length=1, max_length=100)
     username: str = Field(..., min_length=3, max_length=50, pattern=r"^[a-zA-Z0-9_]+$")
     email: EmailStr
@@ -72,7 +78,7 @@ class RegisterRequest(BaseModel):
     password: str = Field(..., min_length=8, max_length=100)
     institution: Optional[str] = Field(None, max_length=200)
     description: Optional[str] = Field(None, max_length=500)
- 
+
     @validator("password")
     def validate_password(cls, v):
         if len(v) < 8:
@@ -82,6 +88,7 @@ class RegisterRequest(BaseModel):
 
 class ResetPasswordRequest(BaseModel):
     """Reset password request body."""
+
     token: str
     new_password: str = Field(..., min_length=8)
     confirm_password: str = Field(..., min_length=8)
@@ -95,6 +102,7 @@ class ResetPasswordRequest(BaseModel):
 
 class MessageResponse(BaseModel):
     """Generic message response."""
+
     status: str = "success"
     message: str
 
@@ -102,6 +110,7 @@ class MessageResponse(BaseModel):
 # =============================================================================
 # Helper Functions
 # =============================================================================
+
 
 def clear_refresh_cookie(response: Response) -> None:
     """Clear the refresh token cookie."""
@@ -127,9 +136,11 @@ def set_refresh_cookie(response: Response, token: str) -> None:
         path="/",
     )
 
+
 # =============================================================================
 # Auth Endpoints (for HTMX/Alpine.js frontend)
 # =============================================================================
+
 
 @router.post("/login/json", response_model=LoginResponse)
 async def login_json(
@@ -141,7 +152,9 @@ async def login_json(
     Login endpoint for JSON requests (HTMX/Alpine.js).
     Returns access token and user info, sets refresh token as cookie.
     """
-    user = await authenticate_user(username_or_email=data.username, password=data.password, db=db)
+    user = await authenticate_user(
+        username_or_email=data.username, password=data.password, db=db
+    )
     if not user:
         raise UnauthorizedException("Usuario, email o contraseña incorrectos.")
 
@@ -166,7 +179,9 @@ async def login_form(
     """
     Login endpoint for OAuth2 form data (Swagger UI, traditional forms).
     """
-    user = await authenticate_user(username_or_email=form_data.username, password=form_data.password, db=db)
+    user = await authenticate_user(
+        username_or_email=form_data.username, password=form_data.password, db=db
+    )
     if not user:
         raise UnauthorizedException("Usuario, email o contraseña incorrectos.")
 
@@ -208,7 +223,9 @@ async def refresh_access_token(
         clear_refresh_cookie(response)
         raise UnauthorizedException("Invalid refresh token.")
 
-    new_access_token = await create_access_token(data={"sub": user_data.username_or_email})
+    new_access_token = await create_access_token(
+        data={"sub": user_data.username_or_email}
+    )
     return Token(access_token=new_access_token, token_type="bearer")
 
 
@@ -222,6 +239,7 @@ async def logout(response: Response) -> MessageResponse:
 # =============================================================================
 # Registration Endpoints
 # =============================================================================
+
 
 @router.post("/register/json", status_code=status.HTTP_201_CREATED)
 async def register_user_json(
@@ -293,7 +311,9 @@ async def _register_user(
         )
     except ValidationError as e:
         errors = "; ".join(err["msg"] for err in e.errors())
-        raise CustomException(status_code=422, detail=f"Error en los valores proporcionados: {errors}")
+        raise CustomException(
+            status_code=422, detail=f"Error en los valores proporcionados: {errors}"
+        )
 
     # Check for duplicates
     if await crud_users.exists(db=db, email=user.email):
@@ -304,7 +324,9 @@ async def _register_user(
 
     # Create user
     user_internal_dict = user.model_dump()
-    user_internal_dict["hashed_password"] = get_password_hash(password=user_internal_dict.pop("password"))
+    user_internal_dict["hashed_password"] = get_password_hash(
+        password=user_internal_dict.pop("password")
+    )
     user_internal = UserCreateInternal(**user_internal_dict)
 
     created_user = await crud_users.create(
@@ -319,29 +341,33 @@ async def _register_user(
 
     # Send verification email
     verification_token = create_verification_token(
-        email=user.email, 
-        token_type=TokenType.EMAIL_VERIFICATION, # Use Enum
-        expires_delta=timedelta(minutes=settings.VERIFICATION_TOKEN_EXPIRE_MINUTES), # Required now
+        email=user.email,
+        token_type=TokenType.EMAIL_VERIFICATION,  # Use Enum
+        expires_delta=timedelta(
+            minutes=settings.VERIFICATION_TOKEN_EXPIRE_MINUTES
+        ),  # Required now
     )
-    
-    verification_url = str(request.url_for("email_verification")) + f"?token={verification_token}"
-    verification_url 
-    #job = await queue.pool.enqueue_job(
+
+    verification_url = (
+        str(request.url_for("email_verification")) + f"?token={verification_token}"
+    )
+    verification_url
+    # job = await queue.pool.enqueue_job(
     #    "send_email_task",
     #    "Verificación de cuenta - AATI",
     #    [user.email],
     #    f"""
     #    <p>Su correo <strong>{user.email}</strong> ha sido registrado exitosamente en AATI.</p>
-    #    
+    #
     #    <p>Para verificar su cuenta, haga clic en el siguiente enlace:</p>
     #    <p><a href="{verification_url}" style="padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">Verificar mi cuenta</a></p>
-    #    
+    #
     #    <p style="margin-top: 20px; color: #666;">Si usted no se registró en AATI, por favor ignore este correo.</p>
     #    """,
-    #)
+    # )
 
-    #if not job:
-        # User was created but email failed - log this, don't fail the request
+    # if not job:
+    # User was created but email failed - log this, don't fail the request
     #    pass  # Consider adding logging here
 
     return JSONResponse(
@@ -363,6 +389,7 @@ async def _register_user(
 # =============================================================================
 # Email Verification Endpoints
 # =============================================================================
+
 
 @router.post("/verify_email")
 async def verify_email(
@@ -389,7 +416,9 @@ async def verify_email(
         raise NotFoundException("Usuario no encontrado.")
 
     if user_read.is_verified:
-        raise CustomException(status_code=422, detail="Esta cuenta ya ha sido verificada.")
+        raise CustomException(
+            status_code=422, detail="Esta cuenta ya ha sido verificada."
+        )
 
     updated_user = await crud_users.update(
         db=db,
@@ -400,7 +429,10 @@ async def verify_email(
     )
 
     if not updated_user:
-        raise CustomException(status_code=500, detail="Error al verificar el correo. Contacte al administrador.")
+        raise CustomException(
+            status_code=500,
+            detail="Error al verificar el correo. Contacte al administrador.",
+        )
 
     return JSONResponse(
         content={
@@ -414,6 +446,7 @@ async def verify_email(
 # =============================================================================
 # Password Reset Endpoints
 # =============================================================================
+
 
 @router.post("/request_reset_password/json")
 async def request_reset_password_json(
@@ -453,33 +486,39 @@ async def _request_reset_password(
 
     if not user:
         # Don't reveal if email exists or not (security best practice)
-        return MessageResponse(message="Si el email está registrado, recibirá un correo para restablecer la contraseña.")
+        return MessageResponse(
+            message="Si el email está registrado, recibirá un correo para restablecer la contraseña."
+        )
 
     reset_token = create_verification_token(
-        email=user.email, 
-        token_type=TokenType.PASSWORD_RESET, # Use Enum
-        expires_delta=timedelta(minutes=settings.VERIFICATION_TOKEN_EXPIRE_MINUTES), # Required now
+        email=user.email,
+        token_type=TokenType.PASSWORD_RESET,  # Use Enum
+        expires_delta=timedelta(
+            minutes=settings.VERIFICATION_TOKEN_EXPIRE_MINUTES
+        ),  # Required now
     )
     reset_url = str(request.url_for("reset_password")) + f"?token={reset_token}"
     reset_url
-    #job = await queue.pool.enqueue_job(
+    # job = await queue.pool.enqueue_job(
     #    "send_email_task",
     #    "Solicitud de cambio de contraseña - AATI",
     #    [user.email],
     #    f"""
     #    <p>Se ha solicitado cambiar la contraseña para la cuenta asociada a <strong>{user.email}</strong> en AATI.</p>
-    #    
+    #
     #    <p>Si reconoce esta solicitud, haga clic en el siguiente enlace:</p>
     #    <p><a href="{reset_url}" style="padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px;">Cambiar contraseña</a></p>
-    #    
+    #
     #    <p style="margin-top: 20px; color: #666;">Si usted no hizo esta solicitud, por favor ignore este correo.</p>
     #    """,
-    #)
+    # )
 
-    #if not job:
+    # if not job:
     #    raise CustomException(status_code=500, detail="Error al enviar el correo. Contacte al administrador.")
 
-    return MessageResponse(message="Si el email está registrado, recibirá un correo para restablecer la contraseña.")
+    return MessageResponse(
+        message="Si el email está registrado, recibirá un correo para restablecer la contraseña."
+    )
 
 
 @router.post("/reset_password")
@@ -502,7 +541,10 @@ async def reset_password(
         raise NotFoundException("Usuario no encontrado.")
 
     if not user_read.is_verified:
-        raise CustomException(status_code=422, detail="El usuario no ha sido verificado. Verifique su email primero.")
+        raise CustomException(
+            status_code=422,
+            detail="El usuario no ha sido verificado. Verifique su email primero.",
+        )
 
     updated_user = await crud_users.update(
         db=db,
@@ -513,7 +555,10 @@ async def reset_password(
     )
 
     if not updated_user:
-        raise CustomException(status_code=500, detail="Error al actualizar la contraseña. Contacte al administrador.")
+        raise CustomException(
+            status_code=500,
+            detail="Error al actualizar la contraseña. Contacte al administrador.",
+        )
 
     return JSONResponse(
         content={

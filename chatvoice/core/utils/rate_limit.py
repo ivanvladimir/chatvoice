@@ -35,7 +35,9 @@ class RateLimiter:
             raise Exception("Redis client is not initialized.")
         return instance.client
 
-    async def is_rate_limited(self, db: AsyncSession, user_id: int, path: str, limit: int, period: int) -> bool:
+    async def is_rate_limited(
+        self, db: AsyncSession, user_id: int, path: str, limit: int, period: int
+    ) -> bool:
         client = self.get_client()
         current_timestamp = int(datetime.now(UTC).timestamp())
         window_start = current_timestamp - (current_timestamp % period)
@@ -52,7 +54,9 @@ class RateLimiter:
                 return True
 
         except Exception as e:
-            logger.exception(f"Error checking rate limit for user {user_id} on path {path}: {e}")
+            logger.exception(
+                f"Error checking rate limit for user {user_id} on path {path}: {e}"
+            )
             raise e
 
         return False

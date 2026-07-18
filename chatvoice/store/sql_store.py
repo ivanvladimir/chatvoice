@@ -4,6 +4,7 @@ from typing import Any
 from ..models import KB
 from ..core.db.database_sync import get_db_ctx
 
+
 class SqlAlchemyMemoryStore:
     def remember(self, user_id: int, project_path: str, variable: str, value: Any):
         with get_db_ctx() as db:
@@ -15,7 +16,7 @@ class SqlAlchemyMemoryStore:
                 )
             )
             kb = result.scalar_one_or_none()
-            
+
             if not kb:
                 stmt = insert(KB).values(
                     user_id=user_id,

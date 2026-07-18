@@ -1,14 +1,16 @@
 from abc import ABC, abstractmethod
 
-class BaseStateStore(ABC):
 
+class BaseStateStore(ABC):
     @abstractmethod
     def get(self, user_id: str, conversation_name: str, session_id: str) -> dict:
         """Load state for a specific session. Returns {} if not found."""
         ...
 
     @abstractmethod
-    def set(self, user_id: str, state: dict, conversation_name: str, session_id: str) -> None:
+    def set(
+        self, user_id: str, state: dict, conversation_name: str, session_id: str
+    ) -> None:
         """Persist state for a specific session."""
         ...
 

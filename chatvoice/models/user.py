@@ -21,57 +21,52 @@ class User(Base):
     profile_image_url: Mapped[str | None] = mapped_column(String, nullable=True)
     institution: Mapped[str | None] = mapped_column(String, nullable=True)
     description: Mapped[str | None] = mapped_column(String, nullable=True)
-    uuid: Mapped[uuid7] = mapped_column(UUID(as_uuid=True), default_factory=uuid7, unique=True)
+    uuid: Mapped[uuid7] = mapped_column(
+        UUID(as_uuid=True), default_factory=uuid7, unique=True
+    )
 
     role: Mapped[UserRole] = mapped_column(
-        Enum(UserRole, native_enum=False),
-        default=UserRole.user,
-        index=True
+        Enum(UserRole, native_enum=False), default=UserRole.user, index=True
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), 
-        server_default=func.now(), 
-        init=False
+        DateTime(timezone=True), server_default=func.now(), init=False
     )
     updated_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), 
-        server_default=func.now(), 
+        DateTime(timezone=True),
+        server_default=func.now(),
         onupdate=func.now(),
-        init=False
+        init=False,
     )
     deleted_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), 
-        nullable=True, 
-        init=False
+        DateTime(timezone=True), nullable=True, init=False
     )
     is_deleted: Mapped[bool] = mapped_column(default=False, index=True)
-    is_verified: Mapped[bool] = mapped_column(default=False, index=True) # Added index, often used for filtering
+    is_verified: Mapped[bool] = mapped_column(
+        default=False, index=True
+    )  # Added index, often used for filtering
 
-    tier_id: Mapped[int | None] = mapped_column(ForeignKey("tier.id"), index=True, default=None, init=False)
+    tier_id: Mapped[int | None] = mapped_column(
+        ForeignKey("tier.id"), index=True, default=None, init=False
+    )
 
     kbs: Mapped[list["KB"]] = relationship(
-        "KB", 
-        back_populates="user", 
-        cascade="all, delete-orphan", 
+        "KB",
+        back_populates="user",
+        cascade="all, delete-orphan",
         lazy="selectin",
-        default_factory=list
+        default_factory=list,
     )
     owned_projects: Mapped[list["Project"]] = relationship(
-        "Project", 
-        back_populates="owner", 
+        "Project",
+        back_populates="owner",
         lazy="selectin",
-        default_factory=list
+        default_factory=list,
         # Note: Consider if you want cascade="all, delete-orphan" here too
     )
     project_memberships: Mapped[list["ProjectMember"]] = relationship(
-        "ProjectMember", 
-        back_populates="user", 
-        lazy="selectin",
-        default_factory=list
+        "ProjectMember", back_populates="user", lazy="selectin", default_factory=list
     )
 
     def __repr__(self) -> str:
-        return (
-            f"<User id={self.id!r} username={self.username!r} email={self.email!r}>"
-        )
+        return f"<User id={self.id!r} username={self.username!r} email={self.email!r}>"

@@ -36,11 +36,17 @@ async def health():
 async def ready(db: Annotated[AsyncSession, Depends(async_get_db)]):
     database_status = await check_database_health(db=db)
     LOGGER.debug(f"Database health check status: {database_status}")
-    redis_status = True #await check_redis_health(redis=redis)
-    #LOGGER.debug(f"Redis health check status: {redis_status}")
+    redis_status = True  # await check_redis_health(redis=redis)
+    # LOGGER.debug(f"Redis health check status: {redis_status}")
 
-    overall_status = STATUS_HEALTHY if database_status and redis_status else STATUS_UNHEALTHY
-    http_status = status.HTTP_200_OK if overall_status == STATUS_HEALTHY else status.HTTP_503_SERVICE_UNAVAILABLE
+    overall_status = (
+        STATUS_HEALTHY if database_status and redis_status else STATUS_UNHEALTHY
+    )
+    http_status = (
+        status.HTTP_200_OK
+        if overall_status == STATUS_HEALTHY
+        else status.HTTP_503_SERVICE_UNAVAILABLE
+    )
 
     response = {
         "status": overall_status,
@@ -48,7 +54,7 @@ async def ready(db: Annotated[AsyncSession, Depends(async_get_db)]):
         "version": settings.APP_VERSION,
         "app": STATUS_HEALTHY,
         "database": STATUS_HEALTHY if database_status else STATUS_UNHEALTHY,
-        #"redis": STATUS_HEALTHY if redis_status else STATUS_UNHEALTHY,
+        # "redis": STATUS_HEALTHY if redis_status else STATUS_UNHEALTHY,
         "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
     }
 

@@ -31,12 +31,14 @@ CHATVOICE_ROOT_KEYS = ["chatvoice"]
 
 LogLevel = Literal["critical", "error", "warning", "info", "debug", "trace"]
 
+
 def with_logging(func):
     """Decorator to setup logging before command execution.
-    
+
     Extracts logging-related keyword arguments, configures logging,
     and calls the wrapped function without those parameters.
     """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         setup_logging(
@@ -45,8 +47,8 @@ def with_logging(func):
             log_level=kwargs.pop("logging_level", CHATVOICE_LOG_LEVEL),
         )
         return func(*args, **kwargs)
-    return wrapper
 
+    return wrapper
 
 
 cli = cyclopts.App(
@@ -58,7 +60,9 @@ cli = cyclopts.App(
 @cli.command
 @with_logging
 def console(
-    project_pathname: Annotated[Path, cyclopts.Parameter(validator=cyclopts.validators.Path(exists=True))],
+    project_pathname: Annotated[
+        Path, cyclopts.Parameter(validator=cyclopts.validators.Path(exists=True))
+    ],
     *,
     name: str = CHATVOICE_NAME,
     logging_json: bool = False,
@@ -66,7 +70,7 @@ def console(
     logging_file: str = CHATVOICE_LOG_FILE,
 ) -> None:
     """Run the chat from the console.
-    
+
     Parameters
     ----------
     project_pathname : Path
@@ -81,13 +85,17 @@ def console(
 
     print("Initializing LLM client.")
     llm_client = init_llm_client(settings)
-    print(f"Running [yellow]{project_pathname}[/] conversation from the console as [green]{name}[/].")
+    print(
+        f"Running [yellow]{project_pathname}[/] conversation from the console as [green]{name}[/]."
+    )
 
     console = Console()
     user = console.authenticate_user()
-    
+
     if not user:
-        print("[red]Authentication failed. Please check your credentials and try again.[/]")
+        print(
+            "[red]Authentication failed. Please check your credentials and try again.[/]"
+        )
         return
 
     interpreter = Interpreter(
@@ -116,26 +124,30 @@ def server(
     """Run the server chat."""
     log = get_logger(__name__)
 
-    os.environ["CHATVOICE_RUNTIME_CONFIG"] = json.dumps({
-        "paths":{
-            "content": str(content_path),
-            "templates": str(templates_path),
-            "static": str(static_path)
+    os.environ["CHATVOICE_RUNTIME_CONFIG"] = json.dumps(
+        {
+            "paths": {
+                "content": str(content_path),
+                "templates": str(templates_path),
+                "static": str(static_path),
+            }
         }
-    })
+    )
 
     import uvicorn
-    
+
     log.info("Starting server chat")
     print("Running the [yellow]server chat[/].")
-    uvicorn.run("chatvoice.asgi:create_app",
-                host=host,
-                port=port,
-                reload=reload,
-                workers=workers,
-                reload_dirs=["chatvoice/"],
-#                log_level=logging_level,
-                factory=True)
+    uvicorn.run(
+        "chatvoice.asgi:create_app",
+        host=host,
+        port=port,
+        reload=reload,
+        workers=workers,
+        reload_dirs=["chatvoice/"],
+        #                log_level=logging_level,
+        factory=True,
+    )
     log.info("Ending server chat")
 
 
@@ -151,7 +163,7 @@ def create_user(
     from .utils.user import create_user
 
     print("About to create [yellow]admin user[/].")
-    username,role = create_user()
+    username, role = create_user()
     if role:
         log.info(f"User '{username}' created successfully with role '{role}'.")
         print(f"[green]User '{username}' created successfully with role '{role}'.[/]")
@@ -180,6 +192,7 @@ def create_admin(
         log.info(f"Admin '{username}' was not created.")
         print(f"[red]Admin '{username}' was not created.[/]")
 
+
 @cli.command
 @with_logging
 def audit_admin_users(
@@ -206,15 +219,18 @@ def create_tier(
     print("About to create a [yellow]tier[/].")
     create_tier()
 
+
 @cli.meta.default
 def meta(
     *tokens: Annotated[str, cyclopts.Parameter(show=False, allow_leading_hyphen=True)],
     config: Path = CHATVOICE_CONFIG_PATH,
     root_keys: Annotated[
         list[str] | None,
-        cyclopts.Parameter(converter=lambda type_, tokens: [
-            k for t in tokens for k in t.value.split(".")
-        ])
+        cyclopts.Parameter(
+            converter=lambda type_, tokens: [
+                k for t in tokens for k in t.value.split(".")
+            ]
+        ),
     ] = None,
 ) -> None:
     """Load configuration and run the app."""
@@ -241,6 +257,7 @@ def meta(
         *toml_sources,
     ]
     cli(tokens)
+
 
 if __name__ == "__main__":
     cli.meta()

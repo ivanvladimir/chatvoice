@@ -9,7 +9,7 @@ from ..core.dependencies.paths import RuntimeContext
 
 
 def markdown_page(
-    view_name: str, 
+    view_name: str,
     ctx: RuntimeContext,  # We now pass the single aggregate object
 ) -> HTMLResponse:
     safe_filename = f"{Path(view_name).stem}.md"
@@ -17,7 +17,6 @@ def markdown_page(
 
     if not str(file_path).startswith(str(ctx.content_path)):
         raise HTTPException(status_code=400, detail="Invalid page name")
-
 
     if not file_path.is_file():
         raise HTTPException(status_code=404, detail="Page not found")
@@ -33,11 +32,11 @@ def markdown_page(
 
 
 def render_markdown_page(
-    view_name: str, 
+    view_name: str,
     template_file: Path,
-    request: Request, 
+    request: Request,
     ctx: RuntimeContext,  # We now pass the single aggregate object
-    is_main: bool = False
+    is_main: bool = False,
 ) -> HTMLResponse:
     start_time = time.time()
 

@@ -9,6 +9,7 @@ current_file_dir = os.path.dirname(os.path.realpath(__file__))
 env_path = os.path.join(current_file_dir, "..", "..", ".env")
 config = Config(env_path)
 
+
 class AppSettings:
     APP_NAME: str = "Chatvoice"
     APP_DESCRIPTION: str | None = None
@@ -17,6 +18,7 @@ class AppSettings:
     CONTACT_NAME: str | None = None
     CONTACT_EMAIL: str | None = None
 
+
 class CryptSettings:
     SECRET_KEY: SecretStr = SecretStr("secret-key")
     ALGORITHM: str = "HS256"
@@ -24,21 +26,26 @@ class CryptSettings:
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     WS_SESSION_EXPIRE_MINUTES: int = 15
 
-class DatabaseOption(str,Enum):
+
+class DatabaseOption(str, Enum):
     SQLITE: str = "sqlite"
     MYSQL: str = "mysql"
     POSTGRES: str = "postgres"
 
+
 class DatabaseOptionSettings:
     DATABASE: DatabaseOption = "sqlite"
 
+
 class DatabaseSettings:
     pass
+
 
 class SQLiteSettings(DatabaseSettings):
     SQLITE_URI: str = "./sql_app.db"
     SQLITE_SYNC_PREFIX: str = "sqlite:///"
     SQLITE_ASYNC_PREFIX: str = "sqlite+aiosqlite:///"
+
 
 class MySQLSettings(DatabaseSettings):
     MYSQL_USER: str = "username"
@@ -75,6 +82,7 @@ class PostgresSettings(DatabaseSettings):
         location = f"{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         return f"{credentials}@{location}"
 
+
 class CRUDAdminSettings:
     CRUD_ADMIN_ENABLED: bool = True
     CRUD_ADMIN_MOUNT_PATH: str = "/admin"
@@ -95,30 +103,37 @@ class CRUDAdminSettings:
     CRUD_ADMIN_REDIS_PASSWORD: str | None = "None"
     CRUD_ADMIN_REDIS_SSL: bool = False
 
+
 class EnvironmentOption(str, Enum):
     LOCAL = "local"
     STAGING = "staging"
     PRODUCTION = "production"
 
+
 class EnvironmentSettings(BaseSettings):
     ENVIRONMENT: EnvironmentOption = EnvironmentOption.LOCAL
+
 
 class CORSSettings(BaseSettings):
     CORS_ORIGINS: list[str] = ["*"]
     CORS_METHODS: list[str] = ["*"]
     CORS_HEADERS: list[str] = ["*"]
 
+
 class DefaultRateLimitSettings(BaseSettings):
     DEFAULT_RATE_LIMIT_LIMIT: int = 10
     DEFAULT_RATE_LIMIT_PERIOD: int = 3600
 
+
 class ClientSideCacheSettings(BaseSettings):
     CLIENT_CACHE_MAX_AGE: int = 60
+
 
 class EnvironmentOption(str, Enum):
     LOCAL = "local"
     STAGING = "staging"
     PRODUCTION = "production"
+
 
 class LLMProvider(str, Enum):
     OPENAI = "openai"
@@ -126,6 +141,7 @@ class LLMProvider(str, Enum):
     GOOGLE = "google"
     AZURE_OPENAI = "azure_openai"
     NONE = "none"
+
 
 class LLMSettings:  # <-- plain class, no BaseSettings here
     LLM_PROVIDER: LLMProvider = LLMProvider.NONE
@@ -163,29 +179,34 @@ class LLMSettings:  # <-- plain class, no BaseSettings here
         assert key is not None
         return key.get_secret_value()
 
+
 class Settings(
-            AppSettings,
-            CryptSettings,
-            DatabaseOptionSettings,
-            SQLiteSettings,
-            MySQLSettings,
-            PostgresSettings,
-            CRUDAdminSettings,
-            EnvironmentSettings,
-            CORSSettings,
-            DefaultRateLimitSettings,
-            ClientSideCacheSettings,
-            BaseSettings,
-            LLMSettings,
-        ):
+    AppSettings,
+    CryptSettings,
+    DatabaseOptionSettings,
+    SQLiteSettings,
+    MySQLSettings,
+    PostgresSettings,
+    CRUDAdminSettings,
+    EnvironmentSettings,
+    CORSSettings,
+    DefaultRateLimitSettings,
+    ClientSideCacheSettings,
+    BaseSettings,
+    LLMSettings,
+):
     model_config = SettingsConfigDict(
-        env_file=os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", ".env"),
+        env_file=os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "..", "..", ".env"
+        ),
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore",
     )
 
+
 settings = Settings()
+
 
 def get_settings() -> Settings:
     return settings

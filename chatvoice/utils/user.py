@@ -11,6 +11,7 @@ from ..core.db.database_sync import get_db_ctx, init_db
 
 import asyncio
 
+
 async def _audit_admin_users_async():
     from crudadmin.admin_user.schemas import AdminUserRead
     from ..admin.initialize import create_admin_interface
@@ -19,17 +20,18 @@ async def _audit_admin_users_async():
 
     async for admin_session in admin.db_config.get_admin_db():
         result = await admin.db_config.crud_users.get_multi(admin_session)
-        
+
         # Access the actual list of users
-        users = result['data']
+        users = result["data"]
 
         print("Admin Users Audit:")
         print("-" * 50)
         for user in users:
-            user=AdminUserRead(**user)
+            user = AdminUserRead(**user)
             print(f"Username: {user.username}")
             print(f"Superuser: {user.is_superuser}")
             print("-" * 30)
+
 
 def audit_admin_users():
     return asyncio.run(_audit_admin_users_async())
@@ -40,7 +42,7 @@ def create_admin_user():
     username = Prompt.ask("Enter your username", default="admin")
     passwd = Prompt.ask("Enter your password", password=True)
     passwd_ = Prompt.ask("Confirm your password", password=True)
-    
+
     if passwd != passwd_:
         print("[red]Passwords do not match. Please try again.[/]")
         return (username, None)
@@ -54,7 +56,7 @@ async def _create_admin_user_async(username: str, password: str):
     from ..admin.initialize import create_admin_interface
 
     admin = create_admin_interface()
-    
+
     async for admin_session in admin.db_config.get_admin_db():
         try:
             hashed_password = admin.admin_user_service.get_password_hash(password)
@@ -64,9 +66,7 @@ async def _create_admin_user_async(username: str, password: str):
             )
 
             await admin.initialize()
-            await admin.db_config.crud_users.create(
-                admin_session, object=internal_data
-            )
+            await admin.db_config.crud_users.create(admin_session, object=internal_data)
             await admin_session.commit()
             return username, True
 
@@ -83,27 +83,27 @@ def create_user():
     email = Prompt.ask("Enter your email", default="user@ejemplo.com")
     institution = Prompt.ask("Enter the name of your institution", default="")
     description = Prompt.ask("Enter a brief description of yourself", default="")
-    
+
     # Role selection
     print("\n[bold]Select user role:[/]")
-    roles=list(UserRole)
+    roles = list(UserRole)
     for idx, role in enumerate(roles, 1):
         print(f"  [cyan]{idx}[/]. {role.value}")
-   
+
     role_choice = IntPrompt.ask(
         "Enter your choice",
         choices=[str(i) for i in range(1, len(roles) + 1)],
-        default=1
+        default=1,
     )
     selected_role = roles[role_choice - 1]
-    
+
     passwd = Prompt.ask("Enter your password", password=True)
     passwd_ = Prompt.ask("Confirm your password", password=True)
-    
+
     if passwd != passwd_:
         print("[red]Passwords do not match. Please try again.[/]")
         return (name, None)
-    
+
     # Validate with Pydantic schema
     try:
         user_create = UserCreate(
@@ -113,12 +113,12 @@ def create_user():
             institution=institution or None,
             description=description or None,
             password=passwd,
-            role=selected_role
+            role=selected_role,
         )
     except Exception as e:
         print(f"[red]Validation error: {e}[/]")
         return (name, None)
-    
+
     hashed_password = get_password_hash(passwd)
     init_db()
 
@@ -139,12 +139,12 @@ def create_user():
         institution=user_create.institution,
         description=user_create.description,
         hashed_password=hashed_password,
-        role=selected_role
+        role=selected_role,
     )
-    
+
     new_user = User(**user_internal.model_dump())
     new_user.is_verified = True
-   
+
     with get_db_ctx() as session:
         session.add(new_user)
         session.flush()
@@ -153,7 +153,8 @@ def create_user():
         userrole = new_user.role.value
 
     return username, userrole
-    
+
+
 def create_tier():
     tiername = Prompt.ask("Enter the tier name", default="free")
     init_db()  # Ensure tables are created before querying

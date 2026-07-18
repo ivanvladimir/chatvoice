@@ -5,12 +5,14 @@ from crudadmin.admin_interface.model_view import PasswordTransformer
 from pydantic import BaseModel, Field
 
 from ..core.security import get_password_hash
-#from ..models.task import Task
+
+# from ..models.task import Task
 from ..models.tier import Tier
 from ..models.user import User
 from ..models.kb import KB
 from ..models.project import Project
-#from ..schemas.task import TaskUpdate, TaskCreate, TaskCreateInternal
+
+# from ..schemas.task import TaskUpdate, TaskCreate, TaskCreateInternal
 from ..schemas.tier import TierCreate, TierUpdate
 from ..schemas.user import UserCreate, UserUpdateInternal, UserUpdate
 from ..schemas.kb import KBCreate, KBUpdateInternal, KBUpdate
@@ -18,17 +20,23 @@ from ..schemas.project import ProjectCreate, ProjectUpdateInternal, ProjectUpdat
 
 from enum import Enum as PyEnum
 
+
 class TaskStatus(PyEnum):
     """Enum for task status"""
+
     STARTING = "starting"
     RUNNING = "running"
     FINISHED = "finished"
     ERROR = "error"
 
+
 class TaskCreateAdmin(BaseModel):
-    name: Annotated[str, Field(min_length=2, max_length=500, examples=["This is my task"])]
+    name: Annotated[
+        str, Field(min_length=2, max_length=500, examples=["This is my task"])
+    ]
     status: Annotated[TaskStatus, Field(default=TaskStatus.STARTING)]
     created_by_user_id: int
+
 
 def register_admin_views(admin: CRUDAdmin) -> None:
     """Register all models and their schemas with the admin interface.
@@ -50,7 +58,7 @@ def register_admin_views(admin: CRUDAdmin) -> None:
         update_schema=UserUpdate,
         update_internal_schema=UserUpdateInternal,
         password_transformer=password_transformer,
-        allowed_actions={"view", "create", "update","delete"},
+        allowed_actions={"view", "create", "update", "delete"},
     )
 
     admin.add_view(
@@ -58,7 +66,7 @@ def register_admin_views(admin: CRUDAdmin) -> None:
         create_schema=KBCreate,
         update_schema=KBUpdate,
         update_internal_schema=KBUpdateInternal,
-        allowed_actions={"view", "create", "update","delete"},
+        allowed_actions={"view", "create", "update", "delete"},
     )
 
     admin.add_view(
@@ -66,7 +74,7 @@ def register_admin_views(admin: CRUDAdmin) -> None:
         create_schema=ProjectCreate,
         update_schema=ProjectUpdate,
         update_internal_schema=ProjectUpdateInternal,
-        allowed_actions={"view", "create", "update","delete"},
+        allowed_actions={"view", "create", "update", "delete"},
     )
 
     admin.add_view(
@@ -75,6 +83,7 @@ def register_admin_views(admin: CRUDAdmin) -> None:
         update_schema=TierUpdate,
         allowed_actions={"view", "create", "update", "delete"},
     )
+
 
 #    admin.add_view(
 #        model=Task,

@@ -5,8 +5,10 @@ from simpleeval import simple_eval, NameNotDefined, InvalidExpression
 # Import your parser models
 from .parser import Clause, Condition
 
+
 class EvaluationError(Exception):
     """Custom exception raised when an expression or condition cannot be evaluated."""
+
     pass
 
 
@@ -17,7 +19,7 @@ class ExpressionEvaluator:
     """
 
     def __init__(self, restricted_locals: dict, initial_slots: dict):
-        # The combined dictionary passed to simpleeval. 
+        # The combined dictionary passed to simpleeval.
         # This solves the '_settings does not exist' bug permanently.
         self._restricted_locals = restricted_locals
         self.slots = initial_slots
@@ -44,13 +46,13 @@ class ExpressionEvaluator:
 
     def resolve_value(self, key: str) -> Any:
         """
-        Looks up a key in the slots. 
+        Looks up a key in the slots.
         If not found, attempts to parse it as a Python literal (1, True, 'string').
         Falls back to returning the raw string.
         """
         if key in self.slots:
             return self.slots[key]
-       
+
         try:
             return ast.literal_eval(key)
         except ValueError:
@@ -77,8 +79,10 @@ class ExpressionEvaluator:
             result = bool(left_val)
         else:
             if clause.right is None:
-                raise EvaluationError(f"Operator '{clause.op}' requires a right operand.")
-            
+                raise EvaluationError(
+                    f"Operator '{clause.op}' requires a right operand."
+                )
+
             right_val = self.resolve_value(clause.right)
             result = self._apply_op(left_val, clause.op, right_val)
 
@@ -88,12 +92,12 @@ class ExpressionEvaluator:
     def _apply_op(self, left: Any, op: str, right: Any) -> bool:
         """Applies the comparison operator, with type coercion for numbers."""
         left, right = self._coerce(left, right)
-        
+
         ops = {
             "==": lambda l, r: l == r,
             "!=": lambda l, r: l != r,
-            ">":  lambda l, r: l > r,
-            "<":  lambda l, r: l < r,
+            ">": lambda l, r: l > r,
+            "<": lambda l, r: l < r,
             ">=": lambda l, r: l >= r,
             "<=": lambda l, r: l <= r,
             "in": lambda l, r: l in r if isinstance(r, (list, str, dict)) else False,
@@ -110,6 +114,7 @@ class ExpressionEvaluator:
 
     def _coerce(self, left: Any, right: Any) -> tuple[Any, Any]:
         """Ensures numeric strings compare as numbers, not lexicographically."""
+
         def to_num(val):
             if isinstance(val, bool):
                 return val
@@ -123,10 +128,10 @@ class ExpressionEvaluator:
             return val
 
         l_num, r_num = to_num(left), to_num(right)
-        
+
         # If BOTH can be converted to floats, compare as floats.
         # Otherwise, compare as their original types.
         if isinstance(l_num, float) and isinstance(r_num, float):
             return l_num, r_num
-            
+
         return left, right

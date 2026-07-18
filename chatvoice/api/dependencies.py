@@ -22,6 +22,7 @@ from ..core.exceptions.http_exceptions import (
     RateLimitException,
     UnauthorizedException,
 )
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_LIMIT = settings.DEFAULT_RATE_LIMIT_LIMIT
@@ -29,21 +30,33 @@ DEFAULT_PERIOD = settings.DEFAULT_RATE_LIMIT_PERIOD
 
 
 async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)], db: Annotated[AsyncSession, Depends(async_get_db)]
+    token: Annotated[str, Depends(oauth2_scheme)],
+    db: Annotated[AsyncSession, Depends(async_get_db)],
 ) -> dict[str, Any]:
     token_data = await verify_token(token, TokenType.ACCESS, db)
     if token_data is None:
         raise UnauthorizedException("User not authenticated.")
 
     if "@" in token_data.username_or_email:
-        user = await crud_users.get(db=db, email=token_data.username_or_email, is_deleted=False, is_verified = True)
+        user = await crud_users.get(
+            db=db,
+            email=token_data.username_or_email,
+            is_deleted=False,
+            is_verified=True,
+        )
     else:
-        user = await crud_users.get(db=db, username=token_data.username_or_email, is_deleted=False, is_verified = True)
+        user = await crud_users.get(
+            db=db,
+            username=token_data.username_or_email,
+            is_deleted=False,
+            is_verified=True,
+        )
 
     if user:
         return user
 
     raise UnauthorizedException("User not authenticated.")
+
 
 def get_session_transport(websocket: WebSocket) -> WS:
     # FastAPI injects the 'websocket' object automatically here
@@ -53,26 +66,27 @@ def get_session_transport(websocket: WebSocket) -> WS:
 async def get_ws_session(
     websocket: WebSocket,  # 1. ADD WEBSOCKET HERE
     ws_session: str | None = Cookie(default=None),
-    transport: WS = Depends(get_session_transport) 
+    transport: WS = Depends(get_session_transport),
 ):
     if not ws_session:
         raise WebSocketException(code=1008, reason="Missing session cookie")
-    
+
     payload = decode_ws_token(ws_session)
     if not payload:
         raise WebSocketException(code=1008, reason="Invalid or expired token")
 
     session_id = payload.get("sub")
     session = transport.get_session(session_id)
-    
+
     if not session:
         raise WebSocketException(code=1008, reason="Invalid or expired session")
-        
+
     return session
 
 
-
-async def get_optional_user(request: Request, db: AsyncSession = Depends(async_get_db)) -> dict | None:
+async def get_optional_user(
+    request: Request, db: AsyncSession = Depends(async_get_db)
+) -> dict | None:
     token = request.headers.get("Authorization")
     if not token:
         return None
@@ -90,7 +104,9 @@ async def get_optional_user(request: Request, db: AsyncSession = Depends(async_g
 
     except HTTPException as http_exc:
         if http_exc.status_code != 401:
-            logger.error(f"Unexpected HTTPException in get_optional_user: {http_exc.detail}")
+            logger.error(
+                f"Unexpected HTTPException in get_optional_user: {http_exc.detail}"
+            )
         return None
 
     except Exception as exc:
@@ -98,26 +114,37 @@ async def get_optional_user(request: Request, db: AsyncSession = Depends(async_g
         return None
 
 
-async def get_current_superuser(current_user: Annotated[dict, Depends(get_current_user)]) -> dict:
+async def get_current_superuser(
+    current_user: Annotated[dict, Depends(get_current_user)],
+) -> dict:
     if not current_user["role"] == "superuser":
         raise ForbiddenException("You do not have enough privileges.")
 
     return current_user
 
-async def get_current_admin(current_user: Annotated[dict, Depends(get_current_user)]) -> dict:
+
+async def get_current_admin(
+    current_user: Annotated[dict, Depends(get_current_user)],
+) -> dict:
     if not current_user["role"] == "admin":
         raise ForbiddenException("You do not have enough privileges.")
 
     return current_user
 
-async def get_current_editor(current_editor: Annotated[dict, Depends(get_current_user)]) -> dict:
+
+async def get_current_editor(
+    current_editor: Annotated[dict, Depends(get_current_user)],
+) -> dict:
     if not current_editor["role"] == "editor":
         raise ForbiddenException("You do not have enough privileges.")
 
     return current_editor
 
+
 async def rate_limiter_dependency(
-    request: Request, db: Annotated[AsyncSession, Depends(async_get_db)], user: dict | None = Depends(get_optional_user)
+    request: Request,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    user: dict | None = Depends(get_optional_user),
 ) -> None:
     if hasattr(request.app.state, "initialization_complete"):
         await request.app.state.initialization_complete.wait()
@@ -139,12 +166,16 @@ async def rate_limiter_dependency(
                 )
                 limit, period = DEFAULT_LIMIT, DEFAULT_PERIOD
         else:
-            logger.warning(f"User {user_id} has no assigned tier. Applying default rate limit.")
+            logger.warning(
+                f"User {user_id} has no assigned tier. Applying default rate limit."
+            )
             limit, period = DEFAULT_LIMIT, DEFAULT_PERIOD
     else:
         user_id = request.client.host if request.client else "unknown"
         limit, period = DEFAULT_LIMIT, DEFAULT_PERIOD
 
-    is_limited = await rate_limiter.is_rate_limited(db=db, user_id=user_id, path=path, limit=limit, period=period)
+    is_limited = await rate_limiter.is_rate_limited(
+        db=db, user_id=user_id, path=path, limit=limit, period=period
+    )
     if is_limited:
         raise RateLimitException("Rate limit exceeded.")
