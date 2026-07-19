@@ -15,6 +15,7 @@ from .commands import (
     cmd_llm,
     cmd_set,
     cmd_exec,
+    cmd_tag,
     cmd_remember,
     cmd_info,
     ExecutionState,
@@ -87,6 +88,7 @@ class Interpreter:
             "listen": cmd_listen,
             "set": cmd_set,
             "solve": cmd_solve,
+            "tag": cmd_tag,
             "return": cmd_return,
             "llm": cmd_llm,
             "exec": cmd_exec,
@@ -138,7 +140,6 @@ class Interpreter:
 
         while chain.commands and not self.exit:
             c = chain.commands.pop(0)
-
             # Handle shorthand dot-commands (e.g., .my_func -> exec my_func)
             if c.name.startswith("."):
                 c = Command(

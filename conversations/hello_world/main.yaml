@@ -25,9 +25,11 @@ slots:
 
 script:
   - info slots
+  - tag "Saludo"
   - say GREET
   - llm wheather_opening | say
   - if not name then solve name
+  - tag "Preguntas" "Se hacen algunas preguntas para establecer report"
   - say "¿como estás hoy, {name}?"
   - listen status | .keyword options | set status
   - if status == "good" then solve excelent

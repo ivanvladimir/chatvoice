@@ -156,7 +156,7 @@ async def websocket_endpoint(
                 json_message=tuples_to_json_string(m["args"])
                 await websocket.send_json({"type": "tags", "message": json_message})
             if m["cmd"] == "tag" and len(m["args"]) > 0:
-                await websocket.send_json({"type": "divider", "message": m['args'][0]})
+                await websocket.send_json({"type": "divider", "tag":m['args'][0], "message": "\n".join(m["args"][1:])})
             elif m["cmd"] == "listen":
                 # If you need to wait for user input, you MUST use asyncio.wait_for
                 # or websocket.receive_text() here, NOT a synchronous input()

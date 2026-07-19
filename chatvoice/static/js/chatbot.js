@@ -102,15 +102,15 @@ document.addEventListener('alpine:init', () => {
                 timestamp: new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
             });
         },
-        addDivider(label = '') {
+        addDivider(tag = '', message = '') {
             this.messages.push({
                 id: Date.now(), 
                 type: 'divider', 
-                label,
+                tag: tag,          // The name of the divider
+                message: message,  // Optional associated text/html
                 timestamp: new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
             });
         },
-
         // ─── Connection ───
 
         async startChatSession() {
@@ -153,21 +153,19 @@ document.addEventListener('alpine:init', () => {
                 this.addSystemMessage("Connected to chat securely!");
             };
 
+               
             this.chatWs.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 
-                // Route directly based on the backend 'type' key
                 if (data.type === 'message') {
-                    // Everything from WS is treated as 'other' (left side)
                     this.addMessage(data.user, data.message, 'other');
                 } 
                 else if (data.type === 'tags') {
-                    // data.message is expected to be the JSON object
                     this.addTags(data.message);
                 } 
                 else if (data.type === 'divider') {
-                    // data.message is expected to be the string label
-                    this.addDivider(data.message);
+                    // Updated to pass data.tag and data.message
+                    this.addDivider(data.tag, data.message);
                 }
             };
 

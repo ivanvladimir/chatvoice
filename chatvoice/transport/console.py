@@ -89,4 +89,12 @@ class Console:
                     self.console.print(f"[cyan]  {label: <10}: {info}[/]")
                 self.console.print()
                 self.console.file.flush()
+            elif m["cmd"] == "tag" and len(m["args"]) > 0:
+                line = f"-- TAG: {m['args'][0]} "
+                self.console.print(f"[yellow]{line:-<50} [/]")
+                for text in m["args"][1:]:
+                    self.console.print(f"[cyan]   {text}[/]")
+                self.console.print()
+                self.console.file.flush()
+ 
         self.console.print("\n====== Conversation finished =====")

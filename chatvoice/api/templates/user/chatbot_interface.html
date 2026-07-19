@@ -68,12 +68,22 @@
                         </div>
                     </template>
 
-                    {# ─── DIVIDER (Registered independently, visibility tied ONLY to debugMode) ─── #}
+                     {# ─── DIVIDER (Name + Optional Message) ─── #}
                     <template x-if="msg.type === 'divider'">
-                        <div x-show="debugMode" class="flex items-center gap-3 my-2" style="display: none;">
-                            <div class="flex-1 h-px bg-warning/30"></div>
-                            <span class="text-[10px] text-warning/60 font-mono uppercase tracking-widest flex items-center gap-1.5" x-text="msg.label || 'debug step'"></span>
-                            <div class="flex-1 h-px bg-warning/30"></div>
+                        <div x-show="debugMode" class="my-2" style="display: none;">
+                            {# Divider Line and Tag Name #}
+                            <div class="flex items-center gap-3">
+                                <div class="flex-1 h-px bg-warning/30"></div>
+                                <span class="text-[10px] text-warning/60 font-mono uppercase tracking-widest flex items-center gap-1.5" x-text="msg.tag || 'debug step'"></span>
+                                <div class="flex-1 h-px bg-warning/30"></div>
+                            </div>
+                            
+                            {# Optional Message associated with the divider #}
+                            <div x-show="msg.message" 
+                                 x-transition
+                                 class="text-center text-[11px] text-base-content/50 mt-1.5 px-4 whitespace-pre-wrap break-words"
+                                 x-html="msg.message">
+                            </div>
                         </div>
                     </template>
 

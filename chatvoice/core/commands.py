@@ -353,6 +353,26 @@ def cmd_info(
         "ok": bool(info_data),  # False if no valid args were passed
     }
 
+def cmd_tag(
+    args: list, ctx: dict, evaluator: "ExpressionEvaluator", callback: callable
+) -> Generator[dict, Any, dict]:
+    """
+    Adds a tag to the conversation flow intended to analyse segments of the converstions
+    """
+    if not args:
+        yield from ()
+        return {"command": "tag", "ok": False, "error": "Missing arguments"}
+
+    # Yield the actual payload to the UI/callback stream FIRST
+    yield {"cmd": "tag", "args": args}
+
+    # Return the internal status tracker SECOND
+    return {
+        "command": "tag",
+        "value": args[-1],
+        "ok": True,  # False if no valid args were passed
+    }
+
 
 def resolve_template(name: str, ctx: dict, evaluator: "ExpressionEvaluator"):
     t = ctx["templates"][name]
