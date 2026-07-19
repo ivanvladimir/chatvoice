@@ -337,7 +337,7 @@ def cmd_info(
         elif info_type == "strategies":
             # Fallback to 'unknown' if the interpreter forgot to pass the name in ctx
             state = ctx.get("state")
-            info_data.append(("strategies", state.conversation.strategies.keys()))
+            info_data.append(("strategies", list(state.conversation.strategies.keys())))
 
         elif info_type == "status":
             # Grab the previous command's status from the context payload
