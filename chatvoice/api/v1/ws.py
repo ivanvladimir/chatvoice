@@ -160,6 +160,7 @@ async def websocket_endpoint(
             elif m["cmd"] == "listen":
                 # If you need to wait for user input, you MUST use asyncio.wait_for
                 # or websocket.receive_text() here, NOT a synchronous input()
+                await websocket.send_json({"type": "listen"})
                 try:
                     data = await asyncio.wait_for(
                         websocket.receive_text(), timeout=60.0

@@ -9,6 +9,7 @@ document.addEventListener('alpine:init', () => {
         
         debugMode: false,
         isThinking: false,
+        isListening: false, 
 
         init() {
             this.$watch('messages', () => {
@@ -20,6 +21,10 @@ document.addEventListener('alpine:init', () => {
         // ─── State Controls ───
         setThinking(state) {
             this.isThinking = state;
+        },
+        setListening(state) {
+            this.isListening = state;
+            if (state) this.isThinking = false; // If listening, stop thinking
         },
 
         // ─── Data Registration (Independent of Debug Mode) ───
@@ -167,6 +172,10 @@ document.addEventListener('alpine:init', () => {
                     // Updated to pass data.tag and data.message
                     this.addDivider(data.tag, data.message);
                 }
+                else if (data.type === 'listen') {
+                    // Activate input and show waiting banner
+                    this.setListening(true);
+                }
             };
 
             this.chatWs.onclose = (event) => {
@@ -187,17 +196,14 @@ document.addEventListener('alpine:init', () => {
         },
 
         // ─── Interactions ───
-
         sendMessage() {
             const text = this.inputText.trim();
             if (this.chatWs && this.chatWs.readyState === WebSocket.OPEN && text) {
-                // 1. Push locally to UI as 'user' side immediately
+                this.setListening(false); // Turn off listening banner
                 this.addMessage('Tú', text, 'user');
-                // 2. Send raw text to backend
                 this.chatWs.send(text);
-                // 3. Clear input and activate thinking state
                 this.inputText = '';
-                this.setThinking(true);
+                this.setThinking(true); // Optionally activate thinking again while waiting for the next response
             }
         },
 
