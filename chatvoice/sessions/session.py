@@ -22,6 +22,7 @@ class ChatSession:
         self.user_id = user_id
         self.session_id = session_id
         self.interpreter_name = interpreter.name
+        self.interpreter = interpreter
         self.store = store
 
         # Two queues act as the communication bridge between

@@ -11,6 +11,7 @@ from datetime import timedelta
 from pathlib import Path
 import asyncio
 import markdown
+import json
 from concurrent.futures import ThreadPoolExecutor
 
 
@@ -79,6 +80,57 @@ async def establish_ws_session(
 # Create a thread pool outside the endpoint
 executor = ThreadPoolExecutor(max_workers=4)
 
+def tuples_to_json(items, sep=":"):
+    """
+    Converts a list of (label, value) tuples into a dict.
+
+    - If value is a plain (non-dict) type — string, list, number, bool, etc. —
+      it's stored as `label: value`.
+    - If value is a dict, it gets flattened *internally* (nested keys joined
+      with `sep`), and the result is stored under `label` as usual.
+
+    Example:
+        [
+            ("a", "hello"),
+            ("b", [1, 2, 3]),
+            ("c", {"x": 1, "y": {"z": 2, "w": [4, 5]}}),
+        ]
+        ->
+        {
+            "a": "hello",
+            "b": [1, 2, 3],
+            "c": {"x": 1, "y:z": 2, "y:w": [4, 5]},
+        }
+    """
+
+    def _flatten_dict(d, sep):
+        flat = {}
+
+        def _walk(prefix, value):
+            for k, v in value.items():
+                new_key = f"{prefix}{sep}{k}" if prefix else k
+                if isinstance(v, dict):
+                    _walk(new_key, v)
+                else:
+                    flat[new_key] = v
+
+        _walk("", d)
+        return flat
+
+    result = {}
+    for label, value in items:
+        if isinstance(value, dict):
+            result[label] = _flatten_dict(value, sep)
+        else:
+            result[label] = value
+
+    return result
+
+
+def tuples_to_json_string(items, sep=":", **json_kwargs):
+    """Same as above, but returns a JSON string."""
+    return json.dumps(tuples_to_json(items, sep=sep), **json_kwargs)
+
 
 @router.websocket("/ws/{script}")
 async def websocket_endpoint(
@@ -96,10 +148,15 @@ async def websocket_endpoint(
                 break
 
             if m["cmd"] == "say" and len(m["args"]) > 0:
+                _name_system = session.interpreter.settings['_name_user']
                 for msg in m["args"]:
                     html_msg = md.convert(msg)
-                    await websocket.send_json({"user": "hola", "message": html_msg})
-
+                    await websocket.send_json({"type": "message", "user": _name_system, "message": html_msg})
+            if m["cmd"] == "info" and len(m["args"]) > 0:
+                json_message=tuples_to_json_string(m["args"])
+                await websocket.send_json({"type": "tags", "message": json_message})
+            if m["cmd"] == "tag" and len(m["args"]) > 0:
+                await websocket.send_json({"type": "divider", "message": m['args'][0]})
             elif m["cmd"] == "listen":
                 # If you need to wait for user input, you MUST use asyncio.wait_for
                 # or websocket.receive_text() here, NOT a synchronous input()

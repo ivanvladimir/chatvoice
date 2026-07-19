@@ -7,7 +7,6 @@ document.addEventListener('alpine:init', () => {
         showEmojiPicker: false,
         _isConnecting: false,
         
-        // New States
         debugMode: false,
         isThinking: false,
 
@@ -15,40 +14,110 @@ document.addEventListener('alpine:init', () => {
             this.$watch('messages', () => {
                 this.$nextTick(() => this.scrollToBottom());
             });
-            
             this.startChatSession();
         },
 
-        // ─── NEW: Thinking State Control ───
+        // ─── State Controls ───
         setThinking(state) {
             this.isThinking = state;
         },
 
-        // ─── NEW: Inline Debug Functions ───
-        addDebugDivider(label = '') {
+        // ─── Data Registration (Independent of Debug Mode) ───
+
+        addSystemMessage(content, sysType = 'info') {
             this.messages.push({
                 id: Date.now(), 
-                role: 'debug-divider', 
-                label: label,
+                type: 'system', 
+                content, 
+                sysType,
+                timestamp: new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })
+            });
+        },
+
+        addMessage(user, content, side) {
+            this.messages.push({
+                id: Date.now(), 
+                type: 'message', 
+                user, 
+                content, 
+                side, // 'user' or 'other'
+                timestamp: new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })
+            });
+            // Turn off thinking state automatically when a message arrives from the backend
+            if (side === 'other') {
+                this.setThinking(false);
+            }
+        },
+                addTags(payload) {
+            // 1. Check if payload is a string and parse it into an object
+            if (typeof payload === 'string') {
+                try {
+                    payload = JSON.parse(payload);
+                } catch (e) {
+                    console.error("Failed to parse tags JSON string:", e);
+                    // If it fails to parse, push it as a single error tag so you can see what went wrong
+                    this.messages.push({
+                        id: Date.now(), 
+                        type: 'tags', 
+                        tags: [{ color: 'error', key: 'json_error', value: payload }], 
+                        timestamp: new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                    });
+                    return; // Stop execution here
+                }
+            }
+
+            // 2. Flatten and assign colors
+            const colors = ['primary', 'secondary', 'accent', 'info', 'success', 'warning', 'error'];
+            const typeKeys = Object.keys(payload);
+            let flatTags = [];
+
+            typeKeys.forEach((typeKey, index) => {
+                // Assign a consistent color based on the top-level key
+                const color = colors[index % colors.length];
+                const val = payload[typeKey];
+
+                if (typeof val === 'string' || typeof val === 'number') {
+                    // String/Number: use the typeKey as the tag key
+                    flatTags.push({ color, key: typeKey, value: String(val) });
+                } 
+                else if (Array.isArray(val)) {
+                    // List: use the typeKey as the tag key for each item
+                    val.forEach(item => {
+                        flatTags.push({ color, key: typeKey, value: String(item) });
+                    });
+                } 
+                else if (typeof val === 'object' && val !== null) {
+                    // Dictionary: use the inner keys as the tag keys
+                    Object.entries(val).forEach(([innerKey, innerVal]) => {
+                        flatTags.push({ color, key: innerKey, value: String(innerVal) });
+                    });
+                }
+            });
+
+            // 3. Push the flattened array to the messages
+            this.messages.push({
+                id: Date.now(), 
+                type: 'tags', 
+                tags: flatTags, 
+                timestamp: new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+            });
+        },
+        addDivider(label = '') {
+            this.messages.push({
+                id: Date.now(), 
+                type: 'divider', 
+                label,
                 timestamp: new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
             });
         },
 
-        addDebugTags(tagsObject) {
-            this.messages.push({
-                id: Date.now(), 
-                role: 'debug-tags', 
-                tags: tagsObject,
-                timestamp: new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-            });
-        },
+        // ─── Connection ───
 
-        // ─── Connection Methods ───
         async startChatSession() {
             if (this._isConnecting) return;
             this._isConnecting = true;
 
-            const jwtToken = localStorage.getItem('accessToken');
+            const jwtToken = localStorage.getItem('accessToken'); // Still using token for auth handshake
             if (!jwtToken) {
                 this.addSystemMessage('Error: No authentication token found.', 'error');
                 return;
@@ -56,7 +125,7 @@ document.addEventListener('alpine:init', () => {
 
             try {
                 this.addSystemMessage('Establishing secure session...');
-                this.setThinking(true); // Activate thinking state
+                this.setThinking(true);
                 
                 const res = await fetch('/api/v1/ws-session/hello_world', {
                     method: 'POST',
@@ -64,13 +133,12 @@ document.addEventListener('alpine:init', () => {
                 });
 
                 if (!res.ok) throw new Error("Failed to establish WebSocket session");
-
                 this.connectWebSocket();
 
             } catch (error) {
                 this.addSystemMessage(error.message, 'error');
                 this._isConnecting = false;
-                this.setThinking(false); // Deactivate on error
+                this.setThinking(false);
             }
         },
 
@@ -81,20 +149,32 @@ document.addEventListener('alpine:init', () => {
             this.chatWs.onopen = () => {
                 this.isConnected = true;
                 this._isConnecting = false;
-                this.setThinking(false); // Deactivate thinking when connected
+                this.setThinking(false);
                 this.addSystemMessage("Connected to chat securely!");
             };
 
             this.chatWs.onmessage = (event) => {
-                const msg = JSON.parse(event.data);
-                this.addChatMessage(msg.user, msg.message);
+                const data = JSON.parse(event.data);
+                
+                // Route directly based on the backend 'type' key
+                if (data.type === 'message') {
+                    // Everything from WS is treated as 'other' (left side)
+                    this.addMessage(data.user, data.message, 'other');
+                } 
+                else if (data.type === 'tags') {
+                    // data.message is expected to be the JSON object
+                    this.addTags(data.message);
+                } 
+                else if (data.type === 'divider') {
+                    // data.message is expected to be the string label
+                    this.addDivider(data.message);
+                }
             };
 
             this.chatWs.onclose = (event) => {
                 this.isConnected = false;
                 this._isConnecting = false;
-                this.setThinking(false); // Deactivate thinking
-                
+                this.setThinking(false);
                 if (event.code === 1008) {
                     this.addSystemMessage(`Disconnected: ${event.reason}`, 'error');
                 } else {
@@ -108,58 +188,21 @@ document.addEventListener('alpine:init', () => {
             };
         },
 
-        // ─── Message Methods ───
+        // ─── Interactions ───
+
         sendMessage() {
             const text = this.inputText.trim();
             if (this.chatWs && this.chatWs.readyState === WebSocket.OPEN && text) {
-                
-                // Example of using the new debug functions before sending:
-                if (this.debugMode) {
-                    this.addDebugDivider('Outgoing Message');
-                    this.addDebugTags({ 'chars': text.length, 'encoding': 'utf-8' });
-                }
-
+                // 1. Push locally to UI as 'user' side immediately
+                this.addMessage('Tú', text, 'user');
+                // 2. Send raw text to backend
                 this.chatWs.send(text);
+                // 3. Clear input and activate thinking state
                 this.inputText = '';
-                
-                // Optional: Activate thinking while waiting for response
-                // this.setThinking(true);
+                this.setThinking(true);
             }
         },
 
-        addChatMessage(user, text) {
-            const currentUser = localStorage.getItem('username');
-            const role = (user === currentUser) ? 'user' : 'other';
-            
-            // Example of using debug tags on incoming messages
-            if (this.debugMode && role === 'other') {
-                this.addDebugDivider('Incoming Payload');
-                this.addDebugTags({ 'from': user, 'size': text.length });
-            }
-
-            this.messages.push({
-                id: Date.now(), 
-                role, 
-                user, 
-                content: text,
-                timestamp: new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })
-            });
-
-            // Remember to turn off thinking state when the message arrives!
-            this.setThinking(false);
-        },
-        
-        addSystemMessage(text, type = 'info') {
-            this.messages.push({
-                id: Date.now(), 
-                role: 'system', 
-                content: text, 
-                type,
-                timestamp: new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })
-            });
-        },
-        
-        // ─── UI Methods ───
         scrollToBottom() {
             const container = this.$refs.chatMessages;
             if (container) container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
@@ -177,7 +220,12 @@ document.addEventListener('alpine:init', () => {
             this.addSystemMessage('Chat cleared'); 
         },
         
-        copyMessage(text) {
+        copyMessage(htmlContent) {
+            // Extract plain text from HTML for clipboard
+            const tempDiv = document.createElement("div");
+            tempDiv.innerHTML = htmlContent;
+            const text = tempDiv.innerText || tempDiv.textContent;
+            
             navigator.clipboard.writeText(text).then(() => {
                 document.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Copiado al portapapeles', type: 'success' } }));
             });
@@ -192,10 +240,16 @@ document.addEventListener('alpine:init', () => {
         },
         
         exportChat() {
+            // Only export type 'message', strip HTML tags for clean .txt file
             const text = this.messages
-                .filter(m => m.role !== 'system' && m.role !== 'debug-tags' && m.role !== 'debug-divider')
-                .map(m => `[${m.timestamp}] ${m.user || m.role}: ${m.content}`)
-                .join('\n');
+                .filter(m => m.type === 'message')
+                .map(m => {
+                    const tempDiv = document.createElement("div");
+                    tempDiv.innerHTML = m.content;
+                    const cleanText = tempDiv.innerText || tempDiv.textContent;
+                    return `[${m.timestamp}] ${m.user}: ${cleanText}`;
+                }).join('\n');
+                
             const blob = new Blob([text], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); 
@@ -212,3 +266,4 @@ document.addEventListener('show-toast', (e) => {
         window.authAppInstance.showToast(e.detail.message, e.detail.type);
     }
 });
+
