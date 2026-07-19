@@ -24,9 +24,15 @@ document.addEventListener('alpine:init', () => {
         },
         setListening(state) {
             this.isListening = state;
-            if (state) this.isThinking = false; // If listening, stop thinking
+            if (state) {
+                this.isThinking = false; // If listening, stop thinking
+                
+                // Wait for the DOM to update (unhide the input), then focus it
+                this.$nextTick(() => {
+                    this.$refs.chatInput?.focus();
+                });
+            }
         },
-
         // ─── Data Registration (Independent of Debug Mode) ───
 
         addSystemMessage(content, sysType = 'info') {
@@ -117,12 +123,11 @@ document.addEventListener('alpine:init', () => {
             });
         },
         // ─── Connection ───
-
         async startChatSession() {
             if (this._isConnecting) return;
             this._isConnecting = true;
 
-            const jwtToken = localStorage.getItem('accessToken'); // Still using token for auth handshake
+            const jwtToken = localStorage.getItem('accessToken'); 
             if (!jwtToken) {
                 this.addSystemMessage('Error: No authentication token found.', 'error');
                 return;
@@ -130,7 +135,7 @@ document.addEventListener('alpine:init', () => {
 
             try {
                 this.addSystemMessage('Establishing secure session...');
-                this.setThinking(true);
+                // REMOVED: this.setThinking(true);  <--- Delete this line!
                 
                 const res = await fetch('/api/v1/ws-session/hello_world', {
                     method: 'POST',
@@ -242,18 +247,46 @@ document.addEventListener('alpine:init', () => {
             this.showEmojiPicker = false;
             this.$refs.chatInput?.focus();
         },
-        
+       
         exportChat() {
-            // Only export type 'message', strip HTML tags for clean .txt file
-            const text = this.messages
-                .filter(m => m.type === 'message')
-                .map(m => {
+            let exportLines = [];
+
+            this.messages.forEach(m => {
+                // 1. Standard Messages (Always include)
+                if (m.type === 'message') {
                     const tempDiv = document.createElement("div");
                     tempDiv.innerHTML = m.content;
                     const cleanText = tempDiv.innerText || tempDiv.textContent;
-                    return `[${m.timestamp}] ${m.user}: ${cleanText}`;
-                }).join('\n');
+                    exportLines.push(`[${m.timestamp}] ${m.user || 'Sistema'}: ${cleanText}`);
+                } 
                 
+                // 2. Dividers (Only if Debug Mode is ON)
+                else if (m.type === 'divider' && this.debugMode) {
+                    let dividerText = `\n--- [ ${m.tag || 'DEBUG STEP'} ] ---`;
+                    
+                    // If the divider has an associated message, add it below
+                    if (m.message) {
+                        const tempDiv = document.createElement("div");
+                        tempDiv.innerHTML = m.message;
+                        const cleanMsg = tempDiv.innerText || tempDiv.textContent;
+                        dividerText += `\n> ${cleanMsg.trim()}`;
+                    }
+                    
+                    exportLines.push(dividerText);
+                } 
+                
+                // 3. Tags (Only if Debug Mode is ON)
+                else if (m.type === 'tags' && this.debugMode) {
+                    if (m.tags && m.tags.length > 0) {
+                        // Format tags nicely as key=value separated by pipes
+                        const tagsStr = m.tags.map(t => `${t.key}=${t.value}`).join(' | ');
+                        exportLines.push(`[Tags] ${tagsStr}`);
+                    }
+                }
+            });
+
+            const text = exportLines.join('\n');
+            
             const blob = new Blob([text], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); 
