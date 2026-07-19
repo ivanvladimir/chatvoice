@@ -274,6 +274,13 @@
                 async init() {
                     this.setupHtmxInterceptors();
                     this.setupProtectedEvents();
+
+                    // Fires automatically the instant auth becomes true —
+                    // removes the race with the manual nextTick calls.
+                    this.$watch('isAuthenticated', (isAuth) => {
+                        if (isAuth) this.loadProtectedContent();
+                    });
+
                     if (this.accessToken) {
                         await this.checkAuth();
                     }
@@ -322,10 +329,11 @@
                     this.$nextTick(() => {
                         const protectedEl = document.getElementById('protected-content');
                         if (protectedEl && this.isAuthenticated) {
-                            // Reset loading state
                             this.protectedLoaded = false;
-                            // Trigger the HTMX request
-                            htmx.trigger('#protected-content', 'load-protected');
+                            htmx.ajax('POST', protectedEl.getAttribute('hx-post'), {
+                                target: protectedEl,
+                                swap: protectedEl.getAttribute('hx-swap') || 'innerHTML'
+                            });
                         }
                     });
                 },
@@ -438,22 +446,18 @@
                         this.loadProtectedContent();
                     }
                 },
-                
+               
                 setAuth(name, username, accessToken) {
-                    const wasAuthenticated = this.isAuthenticated;
-                    
                     this.name = name;
                     this.username = username;
                     this.accessToken = accessToken;
                     this.isAuthenticated = true;
-                    
+
                     localStorage.setItem('accessToken', accessToken);
                     localStorage.setItem('username', username);
                     localStorage.setItem('name', name);
 
-                    if (!wasAuthenticated) {
-                        this.loadProtectedContent();
-                    }
+                    this.loadProtectedContent();
                 },
                 
                 clearAuth() {
