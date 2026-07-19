@@ -7,47 +7,40 @@ document.addEventListener('alpine:init', () => {
         showEmojiPicker: false,
         _isConnecting: false,
         
-        // Debug mode
+        // New States
         debugMode: false,
-        debugData: {
-            'ws_state': 'CLOSED',
-            'messages': '0',
-            'user': 'unknown',
-            'session': 'hello_world',
-            'latency': 'N/A'
-        },
-        
+        isThinking: false,
+
         init() {
             this.$watch('messages', () => {
                 this.$nextTick(() => this.scrollToBottom());
-                if (this.debugMode) this.updateDebugData();
-            });
-            
-            this.$watch('isConnected', () => {
-                if (this.debugMode) this.updateDebugData();
-            });
-            
-            this.$watch('debugMode', (value) => {
-                if (value) this.updateDebugData();
             });
             
             this.startChatSession();
         },
 
-        // ─── Debug Methods ───
-        updateDebugData() {
-            const wsStates = ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'];
-            this.debugData = {
-                'ws_state': this.chatWs ? wsStates[this.chatWs.readyState] : 'N/A',
-                'messages': String(this.messages.length),
-                'user': localStorage.getItem('username') || 'unknown',
-                'session': 'hello_world',
-                'latency': this._lastLatency ? `${this._lastLatency}ms` : 'N/A'
-            };
+        // ─── NEW: Thinking State Control ───
+        setThinking(state) {
+            this.isThinking = state;
         },
 
-        setDebugValue(key, value) {
-            this.debugData[key] = String(value);
+        // ─── NEW: Inline Debug Functions ───
+        addDebugDivider(label = '') {
+            this.messages.push({
+                id: Date.now(), 
+                role: 'debug-divider', 
+                label: label,
+                timestamp: new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+            });
+        },
+
+        addDebugTags(tagsObject) {
+            this.messages.push({
+                id: Date.now(), 
+                role: 'debug-tags', 
+                tags: tagsObject,
+                timestamp: new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+            });
         },
 
         // ─── Connection Methods ───
@@ -63,6 +56,7 @@ document.addEventListener('alpine:init', () => {
 
             try {
                 this.addSystemMessage('Establishing secure session...');
+                this.setThinking(true); // Activate thinking state
                 
                 const res = await fetch('/api/v1/ws-session/hello_world', {
                     method: 'POST',
@@ -71,41 +65,35 @@ document.addEventListener('alpine:init', () => {
 
                 if (!res.ok) throw new Error("Failed to establish WebSocket session");
 
-                console.log("Cookie set. Connecting to WebSocket...");
                 this.connectWebSocket();
 
             } catch (error) {
                 this.addSystemMessage(error.message, 'error');
                 this._isConnecting = false;
+                this.setThinking(false); // Deactivate on error
             }
         },
 
         connectWebSocket() {
             const wsUrl = `ws://${window.location.host}/api/v1/ws/hello_world`;
             this.chatWs = new WebSocket(wsUrl);
-            this._connectTime = Date.now();
 
             this.chatWs.onopen = () => {
-                this._lastLatency = Date.now() - this._connectTime;
                 this.isConnected = true;
+                this._isConnecting = false;
+                this.setThinking(false); // Deactivate thinking when connected
                 this.addSystemMessage("Connected to chat securely!");
             };
 
             this.chatWs.onmessage = (event) => {
                 const msg = JSON.parse(event.data);
                 this.addChatMessage(msg.user, msg.message);
-                
-                // Update debug data with message info if available
-                if (this.debugMode && msg.debug) {
-                    Object.entries(msg.debug).forEach(([key, value]) => {
-                        this.setDebugValue(key, value);
-                    });
-                }
             };
 
             this.chatWs.onclose = (event) => {
                 this.isConnected = false;
                 this._isConnecting = false;
+                this.setThinking(false); // Deactivate thinking
                 
                 if (event.code === 1008) {
                     this.addSystemMessage(`Disconnected: ${event.reason}`, 'error');
@@ -116,6 +104,7 @@ document.addEventListener('alpine:init', () => {
 
             this.chatWs.onerror = () => {
                 this.addSystemMessage("Error connecting to WebSocket.", 'error');
+                this.setThinking(false);
             };
         },
 
@@ -123,14 +112,31 @@ document.addEventListener('alpine:init', () => {
         sendMessage() {
             const text = this.inputText.trim();
             if (this.chatWs && this.chatWs.readyState === WebSocket.OPEN && text) {
+                
+                // Example of using the new debug functions before sending:
+                if (this.debugMode) {
+                    this.addDebugDivider('Outgoing Message');
+                    this.addDebugTags({ 'chars': text.length, 'encoding': 'utf-8' });
+                }
+
                 this.chatWs.send(text);
                 this.inputText = '';
+                
+                // Optional: Activate thinking while waiting for response
+                // this.setThinking(true);
             }
         },
 
         addChatMessage(user, text) {
             const currentUser = localStorage.getItem('username');
             const role = (user === currentUser) ? 'user' : 'other';
+            
+            // Example of using debug tags on incoming messages
+            if (this.debugMode && role === 'other') {
+                this.addDebugDivider('Incoming Payload');
+                this.addDebugTags({ 'from': user, 'size': text.length });
+            }
+
             this.messages.push({
                 id: Date.now(), 
                 role, 
@@ -138,6 +144,9 @@ document.addEventListener('alpine:init', () => {
                 content: text,
                 timestamp: new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })
             });
+
+            // Remember to turn off thinking state when the message arrives!
+            this.setThinking(false);
         },
         
         addSystemMessage(text, type = 'info') {
@@ -170,15 +179,11 @@ document.addEventListener('alpine:init', () => {
         
         copyMessage(text) {
             navigator.clipboard.writeText(text).then(() => {
-                document.dispatchEvent(new CustomEvent('show-toast', { 
-                    detail: { message: 'Copiado al portapapeles', type: 'success' } 
-                }));
+                document.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Copiado al portapapeles', type: 'success' } }));
             });
         },
         
-        getEmojis() { 
-            return ['😀', '😂', '🤔', '👍', '❤️', '🎉', '🔥', '✨', '😊', '🤝', '💡', '🚀']; 
-        },
+        getEmojis() { return ['😀', '😂', '🤔', '👍', '❤️', '🎉', '🔥', '✨', '😊', '🤝', '💡', '🚀']; },
         
         insertEmoji(emoji) {
             this.inputText += emoji;
@@ -188,7 +193,7 @@ document.addEventListener('alpine:init', () => {
         
         exportChat() {
             const text = this.messages
-                .filter(m => m.role !== 'system')
+                .filter(m => m.role !== 'system' && m.role !== 'debug-tags' && m.role !== 'debug-divider')
                 .map(m => `[${m.timestamp}] ${m.user || m.role}: ${m.content}`)
                 .join('\n');
             const blob = new Blob([text], { type: 'text/plain' });

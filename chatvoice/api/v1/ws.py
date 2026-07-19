@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from datetime import timedelta
 from pathlib import Path
 import asyncio
+import markdown
 from concurrent.futures import ThreadPoolExecutor
 
 
@@ -84,7 +85,8 @@ async def websocket_endpoint(
     websocket: WebSocket, script: str, session: ChatSession = Depends(get_ws_session)
 ):
     await websocket.accept()
-
+    md = markdown.Markdown(extensions=["meta", "tables", "fenced_code", "footnotes"])
+ 
     try:
         while True:
             # Run the synchronous blocking function in a thread
@@ -95,7 +97,8 @@ async def websocket_endpoint(
 
             if m["cmd"] == "say" and len(m["args"]) > 0:
                 for msg in m["args"]:
-                    await websocket.send_json({"user": "hola", "message": msg})
+                    html_msg = md.convert(msg)
+                    await websocket.send_json({"user": "hola", "message": html_msg})
 
             elif m["cmd"] == "listen":
                 # If you need to wait for user input, you MUST use asyncio.wait_for

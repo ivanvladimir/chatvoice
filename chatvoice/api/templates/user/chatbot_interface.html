@@ -1,3 +1,4 @@
+{# partials/chat_session.html #}
 <div x-data="chatbotApp()" x-init="init()" @click.stop>
     <div class="flex flex-col h-[calc(100vh-12rem)] max-w-3xl mx-auto w-full">
         
@@ -32,57 +33,27 @@
                     </svg>
                     <span class="text-xs font-medium" 
                           :class="debugMode ? 'text-warning' : 'text-base-content/40'">Debug</span>
-                    <input type="checkbox" 
-                           class="toggle toggle-sm toggle-warning"
-                           x-model="debugMode">
+                    <input type="checkbox" class="toggle toggle-sm toggle-warning" x-model="debugMode">
                 </div>
                 
                 <div class="divider divider-vertical h-6 before:bg-base-300 after:bg-base-300"></div>
                 
-                {# Clear chat #}
-                <button type="button" class="btn btn-ghost btn-sm btn-square" 
-                        @click="clearChat()"
-                        title="Limpiar chat">
+                <button type="button" class="btn btn-ghost btn-sm btn-square" @click="clearChat()" title="Limpiar chat">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                 </button>
                 
-                {# Export chat #}
-                <button type="button" class="btn btn-ghost btn-sm btn-square" 
-                        @click="exportChat()"
-                        title="Exportar chat">
+                <button type="button" class="btn btn-ghost btn-sm btn-square" @click="exportChat()" title="Exportar chat">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                 </button>
             </div>
         </div>
-        
-        {# ─── Debug Tags Section ─── #}
-        <div x-show="debugMode"
-             x-transition:enter="transition ease-out duration-200"
-             x-transition:enter-start="opacity-0 -translate-y-1"
-             x-transition:enter-end="opacity-100 translate-y-0"
-             x-transition:leave="transition ease-in duration-150"
-             x-transition:leave-start="opacity-100 translate-y-0"
-             x-transition:leave-end="opacity-0 -translate-y-1"
-             class="px-4 py-2.5 bg-warning/5 border-b border-warning/20"
-             style="display: none;">
-            <div class="flex flex-wrap gap-1.5">
-                <template x-for="(value, key) in debugData" :key="key">
-                    <div class="badge badge-ghost badge-sm gap-1 border-warning/20 bg-warning/10 text-warning/80">
-                        <span class="font-mono text-[10px] font-semibold opacity-60" x-text="key"></span>
-                        <span class="text-[10px] opacity-40">=</span>
-                        <span class="font-mono text-[10px]" x-text="value"></span>
-                    </div>
-                </template>
-            </div>
-        </div>
-        
+
         {# ─── Messages Area ─── #}
-        <div x-ref="chatMessages"
-             class="flex-1 overflow-y-auto p-4 space-y-4 chat-scroll bg-base-100">
+        <div x-ref="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4 chat-scroll bg-base-100">
             
             {# Welcome message when empty #}
             <template x-if="messages.length === 0">
@@ -92,41 +63,40 @@
                             <span class="text-4xl">💬</span>
                         </div>
                         <h3 class="text-xl font-semibold mb-2">¡Hola!</h3>
-                        <p class="text-base-content/60 max-w-md">
-                            Tu conexión segura está lista. Envía un mensaje para empezar a chatear.
-                        </p>
+                        <p class="text-base-content/60 max-w-md">Tu conexión segura está lista. Envía un mensaje para empezar a chatear.</p>
                     </div>
                 </div>
             </template>
             
-            {# Debug Mode Header Divider #}
-            <div x-show="debugMode && messages.length > 0"
-                 class="flex items-center gap-3 !mt-0 !mb-2"
-                 style="display: none;">
-                <div class="flex-1 h-px bg-warning/30"></div>
-                <span class="text-[10px] text-warning/60 font-mono uppercase tracking-widest flex items-center gap-1.5">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01" />
-                    </svg>
-                    debug mode
-                </span>
-                <div class="flex-1 h-px bg-warning/30"></div>
-            </div>
-            
             {# Message list #}
-            <template x-for="(msg, index) in messages" :key="msg.id">
+            <template x-for="msg in messages" :key="msg.id">
                 <div class="msg-enter">
                     
-                    {# Debug Divider between messages #}
-                    <div x-show="debugMode && index > 0"
-                         class="flex items-center gap-2 my-2"
-                         style="display: none;">
-                        <div class="flex-1 h-px bg-base-200"></div>
-                        <span class="text-[9px] text-base-content/25 font-mono" x-text="`[${index}]`"></span>
-                        <div class="flex-1 h-px bg-base-200"></div>
-                    </div>
+                    {# ─── DEBUG DIVIDER ─── #}
+                    <template x-if="msg.role === 'debug-divider'">
+                        <div x-show="debugMode" class="flex items-center gap-3 my-2" style="display: none;">
+                            <div class="flex-1 h-px bg-warning/30"></div>
+                            <span class="text-[10px] text-warning/60 font-mono uppercase tracking-widest flex items-center gap-1.5" x-text="msg.label || 'debug step'"></span>
+                            <div class="flex-1 h-px bg-warning/30"></div>
+                        </div>
+                    </template>
+
+                    {# ─── DEBUG TAGS ─── #}
+                    <template x-if="msg.role === 'debug-tags'">
+                        <div x-show="debugMode" class="px-1 py-1" style="display: none;">
+                            <div class="flex flex-wrap gap-1.5">
+                                <template x-for="(value, key) in msg.tags" :key="key">
+                                    <div class="badge badge-ghost badge-sm gap-1 border-warning/20 bg-warning/10 text-warning/80">
+                                        <span class="font-mono text-[10px] font-semibold opacity-60" x-text="key"></span>
+                                        <span class="text-[10px] opacity-40">=</span>
+                                        <span class="font-mono text-[10px]" x-text="value"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
                     
-                    {# System message #}
+                    {# ─── SYSTEM MESSAGE (Changed to x-html) ─── #}
                     <template x-if="msg.role === 'system'">
                         <div class="flex justify-center">
                             <div class="alert py-1.5 px-4 text-xs"
@@ -135,12 +105,13 @@
                                     'alert-warning': msg.type === 'warning',
                                     'alert-error': msg.type === 'error'
                                  }">
-                                <span x-text="msg.content"></span>
+                                <!-- RENDER AS HTML -->
+                                <span x-html="msg.content"></span>
                             </div>
                         </div>
                     </template>
                     
-                    {# User message (Right side) #}
+                    {# ─── USER MESSAGE (Kept as x-text for safety) ─── #}
                     <template x-if="msg.role === 'user'">
                         <div class="chat chat-end">
                             <div class="chat-header opacity-50 text-xs mb-1">
@@ -160,7 +131,7 @@
                         </div>
                     </template>
                     
-                    {# Other user/bot message (Left side) #}
+                    {# ─── OTHER USER/BOT MESSAGE (Changed to x-html) ─── #}
                     <template x-if="msg.role === 'other'">
                         <div class="chat chat-start group">
                             <div class="chat-image avatar placeholder">
@@ -173,7 +144,8 @@
                                 <time x-text="msg.timestamp" class="text-xs opacity-50"></time>
                             </div>
                             <div class="chat-bubble">
-                                <p class="whitespace-pre-wrap break-words" x-text="msg.content"></p>
+                                <!-- RENDER AS HTML (Supports markdown-to-html, bold, links, etc) -->
+                                <div class="whitespace-pre-wrap break-words" x-html="msg.content"></div>
                             </div>
                             <div class="chat-footer opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button type="button" class="btn btn-ghost btn-xs" @click="copyMessage(msg.content)" title="Copiar">
@@ -185,44 +157,35 @@
                         </div>
                     </template>
                     
-                    {# Debug metadata #}
-                    <div x-show="debugMode"
-                         class="mt-1"
-                         style="display: none;">
-                        <span class="text-[9px] font-mono text-base-content/20"
-                              x-text="`id:${msg.id}` + (msg.user ? ` user:${msg.user}` : ` type:${msg.type}`) + ` chars:${msg.content.length}`"></span>
-                    </div>
-                    
                 </div>
             </template>
-            
         </div>
-        
+
         {# ─── Input Area ─── #}
         <div class="border-t border-base-300 p-3 bg-base-200/50 rounded-b-2xl">
-            <div class="flex items-end gap-2">
+            
+            {# ─── THINKING STATE ─── #}
+            <div x-show="isThinking" x-transition class="flex items-center justify-center gap-3 py-4" style="display: none;">
+                <span class="loading loading-dots loading-sm text-primary"></span>
+                <span class="text-sm text-base-content/60 italic">El sistema está pensando...</span>
+            </div>
+
+            {# ─── NORMAL INPUT STATE ─── #}
+            <div x-show="!isThinking" class="flex items-end gap-2" style="display: none;">
                 
-                {# Emoji picker toggle #}
                 <div class="dropdown dropdown-top dropdown-end">
-                    <div tabindex="0" role="button" 
-                         class="btn btn-ghost btn-circle btn-sm"
-                         :class="{ 'btn-primary': showEmojiPicker }">
+                    <div tabindex="0" role="button" class="btn btn-ghost btn-circle btn-sm" :class="{ 'btn-primary': showEmojiPicker }">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
-                    <ul tabindex="0" class="dropdown-content z-[1] p-2 shadow-lg bg-base-100 rounded-box w-64 grid grid-cols-6 gap-1"
-                        @click.away="showEmojiPicker = false">
+                    <ul tabindex="0" class="dropdown-content z-[1] p-2 shadow-lg bg-base-100 rounded-box w-64 grid grid-cols-6 gap-1" @click.away="showEmojiPicker = false">
                         <template x-for="emoji in getEmojis()" :key="emoji">
-                            <button type="button" class="btn btn-ghost btn-sm text-xl p-0 w-10 h-10"
-                                    @click="insertEmoji(emoji)"
-                                    x-text="emoji">
-                            </button>
+                            <button type="button" class="btn btn-ghost btn-sm text-xl p-0 w-10 h-10" @click="insertEmoji(emoji)" x-text="emoji"></button>
                         </template>
                     </ul>
                 </div>
                 
-                {# Text input #}
                 <div class="flex-1 relative">
                     <textarea x-ref="chatInput"
                               x-model="inputText"
@@ -235,7 +198,6 @@
                     </textarea>
                 </div>
                 
-                {# Send button #}
                 <button type="button" class="btn btn-primary btn-circle"
                         @click="sendMessage()"
                         :disabled="!inputText.trim() || !isConnected">
@@ -245,10 +207,10 @@
                 </button>
             </div>
             
-            {# Footer hint #}
             <p class="text-center text-[10px] text-base-content/40 mt-2">
                 Enter para enviar · Shift+Enter para nueva línea
             </p>
         </div>
     </div>
 </div>
+
