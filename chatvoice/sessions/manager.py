@@ -56,6 +56,19 @@ class SessionManager:
         with self._lock:
             return len(self._sessions)
 
+    def list_sessions(self) -> list[dict]:
+        """Return info about all active sessions (for debugging/monitoring)."""
+        with self._lock:
+            return [
+                {
+                    "session_id": s.session_id,
+                    "user_id": s.user_id,
+                    "interpreter": s.interpreter_name,
+                    "is_alive": s._thread.is_alive(),
+                }
+                for s in self._sessions.values()
+            ]
+
     def remove_by_user_and_script(
         self, user_id: str | int, script_name: str, wait: float = 2.0
     ) -> int:

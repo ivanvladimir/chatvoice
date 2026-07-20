@@ -1,4 +1,5 @@
 import logging
+import time
 from datetime import UTC, datetime
 from typing import Annotated
 
@@ -6,10 +7,13 @@ from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..dependencies import get_current_user, get_current_superuser
+
 from ...core.config import settings
 from ...core.db.database import async_get_db
 from ...core.health import check_database_health
-from ...core.schemas import HealthCheck, ReadyCheck
+from ...core.schemas import HealthCheck, ReadyCheck, SessionsCheck
+
 
 router = APIRouter(tags=["health"])
 
@@ -24,13 +28,13 @@ async def health(
     request: Request,
 ):
     http_status = status.HTTP_200_OK
-    transport = request.app.state.transport
+    uptime_seconds = time.monotonic() - request.app.state.start_time
     response = {
         "status": STATUS_HEALTHY,
         "environment": settings.ENVIRONMENT.value,
         "version": settings.APP_VERSION,
+        "uptime_worker": uptime_seconds,
         "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
-        "sessions": transport.session_manager.active_count(),
     }
 
     return JSONResponse(status_code=http_status, content=response)
@@ -63,3 +67,24 @@ async def ready(db: Annotated[AsyncSession, Depends(async_get_db)]):
     }
 
     return JSONResponse(status_code=http_status, content=response)
+
+
+@router.post("/sessions_status", response_model=SessionsCheck)
+async def sessions_status(
+    request: Request,
+    get_current_admin: Annotated[dict, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+):
+    http_status = status.HTTP_200_OK
+    transport = request.app.state.transport
+
+    response = {
+        "satus": http_status,
+        "count": transport.session_manager.active_count(),
+        "sessions": transport.session_manager.list_sessions(),
+        "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
+    }
+
+    return JSONResponse(status_code=http_status, content=response)
+
+

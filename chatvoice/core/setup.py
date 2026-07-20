@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 import anyio
+import time
 import fastapi
 
 # import redis.asyncio as redis
@@ -106,10 +107,18 @@ def lifespan_factory(
         # await set_threadpool_tokens()
 
         try:
+            # Setting the starting time
+            app.state.start_time = time.monotonic()
+
+            # Settin the LLM Client
             llm_client = init_llm_client(settings)
             app.state.llm_client = llm_client
+
+            # Setting the transport by websocket
             ws = WS()
             app.state.transport = ws
+
+
 
             # if isinstance(settings, RedisCacheSettings):
             #     await create_redis_cache_pool()
