@@ -74,7 +74,7 @@ class UserCreateInternal(UserBase):
 
 
 class UserUpdate(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
 
     name: Annotated[
         str | None,
@@ -117,7 +117,7 @@ class UserUpdate(BaseModel):
 
 
 class UserUpdateInternal(UserUpdate):
-    hashed_password: str
+    hashed_password: str | None = None
     updated_at: datetime
 
 
