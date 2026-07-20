@@ -19,6 +19,7 @@ from ..crud.tier import crud_tiers
 from ..crud.users import crud_users
 from ..schemas.rate_limit import RateLimitRead, sanitize_path
 from ..schemas.tier import TierRead
+from ..schemas.user import UserRead
 from ..sessions.session import ChatSession
 from ..transport.ws import WS
 
@@ -118,10 +119,10 @@ async def get_optional_user(
 
 async def get_current_superuser(
     current_user: Annotated[dict, Depends(get_current_user)],
-) -> dict:
+) -> UserRead:
     if not current_user["role"] == "superuser":
         raise ForbiddenException("You do not have enough privileges.")
-
+    
     return current_user
 
 

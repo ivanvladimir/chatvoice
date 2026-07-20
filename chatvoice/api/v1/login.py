@@ -29,7 +29,7 @@ from ...core.security import (
     get_password_hash,
     verify_token,
 )
-from ...core.types import UserRole
+from ...core.types import UserRole, UserResponse
 from ...crud.users import crud_users
 from ...schemas.user import UserCreate, UserCreateInternal, UserRead
 
@@ -56,16 +56,6 @@ class LoginResponse(BaseModel):
     username: str
     name: str
 
-
-class UserResponse(BaseModel):
-    """Current user info response."""
-
-    id: int
-    username: str
-    name: str
-    email: str
-    is_verified: bool
-    role: UserRole
 
 
 class RegisterRequest(BaseModel):

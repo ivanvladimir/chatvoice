@@ -1,0 +1,29 @@
+{# ─── DELETE CONFIRMATION MODAL CONTENT ─── #}
+<div class="space-y-4">
+    <div class="flex items-center gap-3 p-4 bg-error/10 rounded-lg">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-error shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+        </svg>
+        <div>
+            <h4 class="font-bold">¿Eliminar "{{ project_name }}"?</h4>
+            <p class="text-sm text-base-content/60">Esta acción no se puede deshacer</p>
+        </div>
+    </div>
+    
+    <div class="modal-action">
+        <button class="btn" @click="document.dispatchEvent(new CustomEvent('closeDeleteModal'))">
+            Cancelar
+        </button>
+        <button class="btn btn-error"
+                hx-delete="{{ url_for('delete_project_htmx', project_id=project_id) }}"
+                hx-target="#protected-content"
+                hx-indicator="#delete-loading"
+                @click="document.dispatchEvent(new CustomEvent('closeDeleteModal'))">
+            <span id="delete-loading" class="loading loading-spinner loading-xs hidden"></span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Eliminar
+        </button>
+    </div>
+</div>

@@ -1,0 +1,46 @@
+{# ─── EMPTY STATE ─── #}
+<div class="flex flex-col items-center justify-center py-16 px-4">
+    
+    <div class="bg-base-200 rounded-full p-8 mb-6">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-base-content/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+        </svg>
+    </div>
+    
+    <h3 class="text-xl font-semibold text-base-content/70 mb-2">
+        {% if search %}
+        No se encontraron proyectos
+        {% else %}
+        No tienes proyectos aún
+        {% endif %}
+    </h3>
+    
+    <p class="text-base-content/40 text-center max-w-md mb-8">
+        {% if search %}
+        Intenta con otros términos de búsqueda o crea un nuevo proyecto
+        {% else %}
+        Crea tu primer proyecto para comenzar a organizar tus archivos y carpetas
+        {% endif %}
+    </p>
+    
+    <div class="flex gap-3">
+        {% if search %}
+        <button class="btn btn-ghost"
+                hx-post="{{ url_for('projects_list_htmx') }}"
+                hx-target="#protected-content">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Limpiar búsqueda
+        </button>
+        {% endif %}
+        
+        <button class="btn btn-primary"
+                @click="document.dispatchEvent(new CustomEvent('openCreateModal'))">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Crear proyecto
+        </button>
+    </div>
+</div>

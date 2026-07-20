@@ -1,0 +1,97 @@
+{# ─── ERRORS ─── #}
+{% if errors %}
+<div class="alert alert-error mb-4">
+    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    <div>
+        <h4 class="font-bold">Errores</h4>
+        <ul class="text-sm mt-1 list-disc list-inside">
+            {% for error in errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
+{# ─── FORM ─── #}
+<form hx-post="{{ url_for('create_project_htmx') }}"
+      hx-target="#create-form-container"
+      hx-indicator="#create-loading"
+      class="space-y-4">
+    
+    <!-- Project Name -->
+    <div class="form-control w-full">
+        <label class="label">
+            <span class="label-text font-medium">Nombre del proyecto <span class="text-error">*</span></span>
+            <span class="label-text-alt text-base-content/40">Máx. 100 caracteres</span>
+        </label>
+        <input type="text" 
+               name="name" 
+               placeholder="Mi Proyecto" 
+               class="input input-bordered w-full {{ 'input-error' if errors else '' }}"
+               value="{{ name | default('') }}"
+               required 
+               maxlength="100"
+               autofocus />
+    </div>
+    
+    <!-- Directory Path -->
+    <div class="form-control w-full">
+        <label class="label">
+            <span class="label-text font-medium">Ruta del directorio <span class="text-error">*</span></span>
+            <span class="label-text-alt text-base-content/40">Debe ser única</span>
+        </label>
+        <div class="join w-full">
+            <span class="join-item bg-base-200 text-base-content/50 px-3 text-sm">📁</span>
+            <input type="text" 
+                   name="directory_path" 
+                   placeholder="/var/www/projects/mi-proyecto" 
+                   class="input input-bordered join-item w-full {{ 'input-error' if errors else '' }}"
+                   value="{{ directory_path | default('') }}"
+                   required 
+                   maxlength="500" />
+        </div>
+        <label class="label">
+            <span class="label-text-alt text-base-content/40">Ej: /path/to/project, s3://bucket/projects/name</span>
+        </label>
+    </div>
+    
+    <!-- Description -->
+    <div class="form-control w-full">
+        <label class="label">
+            <span class="label-text font-medium">Descripción</span>
+            <span class="label-text-alt text-base-content/40">Opcional</span>
+        </label>
+        <textarea name="description" 
+                  class="textarea textarea-bordered w-full h-24"
+                  placeholder="Describe brevemente tu proyecto..."
+                  maxlength="500">{{ description | default('') }}</textarea>
+        <label class="label">
+            <span></span>
+            <span class="label-text-alt text-base-content/40" 
+                  x-data="{ count: {{ description | length if description else 0 }} }"
+                  x-text="`${$el.closest('.form-control').querySelector('textarea').value.length}/500`">
+            </span>
+        </label>
+    </div>
+    
+    <!-- Actions -->
+    <div class="modal-action">
+        <button type="button" 
+                class="btn"
+                @click="document.dispatchEvent(new CustomEvent('closeCreateModal'))">
+            Cancelar
+        </button>
+        <button type="submit" 
+                class="btn btn-primary"
+                id="create-submit-btn">
+            <span id="create-loading" class="loading loading-spinner loading-xs hidden"></span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Crear proyecto
+        </button>
+    </div>
+</form>

@@ -1,0 +1,99 @@
+{# ─── PROJECT CARD ─── #}
+<div class="card bg-base-200 hover:bg-base-300 transition-colors shadow-sm hover:shadow-md"
+     id="project-card-{{ project.id }}">
+    
+    <div class="card-body p-4">
+        
+        {# ─── HEADER: Status + Actions ─── #}
+        <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center gap-2 min-w-0">
+                {# Status Badge #}
+                <span class="badge {{ 'badge-success' if project.is_active else 'badge-ghost' }} badge-sm">
+                    {{ 'Activo' if project.is_active else 'Inactivo' }}
+                </span>
+                <h3 class="card-title text-base truncate">{{ project.name }}</h3>
+            </div>
+            
+            {# Dropdown Menu #}
+            <div class="dropdown dropdown-end dropdown-hover">
+                <div tabindex="0" role="button" class="btn btn-ghost btn-xs btn-square">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                    </svg>
+                </div>
+                <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-300">
+                    <li>
+                        <a href="/projects/{{ project.uuid }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            Abrir
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/projects/{{ project.uuid }}/settings">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            Configuración
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" @click.prevent="htmx.ajax('PATCH', '{{ url_for(\"toggle_project_active_htmx\", project_id=project.id) }}', {target: '#protected-content', swap: 'innerHTML'})">
+                            {% if project.is_active %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                            </svg>
+                            Desactivar
+                            {% else %}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Activar
+                            {% endif %}
+                        </a>
+                    </li>
+                    <li><hr class="my-1"></li>
+                    <li>
+                        <a href="#" 
+                           class="text-error"
+                           onclick="event.preventDefault(); if(confirm('¿Estás seguro de eliminar este proyecto?')) { htmx.ajax('DELETE', '{{ url_for(\"delete_project_htmx\", project_id=project.id) }}', {target: '#protected-content', swap: 'innerHTML'}); }">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Eliminar
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        {# ─── DESCRIPTION ─── #}
+        {% if project.description %}
+        <p class="text-sm text-base-content/60 line-clamp-2">{{ project.description }}</p>
+        {% else %}
+        <p class="text-sm text-base-content/30 italic">Sin descripción</p>
+        {% endif %}
+        
+        {# ─── FOOTER ─── #}
+        <div class="card-actions justify-between items-center mt-3 pt-3 border-t border-base-300/50">
+            
+            {# Directory Path #}
+            <div class="tooltip tooltip-left" data-tip="{{ project.directory_path }}">
+                <div class="flex items-center gap-1 text-xs text-base-content/50 max-w-[200px]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                    </svg>
+                    <span class="truncate">{{ project.directory_path }}</span>
+                </div>
+            </div>
+            
+            {# Created Date #}
+            <span class="text-xs text-base-content/40">
+                {{ project.created_at.strftime('%d/%m/%Y') }}
+            </span>
+        </div>
+    </div>
+</div>

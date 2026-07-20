@@ -17,4 +17,4 @@ CRUDProject = FastCRUD[
     ProjectDelete,
     ProjectRead,
 ]
-crud_projects = CRUProject(Project)
+crud_projects = CRUDProject(Project)

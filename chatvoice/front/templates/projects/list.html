@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Proyectos{% endblock %}
+
+{% block protected_htmx_config %}
+hx-post="{{ url_for('projects_list_htmx') }}"
+hx-trigger="load-protected"
+hx-swap="innerHTML"
+hx-target="this"
+hx-indicator="#protected-loading"
+{% endblock %}
+
+{% block protected_content %}
+{# Initial content before HTMX loads #}
+{% endblock %}
+
+{% block extra_content %}
+{# Create Project Modal - Outside protected zone so it persists #}
+<div x-data="projectModal()" x-init="init()">
+    
+    <!-- Modal -->
+    <dialog x-ref="modal" 
+            class="modal" 
+            :class="{ 'modal-open': isOpen }"
+            @click.self="close()">
+        <div class="modal-box max-w-lg">
+            <h3 class="font-bold text-lg flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Nuevo Proyecto
+            </h3>
+            <p class="py-2 text-base-content/60">Crea un nuevo proyecto para organizar tus archivos</p>
+            
+            <!-- Form Container (HTMX replaces this) -->
+            <div id="create-form-container">
+                {% include "projects/partials/create_project_form.html" %}
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button @click="close()">close</button>
+        </form>
+    </dialog>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function projectModal() {
+    return {
+        isOpen: false,
+        
+        init() {
+            // Listen for events to open/close modal
+            document.addEventListener('openCreateModal', () => this.open());
+            document.addEventListener('closeCreateModal', () => this.close());
+            document.addEventListener('projectCreated', () => this.close());
+        },
+        
+        open() {
+            this.isOpen = true;
+        },
+        
+        close() {
+            this.isOpen = false;
+            // Reset form after animation
+            setTimeout(() => {
+                const container = document.getElementById('create-form-container');
+                if (container) {
+                    htmx.ajax('GET', '{{ url_for("get_create_form") }}', {
+                        target: container,
+                        swap: 'innerHTML'
+                    });
+                }
+            }, 300);
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -148,3 +148,11 @@ class ProjectDetailWithUsers(ProjectDetail):
     """Full project schema with member user details."""
 
     member_links: list[ProjectMemberReadWithUser] = Field(default_factory=list)
+
+class ProjectDelete(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    is_deleted: bool
+    deleted_at: datetime
+
+
