@@ -5,9 +5,9 @@ from fastapi import FastAPI
 
 from .admin.initialize import create_admin_interface
 from .api import router as api_router
-from .front import router as front_router
-from .core.setup import create_application, lifespan_factory
 from .core.config import get_settings  # wherever get_settings lives
+from .core.setup import create_application, lifespan_factory
+from .front import router as front_router
 
 
 def create_app() -> FastAPI:

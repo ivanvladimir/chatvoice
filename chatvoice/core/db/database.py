@@ -3,7 +3,7 @@ from collections.abc import AsyncGenerator
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
-from ..config import settings, DatabaseOption
+from ..config import DatabaseOption, settings
 
 if settings.DATABASE == DatabaseOption.SQLITE:
     DATABASE_URI = settings.SQLITE_URI

@@ -1,11 +1,12 @@
 import logging
 import random
-from simpleeval import simple_eval, NameNotDefined, InvalidExpression
-from typing import Generator, Any
+from typing import Any, Generator
+
+from simpleeval import InvalidExpression, NameNotDefined, simple_eval
 
 from ..utils.llm import llm_client_response
-from .expresion_evaluator import ExpressionEvaluator
 from .conversation import Conversation
+from .expresion_evaluator import ExpressionEvaluator
 
 log = logging.getLogger(__name__)
 
@@ -352,6 +353,7 @@ def cmd_info(
         "value": info_data[-1] if info_data else [],
         "ok": bool(info_data),  # False if no valid args were passed
     }
+
 
 def cmd_tag(
     args: list, ctx: dict, evaluator: "ExpressionEvaluator", callback: callable

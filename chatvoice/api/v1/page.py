@@ -1,9 +1,10 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 
 from ...api.dependencies import get_current_user
 from ...core.dependencies.paths import RuntimeContext, get_runtime_context
-from typing import Annotated
 from ...utils.markdown import render_markdown_page
 
 router = APIRouter(tags=["content"])

@@ -1,7 +1,8 @@
 import logging
 import logging.handlers
-import structlog
 from pathlib import Path
+
+import structlog
 
 
 def setup_logging(

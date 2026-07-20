@@ -2,7 +2,7 @@ import logging
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status, Request
+from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,8 +10,6 @@ from ...core.config import settings
 from ...core.db.database import async_get_db
 from ...core.health import check_database_health
 from ...core.schemas import HealthCheck, ReadyCheck
-from ..dependencies import get_session_transport
-from ...transport.ws import WS
 
 router = APIRouter(tags=["health"])
 

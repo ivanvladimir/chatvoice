@@ -1,3 +1,4 @@
+from enum import Enum as PyEnum
 from typing import Annotated
 
 from crudadmin import CRUDAdmin
@@ -5,20 +6,18 @@ from crudadmin.admin_interface.model_view import PasswordTransformer
 from pydantic import BaseModel, Field
 
 from ..core.security import get_password_hash
+from ..models.kb import KB
+from ..models.project import Project
 
 # from ..models.task import Task
 from ..models.tier import Tier
 from ..models.user import User
-from ..models.kb import KB
-from ..models.project import Project
+from ..schemas.kb import KBCreate, KBUpdate, KBUpdateInternal
+from ..schemas.project import ProjectCreate, ProjectUpdate, ProjectUpdateInternal
 
 # from ..schemas.task import TaskUpdate, TaskCreate, TaskCreateInternal
 from ..schemas.tier import TierCreate, TierUpdate
-from ..schemas.user import UserCreate, UserUpdateInternal, UserUpdate
-from ..schemas.kb import KBCreate, KBUpdateInternal, KBUpdate
-from ..schemas.project import ProjectCreate, ProjectUpdateInternal, ProjectUpdate
-
-from enum import Enum as PyEnum
+from ..schemas.user import UserCreate, UserUpdate, UserUpdateInternal
 
 
 class TaskStatus(PyEnum):

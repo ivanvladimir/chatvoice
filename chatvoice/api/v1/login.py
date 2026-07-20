@@ -1,26 +1,24 @@
 from datetime import timedelta
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, Request, Response, Form, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, Form, Request, Response, status
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, EmailStr, Field, validator, ValidationError
+from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import BaseModel, EmailStr, Field, ValidationError, validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ...api.dependencies import get_current_user
 from ...core.config import settings
 from ...core.db.database import async_get_db
-from ...api.dependencies import get_current_user
 from ...core.exceptions.http_exceptions import (
-    UnauthorizedException,
+    CustomException,
     DuplicateValueException,
     NotFoundException,
-    CustomException,
+    UnauthorizedException,
 )
 
 # from ...core.utils import queue
 from ...core.schemas import Token
-from ...schemas.user import UserCreate, UserRead, UserCreateInternal
-from ...crud.users import crud_users
 from ...core.security import (
     TokenType,
     authenticate_user,
@@ -28,10 +26,12 @@ from ...core.security import (
     create_refresh_token,
     create_verification_token,
     decode_verification_token,
-    verify_token,
     get_password_hash,
+    verify_token,
 )
 from ...core.types import UserRole
+from ...crud.users import crud_users
+from ...schemas.user import UserCreate, UserCreateInternal, UserRead
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

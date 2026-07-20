@@ -16,8 +16,7 @@ from __future__ import annotations
 import re
 import shlex
 from dataclasses import dataclass, field
-from typing import Optional, Literal, List
-
+from typing import List, Literal, Optional
 
 # ---------------------------------------------------------------------------
 # Data model

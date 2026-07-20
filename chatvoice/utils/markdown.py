@@ -1,8 +1,8 @@
 import time
 from pathlib import Path
-import markdown
 
-from fastapi import Request, HTTPException
+import markdown
+from fastapi import HTTPException, Request
 from fastapi.responses import HTMLResponse
 
 from ..core.dependencies.paths import RuntimeContext

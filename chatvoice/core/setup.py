@@ -1,8 +1,8 @@
 from collections.abc import AsyncGenerator, Callable
 from contextlib import _AsyncGeneratorContextManager, asynccontextmanager
+from pathlib import Path
 from typing import Any
 
-from pathlib import Path
 import anyio
 import fastapi
 
@@ -14,7 +14,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
 from fastapi.staticfiles import StaticFiles
-
 from fastapi_tailwind import tailwind
 
 from ..api.dependencies import get_current_superuser
@@ -23,6 +22,8 @@ from ..api.dependencies import get_current_superuser
 from ..middleware.client_cache_middleware import ClientCacheMiddleware
 from ..middleware.logger_middleware import LoggerMiddleware
 from ..models import *  # noqa: F403
+from ..transport.ws import WS
+from ..utils.llm import init_llm_client
 from .config import (
     AppSettings,
     ClientSideCacheSettings,
@@ -34,9 +35,6 @@ from .config import (
 from .db import Base
 from .db.database import async_engine as engine
 from .dependencies.paths import get_runtime_settings
-
-from ..transport.ws import WS
-from ..utils.llm import init_llm_client
 
 
 # -------------- database --------------

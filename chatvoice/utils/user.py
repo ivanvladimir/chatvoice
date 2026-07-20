@@ -1,19 +1,18 @@
+import asyncio
+
+from rich import print
+from rich.prompt import IntPrompt, Prompt
 from sqlalchemy import select
 
-
-from rich.prompt import Prompt, IntPrompt
-from rich import print
-
-from ..models import User, Tier
-from ..schemas.user import UserRole, UserCreate, UserCreateInternal
-from ..core.security import get_password_hash
 from ..core.db.database_sync import get_db_ctx, init_db
-
-import asyncio
+from ..core.security import get_password_hash
+from ..models import Tier, User
+from ..schemas.user import UserCreate, UserCreateInternal, UserRole
 
 
 async def _audit_admin_users_async():
     from crudadmin.admin_user.schemas import AdminUserRead
+
     from ..admin.initialize import create_admin_interface
 
     admin = create_admin_interface()
@@ -53,6 +52,7 @@ def create_admin_user():
 async def _create_admin_user_async(username: str, password: str):
     """Internal async function to handle database operations."""
     from crudadmin.admin_user.schemas import AdminUserCreateInternal
+
     from ..admin.initialize import create_admin_interface
 
     admin = create_admin_interface()

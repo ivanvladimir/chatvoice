@@ -1,19 +1,17 @@
-from typing import Any, Literal, Callable
-from rich.prompt import Prompt
-from rich.markdown import Markdown
-from rich.console import Console as PConsole
+from typing import Any, Callable, Literal
 
-from sqlalchemy import select
 import bcrypt
+from rich.console import Console as PConsole
+from rich.markdown import Markdown
+from rich.prompt import Prompt
+from sqlalchemy import select
 
+from ..core.db.database_sync import get_db_ctx, init_db
 from ..core.logger import get_logger
-from ..core.db.database_sync import init_db, get_db_ctx
 from ..models import User
 from ..schemas.user import UserRead
-
 from ..sessions.manager import SessionManager
 from ..store.memory import MemoryStateStore
-
 
 log = get_logger(__name__)
 
@@ -96,5 +94,5 @@ class Console:
                     self.console.print(f"[cyan]   {text}[/]")
                 self.console.print()
                 self.console.file.flush()
- 
+
         self.console.print("\n====== Conversation finished =====")

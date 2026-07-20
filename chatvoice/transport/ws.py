@@ -1,12 +1,11 @@
-from typing import Callable, Optional
-from pathlib import Path
+from typing import Optional
 
-from ..core.logger import get_logger
 from ..core.db.database_sync import init_db
-
+from ..core.interpreter import Interpreter
+from ..core.logger import get_logger
 from ..sessions.manager import SessionManager
-from ..store.memory import MemoryStateStore
 from ..sessions.session import ChatSession
+from ..store.memory import MemoryStateStore
 
 log = get_logger(__name__)
 
@@ -15,18 +14,20 @@ class WS:
     def __init__(self, store_type: str = "memory"):
         """Initialize the WebSocket transport layer."""
         init_db()
-        
+
         if store_type.startswith("memory"):
             self.store = MemoryStateStore()
         # elif store_type.startswith("sql"):
         #     self.store = SqlStateStore()
         else:
             raise ValueError(f"Unknown store type: {store_type}")
-        
+
         self.session_manager = SessionManager(self.store)
         log.info(f"WS transport initialized with {store_type} store")
 
-    def create_session(self, user_id: int | str, interpreter: "Interpreter") -> ChatSession:
+    def create_session(
+        self, user_id: int | str, interpreter: "Interpreter"
+    ) -> ChatSession:
         """Create and start a new chat session."""
         session = self.session_manager.create(user_id, interpreter)
         log.info(f"Created session {session.session_id} for user {user_id}")
@@ -36,15 +37,15 @@ class WS:
         """Get a session by ID. Returns None if not found or dead."""
         if not session_id:
             return None
-        
+
         session = self.session_manager.get(session_id)
-        
+
         # Check if the thread is actually alive
         if session and not session._thread.is_alive():
             log.warning(f"Session {session_id} found but thread is dead, cleaning up")
             self.remove_session(session_id)
             return None
-        
+
         return session
 
     def remove_session(self, session_id: str) -> bool:
@@ -75,4 +76,6 @@ class WS:
         """Remove any existing sessions for this user+script combo."""
         count = self.session_manager.remove_by_user_and_script(user_id, script_name)
         if count > 0:
-            log.warning(f"Cleaned up {count} stale session(s) for user {user_id} on script '{script_name}'")
+            log.warning(
+                f"Cleaned up {count} stale session(s) for user {user_id} on script '{script_name}'"
+            )

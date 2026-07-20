@@ -1,9 +1,10 @@
 import queue
 import threading
-from typing import Callable, Optional
+from typing import Optional
 
-from ..core.interpreter import InterpreterStop
+from ..core.interpreter import Interpreter, InterpreterStop
 from ..core.logger import get_logger
+from ..store.base import BaseStateStore
 
 log = get_logger(__name__)
 
@@ -100,6 +101,8 @@ class ChatSession:
         finally:
             # Persist final state
             final_state = {"slots": dict(interpreter.conversation.slots)}
-            self.store.set(self.user_id, self.interpreter_name, self.session_id, final_state)
+            self.store.set(
+                self.user_id, self.interpreter_name, self.session_id, final_state
+            )
             # Signal to WebSocket handler that we're done
             self._outbox.put(None)

@@ -3,9 +3,9 @@ import os
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, ValidationError
 from fastapi import Depends
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel, ValidationError
 
 
 class PathsConfig(BaseModel):

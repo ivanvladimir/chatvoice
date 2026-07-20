@@ -3,10 +3,9 @@ from contextlib import contextmanager
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-
-from ..db import Base
 from ...models import *
-from ..config import settings, DatabaseOption
+from ..config import DatabaseOption, settings
+from ..db import Base
 
 if settings.DATABASE == DatabaseOption.SQLITE:
     DATABASE_URI = settings.SQLITE_URI

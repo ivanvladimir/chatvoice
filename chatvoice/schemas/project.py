@@ -1,9 +1,9 @@
 from datetime import datetime
+from enum import Enum
 from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
-from enum import Enum
 
 
 class ProjectPermission(str, Enum):

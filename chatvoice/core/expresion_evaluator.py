@@ -1,6 +1,7 @@
 import ast
 from typing import Any
-from simpleeval import simple_eval, NameNotDefined, InvalidExpression
+
+from simpleeval import InvalidExpression, NameNotDefined, simple_eval
 
 # Import your parser models
 from .parser import Clause, Condition

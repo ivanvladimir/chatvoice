@@ -1,9 +1,10 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 
 from ...api.dependencies import get_current_user
-from fastapi.templating import Jinja2Templates
-from typing import Annotated
 
 router = APIRouter(tags=["chatbot"])
 

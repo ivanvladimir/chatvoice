@@ -1,31 +1,33 @@
+import asyncio
+import json
+from concurrent.futures import ThreadPoolExecutor
+from datetime import timedelta
+from pathlib import Path
+from typing import Annotated
+
+import markdown
 from fastapi import (
     APIRouter,
-    WebSocket,
-    WebSocketDisconnect,
+    Cookie,
     Depends,
     Request,
     Response,
-    Cookie,
+    WebSocket,
+    WebSocketDisconnect,
 )
 from fastapi.responses import JSONResponse
-from datetime import timedelta
-from pathlib import Path
-import asyncio
-import markdown
-import json
-from concurrent.futures import ThreadPoolExecutor
 
-from starlette.concurrency import run_in_threadpool
-
-from typing import Annotated
-
-from ..dependencies import get_current_user, get_ws_session, get_session_transport
 from ...core.interpreter import Interpreter
-from ...core.security import create_ws_session_token, TokenType
+from ...core.logger import get_logger
+from ...core.security import TokenType, create_ws_session_token, decode_ws_token
 from ...sessions.session import ChatSession
-from ...core.security import decode_ws_token
+from ...transport.ws import WS
+from ..dependencies import get_current_user, get_session_transport, get_ws_session
 
 router = APIRouter(tags=["health"])
+
+log = get_logger(__name__)
+
 
 @router.post("/ws-session/{script}")
 async def establish_ws_session(
@@ -53,7 +55,7 @@ async def establish_ws_session(
     )
 
     session = request.app.state.transport.create_session(user_id, interpreter)
-    
+
     # 3. Generate token & set cookie
     ws_token = create_ws_session_token(
         data={
@@ -64,11 +66,13 @@ async def establish_ws_session(
         expires_delta=timedelta(minutes=15),
     )
 
-    response = JSONResponse({
-        "message": "Session created",
-        "status": "ok",
-        "session_id": session.session_id,
-    })
+    response = JSONResponse(
+        {
+            "message": "Session created",
+            "status": "ok",
+            "session_id": session.session_id,
+        }
+    )
 
     response.set_cookie(
         key="ws_session",
@@ -76,7 +80,7 @@ async def establish_ws_session(
         path="/",
         httponly=True,
         samesite="lax",
-        secure=False, 
+        secure=False,
     )
 
     return response
@@ -84,6 +88,7 @@ async def establish_ws_session(
 
 # Create a thread pool outside the endpoint
 executor = ThreadPoolExecutor(max_workers=4)
+
 
 def tuples_to_json(items, sep=":"):
     """
@@ -166,29 +171,37 @@ async def websocket_endpoint(
                 _name_system = session.interpreter.settings.get("_name_user", "System")
                 for msg in args:
                     html_msg = md.convert(msg)
-                    await websocket.send_json({"type": "message", "user": _name_system, "message": html_msg})
+                    await websocket.send_json(
+                        {"type": "message", "user": _name_system, "message": html_msg}
+                    )
 
             elif cmd == "info" and args:
                 json_message = tuples_to_json_string(args)
                 await websocket.send_json({"type": "tags", "message": json_message})
 
             elif cmd == "tag" and args:
-                await websocket.send_json({"type": "divider", "tag": args[0], "message": "\n".join(args[1:])})
+                await websocket.send_json(
+                    {"type": "divider", "tag": args[0], "message": "\n".join(args[1:])}
+                )
 
             elif cmd == "listen":
                 await websocket.send_json({"type": "listen"})
                 try:
-                    data = await asyncio.wait_for(websocket.receive_text(), timeout=60.0)
+                    data = await asyncio.wait_for(
+                        websocket.receive_text(), timeout=60.0
+                    )
                     session.send(data)
                 except asyncio.TimeoutError:
                     session.send("")
 
             elif cmd == "error":
-                await websocket.send_json({"type": "error", "message": args[0] if args else "Unknown error"})
+                await websocket.send_json(
+                    {"type": "error", "message": args[0] if args else "Unknown error"}
+                )
                 break
 
     except WebSocketDisconnect:
-        log.info(f"WebSocket disconnected: {session_id}")
+        log.info(f"WebSocket disconnected: {session.session_id}")
     except Exception as e:
         log.exception(f"Unexpected error in WebSocket: {e}")
     finally:

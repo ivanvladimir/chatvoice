@@ -4,7 +4,6 @@ from typing import Annotated
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 from ..core.schemas import PersistentDeletion, TimestampSchema, UUIDSchema
-
 from ..core.types import UserRole
 
 

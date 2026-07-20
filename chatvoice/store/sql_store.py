@@ -1,8 +1,10 @@
-from sqlalchemy import select, insert, update
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
-from ..models import KB
+
+from sqlalchemy import insert, select, update
+
 from ..core.db.database_sync import get_db_ctx
+from ..models import KB
 
 
 class SqlAlchemyMemoryStore:

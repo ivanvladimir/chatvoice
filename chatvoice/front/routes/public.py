@@ -1,5 +1,6 @@
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
-from fastapi import APIRouter, Request, Depends
+
 from ...core.dependencies.paths import RuntimeContext, get_runtime_context
 from ...utils.markdown import markdown_page, render_markdown_page
 

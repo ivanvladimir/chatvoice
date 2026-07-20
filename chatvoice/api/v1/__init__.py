@@ -1,10 +1,11 @@
 from fastapi import APIRouter
 
+from .default import router as default_router
 from .health import router as health_router
+from .interface import router as interface_router
 from .login import router as login_router
 from .ws import router as ws_router
-from .default import router as default_router
-from .interface import router as interface_router
+
 # from .logout import router as logout_router
 # from .oauth import router as oauth_router
 # from .posts import router as posts_router

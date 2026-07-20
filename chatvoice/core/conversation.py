@@ -1,7 +1,7 @@
-import yaml
-import sys
 import os
+import sys
 
+import yaml
 from sqlalchemy import select
 
 from ..models import KB

@@ -1,4 +1,4 @@
-from ..core.config import LLMSettings, LLMProvider, Settings
+from ..core.config import LLMProvider, LLMSettings, Settings
 
 llm_client = None
 
@@ -22,15 +22,15 @@ def llm_client_response(llm_client: tuple = ("none", None), input: str = ""):
     if not llm_client:
         return ""
     if t == "google":
-        try: 
+        try:
             interaction = llm_client.interactions.create(
                 model="gemini-3.1-flash-lite", input=input, store=False
             )
-        except e:
+        except:
             interaction = None
         if interaction:
             return interaction.output_text
-        else: 
+        else:
             return "mmm ..."
 
 

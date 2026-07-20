@@ -1,12 +1,14 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, func, Enum
+from sqlalchemy import DateTime, Enum, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid6 import uuid7
 
 from ..core.db import Base
 from ..core.types import UserRole
+from .kb import KB
+from .project import Project, ProjectMember
 
 
 class User(Base):

@@ -1,18 +1,17 @@
 from __future__ import annotations
 
-import cyclopts
 import json
 import os
 from functools import wraps
 from pathlib import Path
 from typing import Annotated, Literal
 
+import cyclopts
 from rich import print
 
 from .core.config import get_settings
 from .core.interpreter import Interpreter
 from .core.logger import get_logger, setup_logging
-
 
 # Default configuration values
 CHATVOICE_CONFIG_PATH = Path("config.toml")
