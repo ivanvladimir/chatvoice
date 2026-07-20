@@ -14,6 +14,7 @@ from ..crud.tier import crud_tiers
 from ..crud.users import crud_users
 from ..schemas.rate_limit import RateLimitRead, sanitize_path
 from ..schemas.tier import TierRead
+from ..sessions.session import ChatSession
 
 from ..transport.ws import WS
 
@@ -64,10 +65,10 @@ def get_session_transport(websocket: WebSocket) -> WS:
 
 
 async def get_ws_session(
-    websocket: WebSocket,  # 1. ADD WEBSOCKET HERE
+    websocket: WebSocket,
     ws_session: str | None = Cookie(default=None),
     transport: WS = Depends(get_session_transport),
-):
+) -> ChatSession:
     if not ws_session:
         raise WebSocketException(code=1008, reason="Missing session cookie")
 
@@ -76,13 +77,15 @@ async def get_ws_session(
         raise WebSocketException(code=1008, reason="Invalid or expired token")
 
     session_id = payload.get("sub")
-    session = transport.get_session(session_id)
+    if not session_id:
+        raise WebSocketException(code=1008, reason="Invalid token")
 
+    # get_session now handles dead session detection
+    session = transport.get_session(session_id)
     if not session:
-        raise WebSocketException(code=1008, reason="Invalid or expired session")
+        raise WebSocketException(code=1008, reason="Session expired")
 
     return session
-
 
 async def get_optional_user(
     request: Request, db: AsyncSession = Depends(async_get_db)

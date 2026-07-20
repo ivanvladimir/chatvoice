@@ -136,6 +136,8 @@ def lifespan_factory(
             yield
 
         finally:
+            app.state.transport.shutdown()
+
             # if isinstance(settings, RedisCacheSettings):
             #     await close_redis_cache_pool()
             #

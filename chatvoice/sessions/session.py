@@ -1,23 +1,23 @@
 import queue
-from ..store.base import BaseStateStore
-from typing import Callable
 import threading
+from typing import Callable, Optional
 
+from ..core.interpreter import InterpreterStop
+from ..core.logger import get_logger
 
-def global_thread_exception_hook(args):
-    print(f"Thread {args.thread.name} crashed: {args.exc_value}")
+log = get_logger(__name__)
 
-
-threading.excepthook = global_thread_exception_hook
+# Sentinel to unblock the queue when stopping
+_STOP_SENTINEL = object()
 
 
 class ChatSession:
     def __init__(
         self,
-        user_id: int,
+        user_id: str,
         session_id: str,
-        interpreter: Callable,
-        store: BaseStateStore,
+        interpreter: "Interpreter",
+        store: "BaseStateStore",
     ):
         self.user_id = user_id
         self.session_id = session_id
@@ -25,72 +25,81 @@ class ChatSession:
         self.interpreter = interpreter
         self.store = store
 
-        # Two queues act as the communication bridge between
-        # the async WebSocket handler and the blocking script thread.
-        # inbox  = user messages  → script
-        # outbox = bot responses  → WebSocket handler
         self._inbox: queue.Queue = queue.Queue()
         self._outbox: queue.Queue = queue.Queue()
-
-        # daemon=True means the thread dies automatically when the
-        # main process exits — no manual cleanup needed on shutdown.
-        self._thread = threading.Thread(
-            target=self._run,
-            args=(interpreter,),
-            daemon=True,
-            name=f"session-{user_id}-{session_id}",
-        )
+        self._stop_event = threading.Event()
+        self._thread: Optional[threading.Thread] = None
 
     def start(self):
-        # Called by SessionManager after creating the session.
-        # Starts the script thread — from this point the script
-        # runs independently and blocks on _inbox when waiting for input.
+        self._stop_event.clear()
+        self._thread = threading.Thread(
+            target=self._run,
+            args=(self.interpreter,),
+            daemon=True,
+            name=f"session-{self.user_id}-{self.session_id[:8]}",
+        )
         self._thread.start()
 
-    # --- Public API (called from the WebSocket handler) ---
+    def stop(self):
+        """Signal the interpreter thread to stop."""
+        self._stop_event.set()
+        # Unblock _recv_from_user if it's waiting
+        try:
+            self._inbox.put_nowait(_STOP_SENTINEL)
+        except queue.Full:
+            pass
+
+    def wait(self, timeout: float = 2.0) -> bool:
+        """Wait for the thread to finish. Returns True if finished."""
+        if self._thread:
+            self._thread.join(timeout=timeout)
+            return not self._thread.is_alive()
+        return True
+
+    # --- Public API (called from WebSocket handler) ---
 
     def send(self, message: str):
-        # WebSocket handler → script thread.
-        # Non-blocking: just drops the message into the queue and returns.
         self._inbox.put(message)
 
-    def recv(self) -> str:
-        # WebSocket handler ← script thread.
-        # BLOCKS until the script yields a response.
-        # In the async handler this is wrapped with asyncio.to_thread()
-        # so it doesn't freeze the event loop.
+    def recv(self) -> Optional[dict]:
         return self._outbox.get()
 
-    # --- Private API (called from inside the script thread) ---
+    # --- Private API (called from script thread) ---
 
-    def _send_to_user(self, message: str):
-        # Script → outbox. The WebSocket handler picks it up via recv().
-        self._outbox.put(message)
+    def _send_to_user(self, message: dict):
+        if not self._stop_event.is_set():
+            self._outbox.put(message)
 
     def _recv_from_user(self) -> str:
-        # Script ← inbox. BLOCKS the script thread until the user replies.
-        # This is the callable passed into the script as recv().
-        return self._inbox.get()
+        """Blocks until user replies or stop is signaled."""
+        while not self._stop_event.is_set():
+            try:
+                msg = self._inbox.get(timeout=0.5)
+                if msg is _STOP_SENTINEL:
+                    raise InterpreterStop(Exception("Session stopped"))
+                return msg
+            except queue.Empty:
+                continue
+        raise InterpreterStop(Exception("Session stopped"))
 
-    def _run(self, interpreter: Callable):
-        # Runs entirely inside the script thread.
-
-        # Load whatever state was saved from a previous session.
+    def _run(self, interpreter: "Interpreter"):
         state = self.store.get(self.user_id, self.interpreter_name, self.session_id)
 
-        # Build the generator, passing in the two interaction primitives.
-        # The script never touches queues or threads directly —
-        # it only calls recv() and yields strings.
-        gen = interpreter.run(self._recv_from_user, state)
+        try:
+            gen = interpreter.run(self._recv_from_user, state)
+            for message in gen:
+                if self._stop_event.is_set():
+                    break
+                self._send_to_user(message)
 
-        # Each yield from the script is a bot message.
-        # We forward it to the outbox so the WebSocket handler can send it.
-        for message in gen:
-            self._send_to_user(message)
-
-        # Script is exhausted — persist final state.
-        self.store.set(self.user_id, self.interpreter_name, self.session_id, state)
-
-        # Sentinel value: tells the WebSocket handler the conversation
-        # is over so it can close the connection cleanly.
-        self._outbox.put(None)
+        except InterpreterStop:
+            log.info(f"Session {self.session_id} stopped")
+        except Exception as e:
+            log.exception(f"Error in session {self.session_id}")
+            self._send_to_user({"cmd": "error", "args": [str(e)]})
+        finally:
+            # Persist final state
+            final_state = {"slots": dict(interpreter.conversation.slots)}
+            self.store.set(self.user_id, self.interpreter_name, self.session_id, final_state)
+            # Signal to WebSocket handler that we're done
+            self._outbox.put(None)
