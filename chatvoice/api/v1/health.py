@@ -2,7 +2,7 @@ import logging
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,6 +10,8 @@ from ...core.config import settings
 from ...core.db.database import async_get_db
 from ...core.health import check_database_health
 from ...core.schemas import HealthCheck, ReadyCheck
+from ..dependencies import get_session_transport
+from ...transport.ws import WS
 
 router = APIRouter(tags=["health"])
 
@@ -20,13 +22,17 @@ LOGGER = logging.getLogger(__name__)
 
 
 @router.get("/health", response_model=HealthCheck)
-async def health():
+async def health(
+    request: Request,
+):
     http_status = status.HTTP_200_OK
+    transport = request.app.state.transport
     response = {
         "status": STATUS_HEALTHY,
         "environment": settings.ENVIRONMENT.value,
         "version": settings.APP_VERSION,
         "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
+        "sessions": transport.session_manager.active_count(),
     }
 
     return JSONResponse(status_code=http_status, content=response)
