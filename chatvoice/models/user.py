@@ -7,7 +7,6 @@ from uuid6 import uuid7
 
 from ..core.db import Base
 from ..core.types import UserRole
-from .kb import KB
 from .project import Project, ProjectMember
 
 
