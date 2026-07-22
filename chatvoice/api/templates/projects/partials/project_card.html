@@ -1,20 +1,22 @@
 {# ─── PROJECT CARD ─── #}
-<div class="card bg-base-200 hover:bg-base-300 transition-colors shadow-sm hover:shadow-md"
+<div class="card bg-base-200 hover:bg-base-300 transition-colors shadow-sm hover:shadow-md cursor-pointer"
      id="project-card-{{ project.id }}">
     
     <div class="card-body p-4">
         
         {# ─── HEADER: Status + Actions ─── #}
         <div class="flex items-start justify-between gap-2">
-            <div class="flex items-center gap-2 min-w-0">
+            
+            {# ── CLICKABLE AREA (Title & Badge) ── #}
+            <a href="/projects/{{ project.id }}/files" class="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity">
                 {# Status Badge #}
-                <span class="badge {{ 'badge-success' if project.is_active else 'badge-ghost' }} badge-sm">
+                <span class="badge {{ 'badge-success' if project.is_active else 'badge-ghost' }} badge-sm pointer-events-none">
                     {{ 'Activo' if project.is_active else 'Inactivo' }}
                 </span>
-                <h3 class="card-title text-base truncate">{{ project.name }}</h3>
-            </div>
+                <h3 class="card-title text-base truncate pointer-events-none">{{ project.name }}</h3>
+            </a>
             
-            {# Dropdown Menu #}
+            {# Dropdown Menu (Keeps its normal click behavior) #}
             <div class="dropdown dropdown-end dropdown-hover">
                 <div tabindex="0" role="button" class="btn btn-ghost btn-xs btn-square">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -23,12 +25,12 @@
                 </div>
                 <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-300">
                     <li>
-                        <a href="/projects/{{ project.uuid }}">
+                        {# ── UPDATED "ABRIR" LINK ── #}
+                        <a href="/projects/{{ project.id }}/files">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                             </svg>
-                            Abrir
+                            Abrir Archivos
                         </a>
                     </li>
                     <li>
@@ -70,12 +72,14 @@
             </div>
         </div>
         
-        {# ─── DESCRIPTION ─── #}
-        {% if project.description %}
-        <p class="text-sm text-base-content/60 line-clamp-2">{{ project.description }}</p>
-        {% else %}
-        <p class="text-sm text-base-content/30 italic">Sin descripción</p>
-        {% endif %}
+        {# ─── DESCRIPTION (Also Clickable) ─── #}
+        <a href="/projects/{{ project.uuid }}/files" class="block mt-1 hover:opacity-80 transition-opacity">
+            {% if project.description %}
+            <p class="text-sm text-base-content/60 line-clamp-2 pointer-events-none">{{ project.description }}</p>
+            {% else %}
+            <p class="text-sm text-base-content/30 italic pointer-events-none">Sin descripción</p>
+            {% endif %}
+        </a>
         
         {# ─── FOOTER ─── #}
         <div class="card-actions justify-between items-center mt-3 pt-3 border-t border-base-300/50">
@@ -97,3 +101,4 @@
         </div>
     </div>
 </div>
+

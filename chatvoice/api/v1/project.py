@@ -3,6 +3,13 @@ from typing import Annotated
 import re
 import unicodedata
 
+import os
+from pathlib import Path
+from fastapi import APIRouter, Request, Depends, HTTPException, Form
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+
+
 from fastapi import APIRouter, Depends, Form, Query, Request, Response
 from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,14 +21,76 @@ from ...core.db.database import async_get_db
 from ...models.user import User
 from ...schemas.project import ProjectCreate, ProjectCreateInternal
 from ...crud.projects import crud_projects
-from ...utils.project import create_project_directory
+from ...utils.project import create_project_directory,project_directory_exists, list_project_files
 
 router = APIRouter(prefix="/projects", tags=["projects"])
-
 templates = Jinja2Templates(directory="chatvoice/api/templates")
 
+ALLOWED_EXTENSIONS = {".yaml", ".yml", ".html", ".md", ".txt"}
+
+@router.post("/{project_id}/files", response_class=HTMLResponse)
+async def list_project_files_htmx(
+        request: Request, 
+        project_id: int,
+        db: Annotated[AsyncSession, Depends(async_get_db)],
+        current_user: User = Depends(get_current_user),
+):
+    # 1. Fetch your project (Replace with your actual dependency/DB call)
+    project = await crud_projects.get(db, id=project_id)
+    if not project: 
+        raise HTTPException(status_code=404, detail="Project not found.")
+    
+    # Mock project for demonstration:
+    
+    if not project_directory_exists(current_user["username"],project['project_name']):
+        raise HTTPException(status_code=404, detail="Project directory not found on server.")
+
+    # 2. Scan directory for allowed files
+    files = list_project_files(current_user['username'], project['project_name'], allowed_extensions=ALLOWED_EXTENSIONS)
+
+    # 3. Render list template
+    return templates.TemplateResponse(
+        request=request,
+        name="projects/partials/files_list_content.html",
+        context={
+        "request": request,
+        "project": project,
+        "files": files
+    })
+
+
+@router.post("/{project_id}/files/{filename}")
+async def save_file(
+    request: Request, 
+    project_id: int, 
+    filename: str, 
+    content: str = Form(...),
+):
+    # Mock project
+    project = type('Obj', (object,), {'directory_path': './sample_project_dir'})()
+    base_path = get_project_base_path(project)
+
+    # SECURITY CHECK AGAIN
+    safe_base = base_path.resolve()
+    target_file = (base_path / filename).resolve()
+
+    if not str(target_file).startswith(str(safe_base)):
+        raise HTTPException(status_code=403, detail="Access denied.")
+
+    # Write to file
+    try:
+        target_file.write_text(content, encoding="utf-8")
+        return {"success": True, "message": "File saved successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
+
+
+
 @router.get("/create-form", response_class=HTMLResponse)
-async def get_create_form(request: Request):
+async def get_create_form(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
     """Return empty form for the create modal."""
     return templates.TemplateResponse(
         request=request,
