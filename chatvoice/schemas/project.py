@@ -74,17 +74,18 @@ class ProjectBase(BaseModel):
 class ProjectCreate(ProjectBase):
     """Schema for creating a new project."""
 
-    directory_path: str = Field(
+    project_name: str = Field(
         ...,
         min_length=1,
         max_length=500,
-        description="Root directory path for the project",
+        description="Project name",
     )
 
-    # Note: owner_id is typically set from authenticated user, not request body
-    # Include only if you want to allow specifying owner explicitly
-    # owner_id: int | None = None
 
+class ProjectCreateInternal(ProjectCreate):
+    """Internal schema with owner_id added server-side."""
+    
+    owner_id: int = Field(..., gt=0, description="ID of the project owner (set server-side)")
 
 class ProjectUpdate(BaseModel):
     """Schema for updating a project. All fields are optional."""
@@ -106,7 +107,7 @@ class ProjectRead(BaseModel):
 
     id: int
     name: str
-    directory_path: str
+    project_name: str
     is_active: bool
     description: str | None
     owner_id: int
@@ -124,7 +125,7 @@ class ProjectListItem(BaseModel):
 
     id: int
     name: str
-    directory_path: str
+    project_name: str
     is_active: bool
     uuid: UUID
     created_at: datetime

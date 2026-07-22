@@ -32,16 +32,16 @@ class Project(Base):
 
     id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True, init=False)
     name: Mapped[str] = mapped_column(String(100))
-    directory_path: Mapped[str] = mapped_column(String(500), unique=True, index=True)
-
+    project_name: Mapped[str] = mapped_column(String(500), index=True)
+    # The creator/owner of the project
+    owner_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"), index=True,#init=False
+    )
+ 
     # The root directory path for this project (e.g., "s3://my-bucket/projects/uuid/" or "/var/www/projects/uuid/")
     is_active: Mapped[bool] = mapped_column(default=True)
     description: Mapped[str | None] = mapped_column(String, default=None, nullable=True)
 
-    # The creator/owner of the project
-    owner_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"), index=True, init=False
-    )
     owner: Mapped["User"] = relationship(
         "User", back_populates="owned_projects", init=False
     )

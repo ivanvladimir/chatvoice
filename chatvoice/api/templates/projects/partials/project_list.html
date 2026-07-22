@@ -26,8 +26,8 @@
             </button>
         </div>
     </div>
-    
-    <!-- Sort Dropdown -->
+   
+    {# ─── Sort Dropdown ─── #}
     <div class="dropdown dropdown-end">
         <div tabindex="0" role="button" class="btn btn-ghost">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -38,35 +38,35 @@
         <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
             <li>
                 <a hx-post="{{ url_for('projects_list_htmx') }}?sort_by=created_at&sort_order=desc&search={{ search }}"
-                   hx-target="#protected-content"
-                   :class="{{ 'active' if sort_by == 'created_at' and sort_order == 'desc' else '' }}">
+                  hx-target="#protected-content"
+                  class="{{ 'active' if sort_by == 'created_at' and sort_order == 'desc' else '' }}">
                     Más recientes
                 </a>
             </li>
             <li>
                 <a hx-post="{{ url_for('projects_list_htmx') }}?sort_by=created_at&sort_order=asc&search={{ search }}"
-                   hx-target="#protected-content"
-                   :class="{{ 'active' if sort_by == 'created_at' and sort_order == 'asc' else '' }}">
+                  hx-target="#protected-content"
+                  class="{{ 'active' if sort_by == 'created_at' and sort_order == 'asc' else '' }}">
                     Más antiguos
                 </a>
             </li>
             <li>
                 <a hx-post="{{ url_for('projects_list_htmx') }}?sort_by=name&sort_order=asc&search={{ search }}"
-                   hx-target="#protected-content"
-                   :class="{{ 'active' if sort_by == 'name' else '' }}">
+                  hx-target="#protected-content"
+                  class="{{ 'active' if sort_by == 'name' and sort_order == 'asc' else '' }}">
                     Nombre A-Z
                 </a>
             </li>
             <li>
                 <a hx-post="{{ url_for('projects_list_htmx') }}?sort_by=name&sort_order=desc&search={{ search }}"
-                   hx-target="#protected-content"
-                   :class="{{ 'active' if sort_by == 'name' and sort_order == 'desc' else '' }}">
+                  hx-target="#protected-content"
+                  class="{{ 'active' if sort_by == 'name' and sort_order == 'desc' else '' }}">
                     Nombre Z-A
                 </a>
             </li>
         </ul>
     </div>
-    
+
     <!-- Create Button -->
     <button class="btn btn-primary"
             @click="document.dispatchEvent(new CustomEvent('openCreateModal'))">
@@ -91,7 +91,7 @@
     <div class="join">
         {% if page > 1 %}
         <button class="join-item btn btn-sm"
-                hx-post="{{ url_for('projects_list_htmx') }}?page={{ page - 1 }}&search={{ search }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
+                hx-post="{{ url_for('projects_list_htmx') }}" {# ?page={{ page - 1 }}&search={{ search }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}" #}
                 hx-target="#protected-content"
                 hx-indicator="#protected-loading">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -105,7 +105,7 @@
             <button class="join-item btn btn-sm btn-primary">{{ p }}</button>
             {% elif p <= 3 or p >= total_pages - 2 or (p >= page - 1 and p <= page + 1) %}
             <button class="join-item btn btn-sm"
-                    hx-post="{{ url_for('projects_list_htmx') }}?page={{ p }}&search={{ search }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
+                    hx-post="{{ url_for('projects_list_htmx') }}" {#?page={{ p }}&search={{ search }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"#}
                     hx-target="#protected-content"
                     hx-indicator="#protected-loading">
                 {{ p }}
@@ -117,7 +117,7 @@
         
         {% if page < total_pages %}
         <button class="join-item btn btn-sm"
-                hx-post="{{ url_for('projects_list_htmx') }}?page={{ page + 1 }}&search={{ search }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"
+                hx-post="{{ url_for('projects_list_htmx') }}" {#?page={{ page + 1 }}&search={{ search }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"#}
                 hx-target="#protected-content"
                 hx-indicator="#protected-loading">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

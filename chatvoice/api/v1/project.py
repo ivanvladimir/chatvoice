@@ -1,5 +1,7 @@
 from datetime import UTC, datetime
 from typing import Annotated
+import re
+import unicodedata
 
 from fastapi import APIRouter, Depends, Form, Query, Request, Response
 from fastapi.responses import HTMLResponse
@@ -10,22 +12,24 @@ from ..dependencies import get_current_user
 
 from ...core.db.database import async_get_db
 from ...models.user import User
-from ...schemas.project import ProjectCreate
+from ...schemas.project import ProjectCreate, ProjectCreateInternal
 from ...crud.projects import crud_projects
+from ...utils.project import create_project_directory
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 templates = Jinja2Templates(directory="chatvoice/api/templates")
 
-@router.get("/htmx/create-form", response_class=HTMLResponse)
+@router.get("/create-form", response_class=HTMLResponse)
 async def get_create_form(request: Request):
     """Return empty form for the create modal."""
     return templates.TemplateResponse(
-        "projects/partials/create_project_form.html",
-        {"request": request, "errors": [], "name": "", "directory_path": "", "description": ""},
+        request=request,
+        name="projects/partials/create_project_form.html",
+        context={"request": request, "errors": [], "name": "", "project_name": "", "description": ""},
     )
 
-@router.post("/htmx/list", response_class=HTMLResponse)
+@router.post("/list", response_class=HTMLResponse)
 async def projects_list_htmx(
     request: Request,
     db: Annotated[AsyncSession, Depends(async_get_db)],
@@ -73,12 +77,46 @@ async def projects_list_htmx(
     )
 
 
-@router.post("/htmx/create", response_class=HTMLResponse)
+def normalize_project_name(name: str, max_length: int = 100) -> str:
+    """
+    Normalize a project name into a GitHub-style slug.
+
+    Example:
+        "My Awesome Project!!" -> "my-awesome-project"
+        "  Héllo   World_2024 " -> "hello-world-2024"
+        "café___déjà-vu" -> "cafe-deja-vu"
+    """
+    if not name or not name.strip():
+        raise ValueError("Project name cannot be empty")
+
+    # Transliterate accented characters to ASCII (é -> e, ñ -> n, etc.)
+    name = unicodedata.normalize("NFKD", name)
+    name = name.encode("ascii", "ignore").decode("ascii")
+
+    # Lowercase
+    name = name.lower()
+
+    # Replace any run of non-alphanumeric characters with a single hyphen
+    name = re.sub(r"[^a-z0-9]+", "-", name)
+
+    # Trim leading/trailing hyphens
+    name = name.strip("-")
+
+    # Enforce max length without cutting mid-hyphen
+    if len(name) > max_length:
+        name = name[:max_length].rstrip("-")
+
+    if not name:
+        raise ValueError("Project name normalizes to an empty string")
+
+    return name
+
+@router.post("/create", response_class=HTMLResponse)
 async def create_project_htmx(
     request: Request,
     name: Annotated[str, Form()],
     db: Annotated[AsyncSession, Depends(async_get_db)],
-    directory_path: Annotated[str, Form()],
+    project_name: Annotated[str, Form()],
     current_user: User = Depends(get_current_user),
     description: Annotated[str | None, Form()] = None,
 ):
@@ -88,74 +126,79 @@ async def create_project_htmx(
     errors: list[str] = []
     
     name = name.strip()
-    directory_path = directory_path.strip()
+    project_name=normalize_project_name(project_name.strip())
     description = description.strip() if description else None
     
     if not name:
         errors.append("El nombre del proyecto es obligatorio")
     elif len(name) > 100:
         errors.append("El nombre no puede superar los 100 caracteres")
-    
-    if not directory_path:
-        errors.append("La ruta del directorio es obligatoria")
-    elif len(directory_path) > 500:
-        errors.append("La ruta no puede superar los 500 caracteres")
-    
+    if not project_name:
+        errors.append("El nombre clave del proyecto es necessario")
+
+    try:
+        project_dir=create_project_directory(current_user['username'], project_name, "conversations/hello_world")
+    except FileNotFoundError:
+        errors.append("El directorio con el proyecto base no está disponible")
+    except FileExistsError:
+        errors.append("Un proyecto con el mismo nombre clave ya esxiste")
+
+
     if errors:
         return templates.TemplateResponse(
-            "projects/partials/create_project_form.html",
-            {
+            request=request,
+            name="projects/partials/create_project_form.html",
+            context={
                 "request": request,
                 "errors": errors,
                 "name": name,
-                "directory_path": directory_path,
+                "project_name": project_name,
                 "description": description,
             },
         )
     
-    # --- Create ---
-    project_data = ProjectCreate(
-        name=name,
-        directory_path=directory_path,
-        description=description,
-    )
-    
     try:
+        # --- Create ---
+        project_in = ProjectCreate(
+            name=name,
+            project_name=str(project_name),
+            description=description,
+        )
+        project_data = project_in.model_dump()
+        project_data["owner_id"] = current_user['id']
+        project_data = ProjectCreateInternal(**project_data)
+    
         await crud_projects.create(
             db,
-            object_to_create=project_data,
-            owner_id=current_user.id,
-        )
-        
+            project_data)
+
         # Close modal and reload list
         response = templates.TemplateResponse(
-            "projects/partials/create_success.html",
-            {"request": request, "project_name": name},
+            request=request,
+            name="projects/partials/create_success.html",
+            context={"request": request, "project_name": name},
         )
         response.headers["HX-Trigger"] = "projectCreated"
         return response
         
     except Exception as e:
         error_msg = str(e).lower()
-        
-        if "unique" in error_msg and "directory_path" in error_msg:
-            errors.append("Ya existe un proyecto con esa ruta de directorio")
-        else:
-            errors.append(f"Error al crear el proyecto: {e}")
+        print(">>>>>>> aaaaa",e)
         
         return templates.TemplateResponse(
-            "projects/partials/create_project_form.html",
-            {
+            request=request,
+            name="projects/partials/create_project_form.html",
+            context={
                 "request": request,
                 "errors": errors,
                 "name": name,
-                "directory_path": directory_path,
+                "project_name": project_name,
                 "description": description,
             },
         )
 
 
-@router.delete("/htmx/{project_id}", response_class=Response)
+@router.delete("/{project_id}", response_class=Response)
 async def delete_project_htmx(
     project_id: int,
     request: Request,
@@ -186,7 +229,7 @@ async def delete_project_htmx(
     return response
 
 
-@router.patch("/htmx/{project_id}/toggle-active", response_class=Response)
+@router.patch("/{project_id}/toggle-active", response_class=Response)
 async def toggle_project_active_htmx(
     project_id: int,
     request: Request,

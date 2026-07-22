@@ -2,7 +2,7 @@ from fastcrud import FastCRUD
 
 from ..models.project import Project
 from ..schemas.project import (
-    ProjectCreate,
+    ProjectCreateInternal,
     ProjectDelete,
     ProjectRead,
     ProjectUpdate,
@@ -11,7 +11,7 @@ from ..schemas.project import (
 
 CRUDProject = FastCRUD[
     Project,
-    ProjectCreate,
+    ProjectCreateInternal,
     ProjectUpdate,
     ProjectUpdateInternal,
     ProjectDelete,
