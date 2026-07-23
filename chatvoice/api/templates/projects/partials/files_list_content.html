@@ -1,0 +1,62 @@
+{# ─── THIS IS A PARTIAL, NO EXTENDS BASE.HTML ─── #}
+<div class="flex flex-col h-full" id="project-files-container">
+    
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold"><em>{{ project.name }}</em></h1>
+    <a href="{{ url_for('projects_page') }}" class="btn btn-ghost">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Regresar a proyectos
+        </a>
+    </div>
+
+    <!-- File List Container -->
+    <div class="bg-base-200 rounded-box p-4 flex-1 overflow-x-auto">
+        {% if not files %}
+            <div class="alert alert-warning shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <span>No supported files (.yaml, .html, .md, .txt) found in this directory.</span>
+            </div>
+        {% else %}
+            <ul class="menu bg-base-100 rounded-box w-full shadow-lg">
+                {% for file in files %}
+                    <li>
+                        <a href="/projects/{{ project.id }}/files/{{ file.rel_path }}" class="flex justify-between items-center gap-4">
+                            
+                            {# Left: Icon + Name #}
+                            <div class="flex items-center gap-3 min-w-0 flex-1">
+                                {% if file.name.endswith('.html') %}
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-orange-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                                {% elif file.name.endswith('.md') %}
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                {% else %}
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                {% endif %}
+                                <span class="font-medium truncate">{{ file.name }}</span>
+                            </div>
+                            {# Right: Directory + Size #}
+                            <div class="flex items-center gap-6 shrink-0">
+                                {# Directory Column (Increased width to w-52) #}
+                                <div class="tooltip tooltip-left" data-tip="{{ file.dir }}">
+                                    <span class="text-base-content/50 text-xs flex items-center gap-1.5 w-52 truncate font-mono">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                                        </svg>
+                                        {{ file.dir }}
+                                    </span>
+                                </div>
+                                {# Size Column #}
+                                <span class="text-base-content/50 text-xs badge badge-ghost w-24 justify-center">{{ file.size }} b</span>
+                            </div>
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+</div>
+

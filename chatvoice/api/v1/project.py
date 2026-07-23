@@ -58,17 +58,68 @@ async def list_project_files_htmx(
         "files": files
     })
 
-
-@router.post("/{project_id}/files/{filename}")
-async def save_file(
-    request: Request, 
-    project_id: int, 
-    filename: str, 
-    content: str = Form(...),
+@router.post("/{project_id}/files/{filename:path}/editor-htmx", response_class=HTMLResponse)
+async def get_file_editor_htmx(
+        request: Request, 
+        project_id: int, 
+        filename: str,
+        db: Annotated[AsyncSession, Depends(async_get_db)],
+        current_user: User = Depends(get_current_user),
+        base_path: str = "conversations"
 ):
-    # Mock project
-    project = type('Obj', (object,), {'directory_path': './sample_project_dir'})()
-    base_path = get_project_base_path(project)
+    """HTMX endpoint that reads the file and returns the partial HTML."""
+    # 1. Fetch your project (Replace with your actual dependency/DB call)
+    project = await crud_projects.get(db, id=project_id)
+    if not project: 
+        raise HTTPException(status_code=404, detail="Project not found.")
+ 
+    base_path = Path(base_path) / current_user['username'] / project['project_name']
+
+    # SECURITY: Resolve paths to prevent directory traversal
+    safe_base = base_path.resolve()
+    target_file = (base_path / filename).resolve()
+
+    if not str(target_file).startswith(str(safe_base)):
+        raise HTTPException(status_code=403, detail="Access denied.")
+    
+    if not target_file.exists() or target_file.suffix.lower() not in ALLOWED_EXTENSIONS:
+        # You could create an error partial here, for simplicity we raise 500
+        raise HTTPException(status_code=404, detail="File not found or unsupported type.")
+
+    try:
+        content = target_file.read_text(encoding="utf-8")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reading file: {str(e)}")
+
+    return templates.TemplateResponse(
+        request=request,
+        name="projects/partials/file_editor_content.html", 
+        context={
+        "request": request,
+        "project": project,
+        "filename": filename,
+        "content": content
+    })
+
+
+@router.post("/{project_id}/files/{filename:path}")
+async def save_file(
+        request: Request, 
+        project_id: int, 
+        filename: str, 
+        db: Annotated[AsyncSession, Depends(async_get_db)],
+        content: str = Form(...),
+        current_user: User = Depends(get_current_user),
+        base_path: str = "conversations"
+):
+    """Saves the file. Called by standard JS fetch."""
+    # project = await crud_projects.get(db, id=project_id)
+    # if not project: raise HTTPException(404)
+    project = await crud_projects.get(db, id=project_id)
+    if not project: 
+        raise HTTPException(status_code=404, detail="Project not found.")
+ 
+    base_path = Path(base_path) / current_user['username'] / project['project_name']
 
     # SECURITY CHECK AGAIN
     safe_base = base_path.resolve()
@@ -77,10 +128,9 @@ async def save_file(
     if not str(target_file).startswith(str(safe_base)):
         raise HTTPException(status_code=403, detail="Access denied.")
 
-    # Write to file
     try:
         target_file.write_text(content, encoding="utf-8")
-        return {"success": True, "message": "File saved successfully"}
+        return {"success": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
 

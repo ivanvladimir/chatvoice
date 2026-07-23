@@ -42,40 +42,26 @@ async def list_project_files(
         "project": project
     })
 
-
-
-@router.get("/{project_id}/files/{filename}", response_class=HTMLResponse)
-async def view_edit_file(
-        request: Request, 
+@router.get("/{project_id}/files/{filename:path}", response_class=HTMLResponse)
+async def view_project_files_page(
+        request: Request,
         project_id: int, 
         filename: str,
+        db: Annotated[AsyncSession, Depends(async_get_db)],
         ctx: RuntimeContext = Depends(get_runtime_context),  # Single injection
 ):
-    # Mock project
-    project = type('Obj', (object,), {'directory_path': './sample_project_dir', 'name': 'My Project'})()
-    base_path = get_project_base_path(project)
-
-    # SECURITY: Resolve paths to prevent directory traversal (e.g. ../../etc/passwd)
-    safe_base = base_path.resolve()
-    target_file = (base_path / filename).resolve()
-
-    if not str(target_file).startswith(str(safe_base)):
-        raise HTTPException(status_code=403, detail="Access denied.")
-    
-    if not target_file.exists() or target_file.suffix.lower() not in ALLOWED_EXTENSIONS:
-        raise HTTPException(status_code=404, detail="File not found or unsupported type.")
-
-    # Read file content
-    try:
-        content = target_file.read_text(encoding="utf-8")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error reading file: {str(e)}")
-
-    return ctx.templates_engine.TemplateResponse("projects/file_editor.html", {
+    """Renders the base template with the skeleton loader."""
+    project = await crud_projects.get(db, id=project_id)
+    if not project: 
+        raise HTTPException(status_code=404, detail="Project not found.")
+ 
+    return ctx.templates_engine.TemplateResponse(
+        request=request,
+        name="projects/file_editor.html",
+        context={
         "request": request,
         "project": project,
-        "filename": filename,
-        "content": content
+        "filename": filename
     })
 
 

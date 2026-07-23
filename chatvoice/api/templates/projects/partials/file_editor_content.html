@@ -1,0 +1,27 @@
+{# ─── THIS IS A PARTIAL, NO EXTENDS BASE.HTML ─── #}
+{# We pass the filename via data-filename so the JS can read it #}
+<div id="editor-wrapper" data-filename="{{ filename }}" class="flex flex-col h-full">
+    
+    <!-- Top Bar -->
+    <div class="flex justify-between items-center mb-4">
+        <div class="flex items-center gap-4">
+            <a href="/projects/{{ project.id }}/files" class="btn btn-ghost btn-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                Back
+            </a>
+            <h2 class="text-xl font-semibold text-base-content/80">{{ filename }}</h2>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <span id="status-message" style="display: none;"></span>
+            <button id="save-btn" class="btn btn-primary btn-sm">
+                Guardar
+            </button>
+        </div>
+    </div>
+
+    <!-- Editor Container -->
+    <div class="flex-1 bg-base-200 rounded-box p-1 shadow-lg">
+        <textarea id="editor-textarea">{{ content }}</textarea>
+    </div>
+</div>

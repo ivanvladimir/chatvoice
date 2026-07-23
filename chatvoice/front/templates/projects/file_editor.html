@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block title %}Editando archivo{% endblock %}
+
+{# ─── LOAD CODEMIRROR RESOURCES HERE ─── #}
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+<style>
+    .CodeMirror { 
+        height: 75vh; 
+        border-radius: 0.5rem;
+        font-size: 15px;
+    }
+</style>
+{% endblock %}
+
+{# ─── HTMX CONFIGURATION ─── #}
+{# Note: We build the URL manually to prevent Jinja from escaping the slashes in the filename path #}
+{% block protected_htmx_config %}
+hx-post="{{ url_for('get_file_editor_htmx',project_id=project.id, filename=filename)}}"
+hx-trigger="load-protected"
+hx-swap="innerHTML"
+hx-target="this"
+hx-indicator="#protected-loading"
+{% endblock %}
+
+{# ─── SKELETON FALLBACK ─── #}
+{% block protected_content %}
+<div class="flex flex-col h-full">
+    <!-- Header Skeleton -->
+    <div class="flex justify-between items-center mb-4">
+        <div class="flex items-center gap-4">
+            <div class="skeleton h-8 w-20"></div>
+            <div class="skeleton h-8 w-64"></div>
+        </div>
+        <div class="skeleton h-10 w-24"></div>
+    </div>
+    <!-- Editor Skeleton -->
+    <div class="bg-base-200 rounded-box p-1 shadow-lg h-[75vh]">
+        <div class="skeleton h-full w-full rounded-box"></div>
+    </div>
+</div>
+{% endblock %}
+
+{# ─── SCRIPTS ─── #}
+{% block scripts %}
+{{ super() }}
+
+<!-- CodeMirror Core -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<!-- Syntax Modes -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/yaml/yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js"></script>
+
+<script>
+    let cmEditor = null;
+
+    // Listen for HTMX to finish swapping the content
+    document.body.addEventListener('htmx:afterSwap', function(event) {
+        // Only initialize if the swap happened inside our protected zone
+        if (event.detail.target.id === 'protected-content') {
+            const textarea = document.getElementById('editor-textarea');
+            if (!textarea) return;
+
+            // 1. Get filename from the data attribute
+            const wrapper = document.getElementById('editor-wrapper');
+            const filename = wrapper ? wrapper.dataset.filename : "";
+            let mode = "text/plain";
+            
+            if (filename.endsWith(".yaml") || filename.endsWith(".yml")) mode = "yaml";
+            else if (filename.endsWith(".html")) mode = "htmlmixed";
+            else if (filename.endsWith(".md")) mode = "markdown";
+
+            // 2. Initialize CodeMirror
+            cmEditor = CodeMirror.fromTextArea(textarea, {
+                mode: mode,
+                theme: "dracula",
+                lineNumbers: true,
+                tabSize: 2,
+                indentWithTabs: false,
+                matchBrackets: true
+            });
+
+            // 3. Setup Save Logic
+            const saveBtn = document.getElementById('save-btn');
+            const statusMsg = document.getElementById('status-message');
+
+            saveBtn.addEventListener('click', async () => {
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span>';
+                statusMsg.style.display = 'none';
+
+                const content = cmEditor.getValue();
+                const token = localStorage.getItem('accessToken');
+
+                try {
+                  const response = await fetch("{{url_for('save_file',project_id=project.id, filename=filename)}}", {
+                        method: "POST",
+                        headers: { 
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'Authorization': token ? `Bearer ${token}` : '' 
+                        },
+                        body: new URLSearchParams({ 'content': content })
+                    });
+
+                    if (response.ok) {
+                        statusMsg.innerText = "¡Guardado!";
+                        statusMsg.className = "text-sm font-semibold text-success";
+                        statusMsg.style.display = "inline";
+                        cmEditor.clearHistory();
+                    } else {
+                        throw new Error("Server error");
+                    }
+                } catch (error) {
+                    statusMsg.innerText = "Error al guardar";
+                    statusMsg.className = "text-sm font-semibold text-error";
+                    statusMsg.style.display = "inline";
+                } finally {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = 'Guardar';
+                    setTimeout(() => { statusMsg.style.display = 'none'; }, 3000);
+                }
+            });
+
+            // 4. Ctrl+S / Cmd+S shortcut
+            document.addEventListener("keydown", (e) => {
+                if ((e.metaKey || e.ctrlKey) && e.keyCode === 83) {
+                    e.preventDefault();
+                    if (!saveBtn.disabled) saveBtn.click();
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
+
