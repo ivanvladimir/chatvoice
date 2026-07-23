@@ -109,32 +109,26 @@
             {% block notlogged_content %} {% endblock %}
         </div>
 
+
+
         <!-- Protected Content (authenticated) -->
         <div x-show="isAuthenticated" x-cloak x-transition:enter="fade-enter"
              x-ref="protectedZone">
-            
+
             {# ─── PROTECTED HTMX LOADER ─── #}
-            {# Child templates override: protected_endpoint, protected_trigger, protected_swap #}
             <div id="protected-content"
-                 {% block protected_htmx_config %}
-                 hx-post="{{ protected_endpoint | default(url_for('protected_default_load')) }}"
-                 hx-trigger="{{ protected_trigger | default('load-protected') }}"
-                 hx-swap="{{ protected_swap | default('innerHTML') }}"
-                 hx-target="this"
-                 hx-indicator="#protected-loading"
-                 hx-disabled-elt="#protected-disabled-overlay"
-                 {% endblock %}>
+                {% block protected_htmx_config %}
+                {# Child templates MUST override this block to enable HTMX loading #}
+                {% endblock %}>
                 
-                {# Loading indicator - shown during HTMX request #}
+                {# Loading indicator #}
                 <div id="protected-loading" class="flex flex-col items-center justify-center py-12 gap-4">
                     <span class="loading loading-spinner loading-lg text-primary"></span>
                     <span class="text-base-content/50 text-sm">Cargando contenido...</span>
                 </div>
                 
-                {# Disabled overlay for preventing interaction during load #}
                 <div id="protected-disabled-overlay" class="hidden"></div>
 
-                {# Child templates define fallback/initial content here #}
                 {% block protected_content %} {% endblock %}
             </div>
 
@@ -328,7 +322,8 @@
                 loadProtectedContent() {
                     this.$nextTick(() => {
                         const protectedEl = document.getElementById('protected-content');
-                        if (protectedEl && this.isAuthenticated) {
+                        // Only trigger if hx-post attribute exists
+                        if (protectedEl && this.isAuthenticated && protectedEl.hasAttribute('hx-post')) {
                             this.protectedLoaded = false;
                             htmx.ajax('POST', protectedEl.getAttribute('hx-post'), {
                                 target: protectedEl,
@@ -456,8 +451,6 @@
                     localStorage.setItem('accessToken', accessToken);
                     localStorage.setItem('username', username);
                     localStorage.setItem('name', name);
-
-                    this.loadProtectedContent();
                 },
                 
                 clearAuth() {
