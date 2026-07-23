@@ -1,15 +1,47 @@
 {# ─── THIS IS A PARTIAL, NO EXTENDS BASE.HTML ─── #}
-<div class="flex flex-col h-full" id="project-files-container">
+<div class="flex flex-col h-full" id="project-files-container" x-data="filesApp({{ project.id | tojson }})">
     
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold"><em>{{ project.name }}</em></h1>
-    <a href="{{ url_for('projects_page') }}" class="btn btn-ghost">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Regresar a proyectos
-        </a>
+        <div class="flex items-center gap-2">
+            <!-- Download Project ZIP (auth-aware) -->
+            <button class="btn btn-outline btn-sm gap-1.5" 
+                    @click="downloadProjectZip()"
+                    :disabled="downloadingZip"
+                    title="Descargar proyecto completo">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span x-show="!downloadingZip" class="hidden sm:inline">Descargar ZIP</span>
+                <span x-show="downloadingZip" class="hidden sm:inline">Descargando...</span>
+                <span x-show="downloadingZip" class="loading loading-spinner loading-xs"></span>
+            </button>
+            
+            <!-- Upload File -->
+            <button class="btn btn-outline btn-sm gap-1.5" @click="showUploadModal = true">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <span class="hidden sm:inline">Subir archivo</span>
+            </button>
+            
+            <!-- Add New File -->
+            <button class="btn btn-primary btn-sm gap-1.5" @click="showAddFileModal = true">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                <span class="hidden sm:inline">Nuevo archivo</span>
+            </button>
+            
+            <!-- Back Button -->
+            <a href="{{ url_for('projects_page') }}" class="btn btn-ghost btn-sm gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                <span class="hidden md:inline">Regresar</span>
+            </a>
+        </div>
     </div>
 
     <!-- File List Container -->
@@ -25,38 +57,464 @@
             <ul class="menu bg-base-100 rounded-box w-full shadow-lg">
                 {% for file in files %}
                     <li>
-                        <a href="/projects/{{ project.id }}/files/{{ file.rel_path }}" class="flex justify-between items-center gap-4">
+                        <div class="flex justify-between items-center gap-2">
                             
-                            {# Left: Icon + Name #}
-                            <div class="flex items-center gap-3 min-w-0 flex-1">
-                                {% if file.name.endswith('.html') %}
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-orange-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
-                                {% elif file.name.endswith('.md') %}
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                {% else %}
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                {% endif %}
-                                <span class="font-medium truncate">{{ file.name }}</span>
-                            </div>
-                            {# Right: Directory + Size #}
-                            <div class="flex items-center gap-6 shrink-0">
-                                {# Directory Column (Increased width to w-52) #}
-                                <div class="tooltip tooltip-left" data-tip="{{ file.dir }}">
-                                    <span class="text-base-content/50 text-xs flex items-center gap-1.5 w-52 truncate font-mono">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                                        </svg>
-                                        {{ file.dir }}
-                                    </span>
+                            {# Main clickable area (file link) #}
+                            <a href="/projects/{{ project.id }}/files/{{ file.rel_path }}" class="flex items-center gap-4 flex-1 min-w-0">
+                                
+                                {# Icon + Name #}
+                                <div class="flex items-center gap-3 min-w-0 flex-1">
+                                    {% if file.name.endswith('.html') %}
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-orange-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                                    {% elif file.name.endswith('.md') %}
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                    {% else %}
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                    {% endif %}
+                                    <span class="font-medium truncate">{{ file.name }}</span>
                                 </div>
-                                {# Size Column #}
-                                <span class="text-base-content/50 text-xs badge badge-ghost w-24 justify-center">{{ file.size }} b</span>
+                                
+                                {# Directory + Size #}
+                                <div class="flex items-center gap-6 shrink-0">
+                                    <div class="tooltip tooltip-left" data-tip="{{ file.dir }}">
+                                        <span class="text-base-content/50 text-xs flex items-center gap-1.5 w-52 truncate font-mono">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                                            </svg>
+                                            {{ file.dir }}
+                                        </span>
+                                    </div>
+                                    <span class="text-base-content/50 text-xs badge badge-ghost w-24 justify-center">{{ file.size }} b</span>
+                                </div>
+                            </a>
+                            
+                            {# Action buttons #}
+                            <div class="flex items-center gap-1 shrink-0">
+                                <!-- Download (auth-aware) -->
+                                <button class="btn btn-ghost btn-xs btn-square opacity-50 hover:opacity-100 transition-opacity"
+                                        title="Descargar {{ file.name }}"
+                                        @click="downloadFile('{{ file.rel_path }}', '{{ file.name }}')">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                </button>
+                                <!-- Delete (auth-aware) -->
+                                <button class="btn btn-ghost btn-xs btn-square text-error/40 hover:text-error transition-colors"
+                                        title="Eliminar {{ file.name }}"
+                                        @click="deleteFile('{{ file.rel_path }}', '{{ file.name }}')">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
                             </div>
-                        </a>
+                        </div>
                     </li>
                 {% endfor %}
             </ul>
         {% endif %}
     </div>
+
+    <!-- ═══════════════ ADD FILE MODAL ═══════════════ -->
+    <dialog class="modal" :class="{ 'modal-open': showAddFileModal }" @click.self="showAddFileModal = false">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Nuevo archivo
+            </h3>
+            <p class="py-2 text-base-content/60 text-sm">
+                Crea un archivo vacío. Extensiones soportadas: <code class="badge badge-sm">.yaml</code> <code class="badge badge-sm">.html</code> <code class="badge badge-sm">.md</code> <code class="badge badge-sm">.txt</code>
+            </p>
+            
+            <form @submit.prevent="createFile()">
+                <div class="form-control w-full mt-2">
+                    <label class="label">
+                        <span class="label-text font-medium">Nombre del archivo</span>
+                    </label>
+                    <input type="text" 
+                           x-model="newFileName"
+                           placeholder="ej: nuevo-archivo.html" 
+                           class="input input-bordered w-full font-mono" 
+                           :class="{ 'input-error': fileNameError }"
+                           @input="fileNameError = ''"
+                           required />
+                </div>
+                
+                <div class="form-control w-full mt-4">
+                    <label class="label">
+                        <span class="label-text font-medium">Subdirectorio <span class="text-base-content/40">(opcional)</span></span>
+                    </label>
+                    <input type="text" 
+                           x-model="newFileDir"
+                           placeholder="ej: subcarpeta/otra" 
+                           class="input input-bordered w-full font-mono" />
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/40">Dejar vacío para crear en la raíz del proyecto</span>
+                    </label>
+                </div>
+                
+                <div x-show="fileNameError" x-cloak class="mt-3">
+                    <div class="alert alert-error alert-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="text-sm" x-text="fileNameError"></span>
+                    </div>
+                </div>
+                
+                <div class="modal-action">
+                    <button type="button" class="btn btn-ghost btn-sm" @click="showAddFileModal = false" :disabled="creatingFile">Cancelar</button>
+                    <button type="submit" class="btn btn-primary btn-sm" :disabled="creatingFile">
+                        <span x-show="!creatingFile">Crear archivo</span>
+                        <span x-show="creatingFile" class="loading loading-spinner loading-xs"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+        <form method="dialog" class="modal-backdrop"><button @click="showAddFileModal = false">close</button></form>
+    </dialog>
+
+    <!-- ═══════════════ UPLOAD FILE MODAL ═══════════════ -->
+    <dialog class="modal" :class="{ 'modal-open': showUploadModal }" @click.self="showUploadModal = false">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                Subir archivo
+            </h3>
+            <p class="py-2 text-base-content/60 text-sm">
+                Sube uno o varios archivos. Solo se aceptan: <code class="badge badge-sm">.yaml</code> <code class="badge badge-sm">.html</code> <code class="badge badge-sm">.md</code> <code class="badge badge-sm">.txt</code>
+            </p>
+            
+            <form @submit.prevent="uploadFiles()">
+                <!-- Target subdirectory -->
+                <div class="form-control w-full mt-2">
+                    <label class="label">
+                        <span class="label-text font-medium">Subdirectorio destino <span class="text-base-content/40">(opcional)</span></span>
+                    </label>
+                    <input type="text" 
+                           x-model="uploadDir"
+                           placeholder="ej: templates"
+                           class="input input-bordered w-full font-mono" 
+                           :class="{ 'input-error': uploadError }"
+                           @input="uploadError = ''" />
+                    <label class="label">
+                        <span class="label-text-alt text-base-content/40">Los archivos se subirán a esta carpeta dentro del proyecto</span>
+                    </label>
+                </div>
+
+                <!-- Drop zone / file picker -->
+                <div class="form-control w-full mt-4"
+                     @dragover.prevent="isDragging = true"
+                     @dragleave.prevent="isDragging = false"
+                     @drop.prevent="handleDrop($event)">
+                    <label class="label">
+                        <span class="label-text font-medium">Archivos</span>
+                    </label>
+                    <div class="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors"
+                         :class="isDragging ? 'border-primary bg-primary/5' : 'border-base-300 hover:border-primary/50'"
+                         @click="$refs.fileInput.click()">
+                        <input type="file" 
+                               x-ref="fileInput"
+                               class="hidden"
+                               :accept="allowedExtensions.join(',')"
+                               multiple
+                               @change="handleFileSelect($event)" />
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mx-auto text-base-content/30 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <p class="text-base-content/50 text-sm">Arrastra archivos aquí o haz clic para seleccionar</p>
+                        <p class="text-base-content/30 text-xs mt-1">.yaml .yml .html .md .txt</p>
+                    </div>
+                </div>
+
+                <!-- Selected files list -->
+                <div x-show="selectedFiles.length > 0" class="mt-3 space-y-1 max-h-40 overflow-y-auto">
+                    <template x-for="(f, i) in selectedFiles" :key="i">
+                        <div class="flex items-center justify-between bg-base-200 rounded px-3 py-1.5 text-sm">
+                            <span class="truncate font-mono text-xs" x-text="f.name"></span>
+                            <span class="badge badge-ghost badge-xs" x-text="formatSize(f.size)"></span>
+                        </div>
+                    </template>
+                </div>
+                
+                <div x-show="uploadError" x-cloak class="mt-3">
+                    <div class="alert alert-error alert-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="text-sm" x-text="uploadError"></span>
+                    </div>
+                </div>
+                
+                <div class="modal-action">
+                    <button type="button" class="btn btn-ghost btn-sm" @click="showUploadModal = false" :disabled="uploading">Cancelar</button>
+                    <button type="submit" class="btn btn-primary btn-sm" :disabled="uploading || selectedFiles.length === 0">
+                        <span x-show="!uploading" x-text="`Subir ${selectedFiles.length} archivo${selectedFiles.length !== 1 ? 's' : ''}`"></span>
+                        <span x-show="uploading">Subiendo...</span>
+                        <span x-show="uploading" class="loading loading-spinner loading-xs"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+        <form method="dialog" class="modal-backdrop"><button @click="showUploadModal = false">close</button></form>
+    </dialog>
+
+    <!-- ═══════════════ DELETE CONFIRM MODAL ═══════════════ -->
+    <dialog class="modal modal-bottom sm:modal-middle" :class="{ 'modal-open': showDeleteModal }">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg text-error flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                Eliminar archivo
+            </h3>
+            <p class="py-4">
+                ¿Estás seguro de eliminar <code class="badge badge-sm" x-text="deleteTarget?.name"></code>?
+                <br><span class="text-base-content/50 text-sm">Esta acción no se puede deshacer.</span>
+            </p>
+            <div class="modal-action">
+                <button class="btn btn-ghost btn-sm" @click="showDeleteModal = false" :disabled="deleting">Cancelar</button>
+                <button class="btn btn-error btn-sm" @click="confirmDelete()" :disabled="deleting">
+                    <span x-show="!deleting">Eliminar</span>
+                    <span x-show="deleting" class="loading loading-spinner loading-xs"></span>
+                </button>
+            </div>
+            <form method="dialog" class="modal-backdrop"><button @click="showDeleteModal = false">close</button></form>
+        </div>
+    </dialog>
 </div>
 
+<script>
+function filesApp(projectId) {
+    return {
+        projectId: projectId,
+        
+        // ─── Shared ───
+        allowedExtensions: ['.yaml', '.yml', '.html', '.md', '.txt'],
+        _getHeaders(json = true) {
+            const h = { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` };
+            if (json) h['Content-Type'] = 'application/json';
+            return h;
+        },
+        
+        // ─── Download states ───
+        downloadingZip: false,
+        
+        // ─── Add file states ───
+        showAddFileModal: false,
+        newFileName: '',
+        newFileDir: '',
+        fileNameError: '',
+        creatingFile: false,
+        
+        // ─── Upload states ───
+        showUploadModal: false,
+        uploadDir: '',
+        uploadError: '',
+        uploading: false,
+        isDragging: false,
+        selectedFiles: [],
+        
+        // ─── Delete states ───
+        showDeleteModal: false,
+        deleteTarget: null,
+        deleting: false,
+        
+        // ════════════════════════════════════════
+        //  DOWNLOADS (auth-aware via fetch + blob)
+        // ════════════════════════════════════════
+        async downloadFile(filePath, filename) {
+            try {
+                const res = await fetch(`/api/v1/projects/${this.projectId}/files/${filePath}/download`, {
+                    headers: this._getHeaders(false)
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Error al descargar');
+                }
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                this._toast(e.message, 'error');
+            }
+        },
+        
+        async downloadProjectZip() {
+            this.downloadingZip = true;
+            try {
+              const res = await fetch(`{{url_for('download_project',project_id=project.id)}}`, {
+                    headers: this._getHeaders(false)
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Error al descargar ZIP');
+                }
+                const blob = await res.blob();
+                // Extract filename from Content-Disposition header
+                const disposition = res.headers.get('Content-Disposition') || '';
+                const match = disposition.match(/filename=(?:"([^"]+)"|([^;]+))/);
+                const zipName = match ? (match[1] || match[2]) : 'project.zip';
+                
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = zipName;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                this._toast(e.message, 'error');
+            } finally {
+                this.downloadingZip = false;
+            }
+        },
+        
+        // ════════════════════════════════════════
+        //  CREATE EMPTY FILE
+        // ════════════════════════════════════════
+        createFile() {
+            const name = this.newFileName.trim();
+            if (!name) { this.fileNameError = 'El nombre del archivo es obligatorio'; return; }
+            if (!this.allowedExtensions.some(ext => name.toLowerCase().endsWith(ext))) {
+                this.fileNameError = `Extensión no válida. Usa: ${this.allowedExtensions.join(', ')}`;
+                return;
+            }
+            if (/[<>:"|?*\\]/.test(name)) { this.fileNameError = 'Nombre con caracteres no válidos'; return; }
+            
+            let fullPath = name;
+            if (this.newFileDir.trim()) {
+                const dir = this.newFileDir.trim().replace(/^\/+|\/+$/g, '');
+                if (/[<>:"|?*\\]/.test(dir)) { this.fileNameError = 'Subdirectorio con caracteres no válidos'; return; }
+                fullPath = dir + '/' + name;
+            }
+            
+            this.creatingFile = true;
+            this.fileNameError = '';
+            
+            fetch(`{{url_for('create_file',project_id=project.id)}}`, {
+                method: 'POST',
+                headers: this._getHeaders(),
+                body: JSON.stringify({ path: fullPath })
+            })
+            .then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.detail || 'Error'); }); return r.json(); })
+            .then(() => {
+                this.showAddFileModal = false;
+                this.newFileName = '';
+                this.newFileDir = '';
+                document.dispatchEvent(new CustomEvent('reload-protected'));
+                this._toast('Archivo creado correctamente', 'success');
+            })
+            .catch(e => { this.fileNameError = e.message; })
+            .finally(() => { this.creatingFile = false; });
+        },
+        
+        // ════════════════════════════════════════
+        //  UPLOAD FILES
+        // ════════════════════════════════════════
+        handleFileSelect(event) {
+            this._setFiles(Array.from(event.target.files));
+            event.target.value = '';
+        },
+        handleDrop(event) {
+            this.isDragging = false;
+            this._setFiles(Array.from(event.dataTransfer.files));
+        },
+        _setFiles(fileList) {
+            this.uploadError = '';
+            const valid = fileList.filter(f => {
+                const ext = '.' + f.name.split('.').pop().toLowerCase();
+                return this.allowedExtensions.includes(ext);
+            });
+            if (valid.length === 0) {
+                this.uploadError = 'Ningún archivo tiene una extensión permitida.';
+                return;
+            }
+            if (valid.length < fileList.length) {
+                this.uploadError = `${fileList.length - valid.length} archivo(s) ignorado(s) por extensión no permitida.`;
+            }
+            this.selectedFiles = valid;
+        },
+        
+        uploadFiles() {
+            if (this.selectedFiles.length === 0) return;
+            this.uploading = true;
+            this.uploadError = '';
+            
+            const formData = new FormData();
+            formData.append('directory', this.uploadDir.trim());
+            this.selectedFiles.forEach(f => formData.append('files', f));
+            
+          fetch(`{{url_for('upload_files',project_id=project.id)}}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` },
+                body: formData
+            })
+            .then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.detail || 'Error al subir'); }); return r.json(); })
+            .then(data => {
+                this.showUploadModal = false;
+                this.uploadDir = '';
+                this.selectedFiles = [];
+                document.dispatchEvent(new CustomEvent('reload-protected'));
+                const msg = data.uploaded_count != null
+                    ? `${data.uploaded_count} archivo(s) subido(s) correctamente`
+                    : 'Archivos subidos correctamente';
+                this._toast(msg, 'success');
+            })
+            .catch(e => { this.uploadError = e.message; })
+            .finally(() => { this.uploading = false; });
+        },
+        
+        // ════════════════════════════════════════
+        //  DELETE FILE
+        // ════════════════════════════════════════
+        deleteFile(filePath, filename) {
+            this.deleteTarget = { path: filePath, name: filename };
+            this.showDeleteModal = true;
+        },
+        
+        confirmDelete() {
+            if (!this.deleteTarget) return;
+            this.deleting = true;
+            
+          fetch(`{{url_for('delete_file',project_id=project.id)}}`, {
+                method: 'DELETE',
+                headers: this._getHeaders(),
+                body: JSON.stringify({ path: this.deleteTarget.path })
+            })
+            .then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.detail || 'Error al eliminar'); }); return r.json(); })
+            .then(() => {
+                this.showDeleteModal = false;
+                this.deleteTarget = null;
+                document.dispatchEvent(new CustomEvent('reload-protected'));
+                this._toast('Archivo eliminado correctamente', 'info');
+            })
+            .catch(e => { this._toast(e.message, 'error'); })
+            .finally(() => { this.deleting = false; });
+        },
+        
+        // ════════════════════════════════════════
+        //  HELPERS
+        // ════════════════════════════════════════
+        formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' b';
+            if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' Kb';
+            return (bytes / 1048576).toFixed(1) + ' Mb';
+        },
+        
+        _toast(message, type = 'info') {
+            if (window.__authApp) window.__authApp.showToast(message, type);
+        }
+    }
+}
+</script>

@@ -1,3 +1,5 @@
+import io
+import zipfile
 from datetime import UTC, datetime
 from typing import Annotated
 import re
@@ -5,9 +7,12 @@ import unicodedata
 
 import os
 from pathlib import Path
-from fastapi import APIRouter, Request, Depends, HTTPException, Form
-from fastapi.responses import HTMLResponse
+
+
+from fastapi import APIRouter, Depends, Form, Query, Request, Response, File as FileForm, UploadFile
+from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 
 
 from fastapi import APIRouter, Depends, Form, Query, Request, Response
@@ -21,12 +26,268 @@ from ...core.db.database import async_get_db
 from ...models.user import User
 from ...schemas.project import ProjectCreate, ProjectCreateInternal
 from ...crud.projects import crud_projects
-from ...utils.project import create_project_directory,project_directory_exists, list_project_files
+from ...utils.project import create_project_directory, project_directory_exists, list_project_files
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 templates = Jinja2Templates(directory="chatvoice/api/templates")
 
 ALLOWED_EXTENSIONS = {".yaml", ".yml", ".html", ".md", ".txt"}
+
+# ─── PYDANTIC MODEL FOR CREATE FILE ───
+class CreateFileRequest(BaseModel):
+    path: str
+
+
+def _get_project_base_path(current_user: dict, project: dict) -> Path:
+    """Helper: build and resolve the project base path."""
+    return (Path("conversations") / current_user["username"] / project["project_name"]).resolve()
+
+
+def _validate_file_path(base_path: Path, file_path_str: str) -> Path:
+    """
+    Validate a file path is inside base_path and has an allowed extension.
+    Returns the resolved target Path.
+    Raises HTTPException on violations.
+    """
+    target = (base_path / file_path_str).resolve()
+
+    # Directory traversal check
+    if not str(target).startswith(str(base_path)):
+        raise HTTPException(status_code=403, detail="Access denied.")
+
+    return target
+
+# ═══════════════════════════════════════════════════════════════
+#  NEW: Upload file(s)
+# ═══════════════════════════════════════════════════════════════
+@router.post("/api/{project_id}/files/upload")
+async def upload_files(
+    request: Request,
+    project_id: int,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    current_user: User = Depends(get_current_user),
+    files: list[UploadFile] = FileForm(...),
+    directory: str = Form(""),
+):
+    project = await crud_projects.get(db, id=project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found.")
+
+    base_path = _get_project_base_path(current_user, project)
+    if not base_path.is_dir():
+        raise HTTPException(status_code=404, detail="Project directory not found on server.")
+
+    # Resolve target directory
+    dir_clean = directory.strip().strip("/")
+    if dir_clean:
+        target_dir = (base_path / dir_clean).resolve()
+        if not str(target_dir).startswith(str(base_path)):
+            raise HTTPException(status_code=403, detail="Access denied.")
+        target_dir.mkdir(parents=True, exist_ok=True)
+    else:
+        target_dir = base_path
+
+    uploaded = 0
+    skipped = []
+
+    for file in files:
+        # Sanitize filename
+        filename = Path(file.filename).name  # strip any path components
+        if not filename:
+            continue
+
+        ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+        if f".{ext}" not in ALLOWED_EXTENSIONS:
+            skipped.append(f"{filename} (extensión no permitida)")
+            continue
+
+        dest = (target_dir / filename).resolve()
+        # Final traversal check per file
+        if not str(dest).startswith(str(target_dir)):
+            skipped.append(f"{filename} (acceso denegado)")
+            continue
+
+        if dest.exists():
+            skipped.append(f"{filename} (ya existe)")
+            continue
+
+        try:
+            content = await file.read()
+            dest.write_bytes(content)
+            uploaded += 1
+        except Exception as e:
+            skipped.append(f"{filename} (error: {e})")
+
+    return {
+        "uploaded_count": uploaded,
+        "skipped": skipped,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════
+#  NEW: Delete a file
+# ═══════════════════════════════════════════════════════════════
+@router.delete("/api/{project_id}/files")
+async def delete_file(
+    request: Request,
+    project_id: int,
+    body: CreateFileRequest,  # reuse { "path": "..." }
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    current_user: User = Depends(get_current_user),
+):
+    """Delete a single file from the project."""
+    project = await crud_projects.get(db, id=project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found.")
+
+    base_path = _get_project_base_path(current_user, project)
+    target_file = _validate_file_path(base_path, body.path.strip())
+
+    if not target_file.exists():
+        raise HTTPException(status_code=404, detail="File not found.")
+    if not target_file.is_file():
+        raise HTTPException(status_code=400, detail="Not a file.")
+    if target_file.suffix.lower() not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Unsupported file type.")
+
+    try:
+        target_file.unlink()
+    except OSError as e:
+        raise HTTPException(status_code=500, detail=f"Could not delete file: {e}")
+
+    # Clean up empty parent directories (up to the project root)
+    parent = target_file.parent
+    while parent != base_path and parent.is_dir():
+        try:
+            parent.rmdir()  # only removes if empty
+            parent = parent.parent
+        except OSError:
+            break  # directory not empty, stop
+
+    return {"message": "File deleted", "path": body.path}
+
+
+# ═══════════════════════════════════════════════════════════════
+#  NEW ENDPOINT 1: Download single file
+# ═══════════════════════════════════════════════════════════════
+@router.get("/{project_id}/files/{file_path:path}/download")
+async def download_file(
+    request: Request,
+    project_id: int,
+    file_path: str,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    current_user: User = Depends(get_current_user),
+):
+    project = await crud_projects.get(db, id=project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found.")
+
+    base_path = _get_project_base_path(current_user, project)
+    target_file = _validate_file_path(base_path, file_path)
+
+    if not target_file.exists():
+        raise HTTPException(status_code=404, detail="File not found.")
+    if not target_file.is_file():
+        raise HTTPException(status_code=400, detail="Not a file.")
+    if target_file.suffix.lower() not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Unsupported file type.")
+
+    return FileResponse(
+        path=str(target_file),
+        filename=target_file.name,
+        media_type="application/octet-stream",
+    )
+
+
+# ═══════════════════════════════════════════════════════════════
+#  NEW ENDPOINT 2: Download project as ZIP
+# ═══════════════════════════════════════════════════════════════
+@router.get("/{project_id}/download")
+async def download_project(
+    request: Request,
+    project_id: int,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    current_user: User = Depends(get_current_user),
+):
+    project = await crud_projects.get(db, id=project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found.")
+
+    base_path = _get_project_base_path(current_user, project)
+
+    if not base_path.is_dir():
+        raise HTTPException(status_code=404, detail="Project directory not found on server.")
+
+    # Build ZIP in memory – only allowed extensions
+    zip_buffer = io.BytesIO()
+    file_count = 0
+
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for file_path in base_path.rglob("*"):
+            if file_path.is_file() and file_path.suffix.lower() in ALLOWED_EXTENSIONS:
+                arcname = file_path.relative_to(base_path)
+                zipf.write(file_path, arcname)
+                file_count += 1
+
+    if file_count == 0:
+        raise HTTPException(status_code=404, detail="No supported files found in project.")
+
+    zip_buffer.seek(0)
+
+    # Clean filename: use project_name (already a slug) + timestamp
+    timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+    zip_filename = f"{project['project_name']}_{timestamp}.zip"
+
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename={zip_filename}"},
+    )
+
+
+# ═══════════════════════════════════════════════════════════════
+#  NEW ENDPOINT 3: Create empty file
+# ═══════════════════════════════════════════════════════════════
+@router.post("/api/{project_id}/files")
+async def create_file(
+    request: Request,
+    project_id: int,
+    body: CreateFileRequest,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    current_user: User = Depends(get_current_user),
+):
+    project = await crud_projects.get(db, id=project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found.")
+
+    file_path_str = body.path.strip()
+    if not file_path_str:
+        raise HTTPException(status_code=400, detail="Path is required.")
+
+    base_path = _get_project_base_path(current_user, project)
+    target_file = _validate_file_path(base_path, file_path_str)
+
+    # Validate extension
+    if target_file.suffix.lower() not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Extension not allowed. Use: {', '.join(sorted(ALLOWED_EXTENSIONS))}",
+        )
+
+    # Prevent overwriting
+    if target_file.exists():
+        raise HTTPException(status_code=409, detail="File already exists.")
+
+    # Create parent directories and the empty file
+    try:
+        target_file.parent.mkdir(parents=True, exist_ok=True)
+        target_file.touch()
+    except OSError as e:
+        raise HTTPException(status_code=500, detail=f"Could not create file: {e}")
+
+    return {"message": "File created", "path": file_path_str}
+
+
 
 @router.post("/{project_id}/files", response_class=HTMLResponse)
 async def list_project_files_htmx(
