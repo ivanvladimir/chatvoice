@@ -2,22 +2,55 @@
 
 {% block title %}Editando archivo{% endblock %}
 
-{# ─── LOAD CODEMIRROR RESOURCES HERE ─── #}
+{# ─── LOAD CODEMIRROR RESOURCES ─── #}
 {% block head %}
 {{ super() }}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/dialog/dialog.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchtags.min.js"></script>
 <style>
-    .CodeMirror { 
-        height: 75vh; 
+    .CodeMirror {
+        height: 100%;
         border-radius: 0.5rem;
         font-size: 15px;
+        font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    }
+    /* Fullscreen mode */
+    .editor-fullscreen {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        z-index: 9999 !important;
+        border-radius: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: var(--b3, #282a36) !important;
+    }
+    .editor-fullscreen .CodeMirror {
+        border-radius: 0 !important;
+        flex: 1;
+    }
+    /* Search match highlight */
+    .cm-searching {
+        background: rgba(255, 255, 0, 0.3) !important;
+    }
+    .cm-searching.cm-searching-selected {
+        background: rgba(255, 165, 0, 0.5) !important;
+    }
+    /* Hide scrollbar for search bar on small screens */
+    #search-bar {
+        overflow-x: auto;
     }
 </style>
 {% endblock %}
 
 {# ─── HTMX CONFIGURATION ─── #}
-{# Note: We build the URL manually to prevent Jinja from escaping the slashes in the filename path #}
 {% block protected_htmx_config %}
 hx-post="{{ url_for('get_file_editor_htmx',project_id=project.id, filename=filename)}}"
 hx-trigger="load-protected"
@@ -29,7 +62,6 @@ hx-indicator="#protected-loading"
 {# ─── SKELETON FALLBACK ─── #}
 {% block protected_content %}
 <div class="flex flex-col h-full">
-    <!-- Header Skeleton -->
     <div class="flex justify-between items-center mb-4">
         <div class="flex items-center gap-4">
             <div class="skeleton h-8 w-20"></div>
@@ -37,8 +69,8 @@ hx-indicator="#protected-loading"
         </div>
         <div class="skeleton h-10 w-24"></div>
     </div>
-    <!-- Editor Skeleton -->
-    <div class="bg-base-200 rounded-box p-1 shadow-lg h-[75vh]">
+    <div class="skeleton h-10 w-full mb-0 rounded-t-box"></div>
+    <div class="bg-base-200 rounded-b-box p-1 shadow-lg flex-1">
         <div class="skeleton h-full w-full rounded-box"></div>
     </div>
 </div>
@@ -57,86 +89,587 @@ hx-indicator="#protected-loading"
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js"></script>
+<!-- Addons -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closetag.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/search.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/searchcursor.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/jump-to-line.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/dialog/dialog.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/indent-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/comment-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/xml-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/markdown-fold.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
 
 <script>
     let cmEditor = null;
+    let editorState = {
+        fontSize: 15,
+        isFullscreen: false,
+        lineNumbers: true,
+        lineWrap: false,
+        activeLine: true,
+        closeBrackets: true
+    };
 
-    // Listen for HTMX to finish swapping the content
     document.body.addEventListener('htmx:afterSwap', function(event) {
-        // Only initialize if the swap happened inside our protected zone
-        if (event.detail.target.id === 'protected-content') {
-            const textarea = document.getElementById('editor-textarea');
-            if (!textarea) return;
+        if (event.detail.target.id !== 'protected-content') return;
 
-            // 1. Get filename from the data attribute
-            const wrapper = document.getElementById('editor-wrapper');
-            const filename = wrapper ? wrapper.dataset.filename : "";
-            let mode = "text/plain";
-            
-            if (filename.endsWith(".yaml") || filename.endsWith(".yml")) mode = "yaml";
-            else if (filename.endsWith(".html")) mode = "htmlmixed";
-            else if (filename.endsWith(".md")) mode = "markdown";
+        const textarea = document.getElementById('editor-textarea');
+        if (!textarea) return;
 
-            // 2. Initialize CodeMirror
-            cmEditor = CodeMirror.fromTextArea(textarea, {
-                mode: mode,
-                theme: "dracula",
-                lineNumbers: true,
-                tabSize: 2,
-                indentWithTabs: false,
-                matchBrackets: true
-            });
+        const wrapper = document.getElementById('editor-wrapper');
+        const filename = wrapper ? wrapper.dataset.filename : "";
+        
+        // Detect mode
+        let mode = "text/plain";
+        let modeLabel = "plain";
+        const ext = filename.split('.').pop().toLowerCase();
+        
+        const modeMap = {
+            'yaml':  { mode: 'yaml',      label: 'yaml'  },
+            'yml':   { mode: 'yaml',      label: 'yaml'  },
+            'html':  { mode: 'htmlmixed', label: 'html'  },
+            'htm':   { mode: 'htmlmixed', label: 'html'  },
+            'md':    { mode: 'markdown',  label: 'md'    },
+            'markdown': { mode: 'markdown', label: 'md'  },
+            'js':    { mode: 'javascript',label: 'js'    },
+            'css':   { mode: 'css',       label: 'css'   },
+            'svg':   { mode: 'xml',       label: 'svg'   },
+        };
+        
+        if (modeMap[ext]) {
+            mode = modeMap[ext].mode;
+            modeLabel = modeMap[ext].label;
+        }
 
-            // 3. Setup Save Logic
-            const saveBtn = document.getElementById('save-btn');
-            const statusMsg = document.getElementById('status-message');
-
-            saveBtn.addEventListener('click', async () => {
-                saveBtn.disabled = true;
-                saveBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span>';
-                statusMsg.style.display = 'none';
-
-                const content = cmEditor.getValue();
-                const token = localStorage.getItem('accessToken');
-
-                try {
-                  const response = await fetch("{{url_for('save_file',project_id=project.id, filename=filename)}}", {
-                        method: "POST",
-                        headers: { 
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'Authorization': token ? `Bearer ${token}` : '' 
-                        },
-                        body: new URLSearchParams({ 'content': content })
-                    });
-
-                    if (response.ok) {
-                        statusMsg.innerText = "¡Guardado!";
-                        statusMsg.className = "text-sm font-semibold text-success";
-                        statusMsg.style.display = "inline";
-                        cmEditor.clearHistory();
+        // Initialize CodeMirror
+        cmEditor = CodeMirror.fromTextArea(textarea, {
+            mode: mode,
+            theme: "dracula",
+            lineNumbers: true,
+            lineWrapping: false,
+            tabSize: 2,
+            indentWithTabs: false,
+            indentUnit: 2,
+            matchBrackets: true,
+            autoCloseBrackets: true,
+            autoCloseTags: true,
+            styleActiveLine: true,
+            foldGutter: true,
+            gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+            // Replace the entire extraKeys block with this:
+            extraKeys: {
+                "Tab": function(cm) {
+                    if (cm.somethingSelected()) {
+                        cm.indentSelection("add");
                     } else {
-                        throw new Error("Server error");
+                        cm.replaceSelection(Array(cm.getOption("indentUnit") + 1).join(" "), "end", "+input");
                     }
-                } catch (error) {
-                    statusMsg.innerText = "Error al guardar";
-                    statusMsg.className = "text-sm font-semibold text-error";
-                    statusMsg.style.display = "inline";
-                } finally {
-                    saveBtn.disabled = false;
-                    saveBtn.innerHTML = 'Guardar';
-                    setTimeout(() => { statusMsg.style.display = 'none'; }, 3000);
-                }
-            });
+                },
+                "Shift-Tab": function(cm) {
+                    cm.indentSelection("subtract");
+                },
+                "Ctrl-/": "toggleComment",
+                "Cmd-/": "toggleComment",
+                "Ctrl-=": function() { changeFontSize(1); },
+                "Cmd-=": function() { changeFontSize(1); },
+                "Ctrl--": function() { changeFontSize(-1); },
+                "Cmd--": function() { changeFontSize(-1); },
+                "Ctrl-G": function() { document.getElementById('goto-line-input').focus(); },
+                "Cmd-G": function() { document.getElementById('goto-line-input').focus(); },
+                "F11": function() { toggleFullscreen(); },
+                "F1": function() { openHelpModal(); return false; },
+                "Esc": function() {
+                    if (editorState.isFullscreen) toggleFullscreen();
+                    const searchBar = document.getElementById('search-bar');
+                    if (!searchBar.classList.contains('hidden')) {
+                        searchBar.classList.add('hidden');
+                    }
+                    // Close help modal if open
+                    const modal = document.getElementById('editor-help-modal');
+                    if (modal.open) modal.close();
+                },
+                "Alt-Up": function(cm) {
+                    cm.execCommand('swapLineUp');
+                },
+                "Alt-Down": function(cm) {
+                    cm.execCommand('swapLineDown');
+                },
+                "Ctrl-Alt-Up": function(cm) {
+                    cm.execCommand('copyLineUp');
+                },
+                "Ctrl-Alt-Down": function(cm) {
+                    cm.execCommand('copyLineDown');
+                },
+                "Ctrl-D": function(cm) {
+                    // If selection exists, delete it; otherwise delete the line
+                    if (cm.somethingSelected()) {
+                        cm.replaceSelection('');
+                    } else {
+                        const cursor = cm.getCursor();
+                        cm.replaceRange('', 
+                            { line: cursor.line, ch: 0 }, 
+                            { line: cursor.line + 1, ch: 0 }
+                        );
+                    }
+                },
+            }
+        });
 
-            // 4. Ctrl+S / Cmd+S shortcut
-            document.addEventListener("keydown", (e) => {
-                if ((e.metaKey || e.ctrlKey) && e.keyCode === 83) {
-                    e.preventDefault();
-                    if (!saveBtn.disabled) saveBtn.click();
+        // ─── FIX: Explicitly hide the original textarea ───
+        textarea.style.display = 'none';
+        textarea.style.visibility = 'hidden';
+        textarea.style.position = 'absolute';
+        textarea.style.height = '0';
+        textarea.style.overflow = 'hidden';
+
+        // Show mode in status bar
+        document.getElementById('file-mode').textContent = modeLabel;
+
+        // ─── Wire up toolbar buttons ───
+        
+        // Font size
+        document.getElementById('font-increase').addEventListener('click', () => changeFontSize(1));
+        document.getElementById('font-decrease').addEventListener('click', () => changeFontSize(-1));
+        
+        // Line numbers
+        document.getElementById('toggle-lines').addEventListener('click', function() {
+            editorState.lineNumbers = !editorState.lineNumbers;
+            cmEditor.setOption('lineNumbers', editorState.lineNumbers);
+            this.classList.toggle('btn-active', editorState.lineNumbers);
+        });
+        
+        // Word wrap
+        document.getElementById('toggle-wrap').addEventListener('click', function() {
+            editorState.lineWrap = !editorState.lineWrap;
+            cmEditor.setOption('lineWrapping', editorState.lineWrap);
+            this.classList.toggle('btn-active', editorState.lineWrap);
+        });
+        
+        // Active line
+        document.getElementById('toggle-activeline').addEventListener('click', function() {
+            editorState.activeLine = !editorState.activeLine;
+            cmEditor.setOption('styleActiveLine', editorState.activeLine);
+            this.classList.toggle('btn-active', editorState.activeLine);
+        });
+        
+        // Indent
+        document.getElementById('indent-more').addEventListener('click', () => {
+            cmEditor.indentSelection('add');
+        });
+        document.getElementById('indent-less').addEventListener('click', () => {
+            cmEditor.indentSelection('subtract');
+        });
+        
+        // Undo / Redo
+        document.getElementById('editor-undo').addEventListener('click', () => cmEditor.undo());
+        document.getElementById('editor-redo').addEventListener('click', () => cmEditor.redo());
+        
+        // Search toggle
+        document.getElementById('toggle-search').addEventListener('click', toggleSearchBar);
+        
+        // Search controls
+        document.getElementById('search-next').addEventListener('click', () => findNext());
+        document.getElementById('search-prev').addEventListener('click', () => findPrev());
+        document.getElementById('replace-one').addEventListener('click', replaceOne);
+        document.getElementById('replace-all').addEventListener('click', replaceAll);
+        document.getElementById('search-close').addEventListener('click', () => {
+            document.getElementById('search-bar').classList.add('hidden');
+            cmEditor.focus();
+        });
+        document.getElementById('search-input').addEventListener('input', debounce(doSearch, 200));
+        document.getElementById('search-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                e.shiftKey ? findPrev() : findNext();
+            }
+            if (e.key === 'Escape') {
+                document.getElementById('search-bar').classList.add('hidden');
+                cmEditor.focus();
+            }
+        });
+        document.getElementById('replace-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                replaceOne();
+            }
+        });
+        
+        // Go to line
+        document.getElementById('goto-line-btn').addEventListener('click', gotoLine);
+        document.getElementById('goto-line-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                gotoLine();
+            }
+        });
+        
+        // Fullscreen
+        document.getElementById('toggle-fullscreen').addEventListener('click', toggleFullscreen);
+        
+        // ─── Cursor tracking ───
+        cmEditor.on('cursorActivity', updateStatusBar);
+        cmEditor.on('change', updateStatusBar);
+        
+        // Initial status
+        updateStatusBar();
+        
+        // ─── Save Logic ───
+        const saveBtn = document.getElementById('save-btn');
+        const statusMsg = document.getElementById('status-message');
+
+        saveBtn.addEventListener('click', async () => {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span>';
+            statusMsg.style.display = 'none';
+
+            const content = cmEditor.getValue();
+            const token = localStorage.getItem('accessToken');
+
+            try {
+                const response = await fetch("{{url_for('save_file',project_id=project.id, filename=filename)}}", {
+                    method: "POST",
+                    headers: { 
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Authorization': token ? `Bearer ${token}` : '' 
+                    },
+                    body: new URLSearchParams({ 'content': content })
+                });
+
+                if (response.ok) {
+                    statusMsg.innerText = "¡Guardado!";
+                    statusMsg.className = "text-sm font-semibold text-success";
+                    statusMsg.style.display = "inline";
+                    cmEditor.clearHistory();
+                } else {
+                    throw new Error("Server error");
+                }
+            } catch (error) {
+                statusMsg.innerText = "Error al guardar";
+                statusMsg.className = "text-sm font-semibold text-error";
+                statusMsg.style.display = "inline";
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Guardar';
+                setTimeout(() => { statusMsg.style.display = 'none'; }, 3000);
+            }
+        });
+
+        // Ctrl+S / Cmd+S
+        document.addEventListener("keydown", (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.keyCode === 83) {
+                e.preventDefault();
+                if (!saveBtn.disabled) saveBtn.click();
+            }
+        });
+
+        // ─── Helper Functions ───
+        
+        function changeFontSize(delta) {
+            editorState.fontSize = Math.min(30, Math.max(10, editorState.fontSize + delta));
+            const cmEl = cmEditor.getWrapperElement();
+            cmEl.style.fontSize = editorState.fontSize + 'px';
+            document.getElementById('font-size-display').textContent = editorState.fontSize + 'px';
+            cmEditor.refresh();
+        }
+        
+        function toggleSearchBar() {
+            const bar = document.getElementById('search-bar');
+            bar.classList.toggle('hidden');
+            if (!bar.classList.contains('hidden')) {
+                const input = document.getElementById('search-input');
+                input.focus();
+                input.select();
+            } else {
+                clearSearchHighlights();
+                cmEditor.focus();
+            }
+        }
+        
+        let searchCursor = null;
+        let searchMatches = [];
+        
+        function doSearch() {
+            clearSearchHighlights();
+            const query = document.getElementById('search-input').value;
+            const countEl = document.getElementById('search-count');
+            
+            if (!query) {
+                countEl.textContent = '';
+                return;
+            }
+            
+            const caseSensitive = document.getElementById('search-case').checked;
+            const isRegex = document.getElementById('search-regex').checked;
+            
+            try {
+                searchCursor = cmEditor.getSearchCursor(
+                    isRegex ? new RegExp(query, caseSensitive ? '' : 'i') : query,
+                    null,
+                    { caseFold: !caseSensitive }
+                );
+                
+                let currentIdx = 0;
+                searchMatches = [];
+                
+                while (searchCursor.findNext()) {
+                    searchMatches.push({
+                        from: searchCursor.from(),
+                        to: searchCursor.to()
+                    });
+                }
+                
+                if (searchMatches.length > 0) {
+                    // Highlight all
+                    searchMatches.forEach((m, i) => {
+                        cmEditor.markText(m.from, m.to, { className: 'cm-searching' });
+                    });
+                    // Select first
+                    searchCursor = cmEditor.getSearchCursor(
+                        isRegex ? new RegExp(query, caseSensitive ? '' : 'i') : query,
+                        null,
+                        { caseFold: !caseSensitive }
+                    );
+                    searchCursor.findNext();
+                    cmEditor.setSelection(searchCursor.from(), searchCursor.to());
+                    cmEditor.scrollIntoView({ from: searchCursor.from(), to: searchCursor.to() }, 50);
+                    countEl.textContent = `1/${searchMatches.length}`;
+                } else {
+                    countEl.textContent = '0/0';
+                }
+            } catch (e) {
+                countEl.textContent = 'error';
+            }
+        }
+        
+        function findNext() {
+            const query = document.getElementById('search-input').value;
+            if (!query || searchMatches.length === 0) return;
+            
+            const cur = cmEditor.getCursor();
+            let nextIdx = -1;
+            
+            for (let i = 0; i < searchMatches.length; i++) {
+                const m = searchMatches[i];
+                // Find first match after current cursor
+                const lineAfter = m.from.line > cur.line || 
+                    (m.from.line === cur.line && m.from.ch > cur.ch);
+                if (lineAfter && nextIdx === -1) {
+                    nextIdx = i;
+                }
+            }
+            
+            if (nextIdx === -1) nextIdx = 0; // Wrap around
+            
+            const m = searchMatches[nextIdx];
+            cmEditor.setSelection(m.from, m.to);
+            cmEditor.scrollIntoView({ from: m.from, to: m.to }, 50);
+            document.getElementById('search-count').textContent = `${nextIdx + 1}/${searchMatches.length}`;
+        }
+        
+        function findPrev() {
+            const query = document.getElementById('search-input').value;
+            if (!query || searchMatches.length === 0) return;
+            
+            const cur = cmEditor.getCursor();
+            let prevIdx = -1;
+            
+            for (let i = searchMatches.length - 1; i >= 0; i--) {
+                const m = searchMatches[i];
+                const lineBefore = m.from.line < cur.line || 
+                    (m.from.line === cur.line && m.from.ch < cur.ch);
+                if (lineBefore && prevIdx === -1) {
+                    prevIdx = i;
+                }
+            }
+            
+            if (prevIdx === -1) prevIdx = searchMatches.length - 1; // Wrap around
+            
+            const m = searchMatches[prevIdx];
+            cmEditor.setSelection(m.from, m.to);
+            cmEditor.scrollIntoView({ from: m.from, to: m.to }, 50);
+            document.getElementById('search-count').textContent = `${prevIdx + 1}/${searchMatches.length}`;
+        }
+        
+        function clearSearchHighlights() {
+            const marks = cmEditor.getAllMarks();
+            marks.forEach(m => m.clear());
+            searchMatches = [];
+        }
+        
+        function replaceOne() {
+            const query = document.getElementById('search-input').value;
+            const replacement = document.getElementById('replace-input').value;
+            if (!query) return;
+            
+            const sel = cmEditor.getSelection();
+            if (sel && sel.toLowerCase() === query.toLowerCase()) {
+                cmEditor.replaceSelection(replacement);
+                doSearch();
+            } else {
+                findNext();
+            }
+        }
+        
+        function replaceAll() {
+            const query = document.getElementById('search-input').value;
+            const replacement = document.getElementById('replace-input').value;
+            if (!query) return;
+            
+            const caseSensitive = document.getElementById('search-case').checked;
+            const isRegex = document.getElementById('search-regex').checked;
+            
+            let count = 0;
+            const cursor = cmEditor.getSearchCursor(
+                isRegex ? new RegExp(query, caseSensitive ? 'g' : 'gi') : query,
+                null,
+                { caseFold: !caseSensitive }
+            );
+            
+            cmEditor.operation(() => {
+                while (cursor.findNext()) {
+                    cursor.replace(replacement);
+                    count++;
                 }
             });
+            
+            doSearch();
+            if (count > 0) {
+                const statusMsg = document.getElementById('status-message');
+                statusMsg.innerText = `${count} reemplazo${count > 1 ? 's' : ''}`;
+                statusMsg.className = "text-sm font-semibold text-info";
+                statusMsg.style.display = "inline";
+                setTimeout(() => { statusMsg.style.display = 'none'; }, 3000);
+            }
+        }
+        
+        function gotoLine() {
+            const input = document.getElementById('goto-line-input');
+            const lineNum = parseInt(input.value);
+            if (isNaN(lineNum) || lineNum < 1) return;
+            
+            const lastLine = cmEditor.lastLine();
+            const targetLine = Math.min(lineNum - 1, lastLine);
+            
+            cmEditor.setCursor(targetLine, 0);
+            cmEditor.scrollIntoView({ line: targetLine, ch: 0 }, 100);
+            cmEditor.focus();
+            input.value = '';
+        }
+        
+        function toggleFullscreen() {
+            editorState.isFullscreen = !editorState.isFullscreen;
+            const container = document.getElementById('editor-container');
+            const expandIcon = document.getElementById('fs-expand-icon');
+            const compressIcon = document.getElementById('fs-compress-icon');
+            
+            container.classList.toggle('editor-fullscreen', editorState.isFullscreen);
+            expandIcon.classList.toggle('hidden', editorState.isFullscreen);
+            compressIcon.classList.toggle('hidden', !editorState.isFullscreen);
+            
+            // Also fullscreen the status bar and toolbar
+            const toolbar = container.previousElementSibling;
+            const searchBar = document.getElementById('search-bar');
+            const statusbar = document.getElementById('editor-statusbar');
+            
+            if (editorState.isFullscreen) {
+                toolbar.style.position = 'fixed';
+                toolbar.style.top = '0';
+                toolbar.style.left = '0';
+                toolbar.style.right = '0';
+                toolbar.style.zIndex = '10000';
+                toolbar.style.borderRadius = '0';
+                
+                if (!searchBar.classList.contains('hidden')) {
+                    searchBar.style.position = 'fixed';
+                    searchBar.style.top = toolbar.offsetHeight + 'px';
+                    searchBar.style.left = '0';
+                    searchBar.style.right = '0';
+                    searchBar.style.zIndex = '10000';
+                }
+                
+                statusbar.style.position = 'fixed';
+                statusbar.style.bottom = '0';
+                statusbar.style.left = '0';
+                statusbar.style.right = '0';
+                statusbar.style.zIndex = '10000';
+                statusbar.style.borderRadius = '0';
+                
+                container.style.top = toolbar.offsetHeight + (!searchBar.classList.contains('hidden') ? searchBar.offsetHeight : 0) + 'px';
+                container.style.bottom = statusbar.offsetHeight + 'px';
+            } else {
+                toolbar.style.position = '';
+                toolbar.style.top = '';
+                toolbar.style.left = '';
+                toolbar.style.right = '';
+                toolbar.style.zIndex = '';
+                toolbar.style.borderRadius = '';
+                
+                searchBar.style.position = '';
+                searchBar.style.top = '';
+                searchBar.style.left = '';
+                searchBar.style.right = '';
+                searchBar.style.zIndex = '';
+                
+                statusbar.style.position = '';
+                statusbar.style.bottom = '';
+                statusbar.style.left = '';
+                statusbar.style.right = '';
+                statusbar.style.zIndex = '';
+                statusbar.style.borderRadius = '';
+                
+                container.style.top = '';
+                container.style.bottom = '';
+            }
+            
+            cmEditor.refresh();
+        }
+        
+        function openHelpModal() {
+            const modal = document.getElementById('editor-help-modal');
+            if (modal) {
+                modal.showModal();
+            }
+        }
+
+        // Wire up the help button (add this alongside the other toolbar button listeners)
+        document.getElementById('editor-help-btn').addEventListener('click', openHelpModal);
+        
+        function updateStatusBar() {
+            const cursor = cmEditor.getCursor();
+            document.getElementById('cursor-position').textContent = 
+                `Ln ${cursor.line + 1}, Col ${cursor.ch + 1}`;
+            
+            const lineCount = cmEditor.lineCount();
+            const charCount = cmEditor.getValue().length;
+            document.getElementById('line-count').textContent = `${lineCount} línea${lineCount !== 1 ? 's' : ''}`;
+            document.getElementById('char-count').textContent = `${charCount} caract.`;
+            
+            // Selection info
+            const selInfo = document.getElementById('selection-info');
+            const sel = cmEditor.getSelection();
+            if (sel) {
+                const lines = sel.split('\n').length;
+                selInfo.textContent = `(${sel.length} sel, ${lines} lín)`;
+                selInfo.classList.remove('hidden');
+            } else {
+                selInfo.classList.add('hidden');
+            }
+        }
+        
+        function debounce(fn, delay) {
+            let timer;
+            return function(...args) {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn.apply(this, args), delay);
+            };
         }
     });
 </script>
 {% endblock %}
-

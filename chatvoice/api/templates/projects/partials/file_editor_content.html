@@ -1,5 +1,4 @@
 {# ─── THIS IS A PARTIAL, NO EXTENDS BASE.HTML ─── #}
-{# We pass the filename via data-filename so the JS can read it #}
 <div id="editor-wrapper" data-filename="{{ filename }}" class="flex flex-col h-full">
     
     <!-- Top Bar -->
@@ -15,13 +14,327 @@
         <div class="flex items-center gap-3">
             <span id="status-message" style="display: none;"></span>
             <button id="save-btn" class="btn btn-primary btn-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
                 Guardar
             </button>
         </div>
     </div>
 
-    <!-- Editor Container -->
-    <div class="flex-1 bg-base-200 rounded-box p-1 shadow-lg">
-        <textarea id="editor-textarea">{{ content }}</textarea>
+    <!-- Editor Toolbar -->
+    <div class="flex flex-wrap items-center justify-between bg-base-300 rounded-t-box px-3 py-2 border-b border-base-content/10 gap-2">
+        <div class="flex items-center gap-1 flex-wrap">
+            <!-- Font Size -->
+            <div class="flex items-center gap-1 mr-1">
+                <button id="font-decrease" class="btn btn-ghost btn-xs" title="Reducir fuente (Ctrl+-)">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" /></svg>
+                </button>
+                <span id="font-size-display" class="text-xs font-mono w-9 text-center select-none">15px</span>
+                <button id="font-increase" class="btn btn-ghost btn-xs" title="Aumentar fuente (Ctrl++)">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                </button>
+            </div>
+            
+            <div class="divider divider-horizontal m-0 before:bg-base-content/20"></div>
+            
+            <!-- Line Numbers Toggle -->
+            <button id="toggle-lines" class="btn btn-ghost btn-xs btn-active" title="Números de línea">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" /></svg>
+            </button>
+            
+            <!-- Word Wrap Toggle -->
+            <button id="toggle-wrap" class="btn btn-ghost btn-xs" title="Ajuste de línea">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h10M4 14h16M4 18h7" /></svg>
+            </button>
+            
+            <!-- Active Line Highlight -->
+            <button id="toggle-activeline" class="btn btn-ghost btn-xs btn-active" title="Resaltar línea activa">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" stroke-opacity="0.4" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 12h16" /></svg>
+            </button>
+            
+            <div class="divider divider-horizontal m-0 before:bg-base-content/20"></div>
+            
+            <!-- Indent / Outdent -->
+            <button id="indent-more" class="btn btn-ghost btn-xs" title="Indentar selección (Tab)">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+            </button>
+            <button id="indent-less" class="btn btn-ghost btn-xs" title="Desindentar selección (Shift+Tab)">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            
+            <div class="divider divider-horizontal m-0 before:bg-base-content/20"></div>
+            
+            <!-- Undo / Redo -->
+            <button id="editor-undo" class="btn btn-ghost btn-xs" title="Deshacer (Ctrl+Z)">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a5 5 0 015 5v2M3 10l4-4M3 10l4 4" /></svg>
+            </button>
+            <button id="editor-redo" class="btn btn-ghost btn-xs" title="Rehacer (Ctrl+Y)">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10H11a5 5 0 00-5 5v2M21 10l-4-4M21 10l-4 4" /></svg>
+            </button>
+
+            <div class="divider divider-horizontal m-0 before:bg-base-content/20"></div>
+
+            <!-- Find & Replace -->
+            <button id="toggle-search" class="btn btn-ghost btn-xs" title="Buscar y reemplazar (Ctrl+F)">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            </button>
+        </div>
+        
+        <div class="flex items-center gap-1">
+            <!-- Go to Line -->
+            <div class="flex items-center gap-1">
+                <input id="goto-line-input" type="number" min="1" class="input input-xs input-bordered w-14 text-center font-mono" placeholder="Lín">
+                <button id="goto-line-btn" class="btn btn-ghost btn-xs" title="Ir a línea (Ctrl+G)">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
+                </button>
+            </div>
+            
+            <div class="divider divider-horizontal m-0 before:bg-base-content/20"></div>
+            
+            <!-- Fullscreen Toggle -->
+            <button id="toggle-fullscreen" class="btn btn-ghost btn-xs" title="Pantalla completa (F11)">
+                <svg id="fs-expand-icon" xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>
+                <svg id="fs-compress-icon" xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9V4H4m0 0l5 5M15 4h5v5m0-5l-5 5M9 15v5H4m0 0l5-5M15 20h5v-5m0 5l-5-5" /></svg>
+            </button>
+
+            <!-- Help Button -->
+            <button id="editor-help-btn" class="btn btn-ghost btn-xs" title="Ayuda (F1)">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </button>
+        </div>
     </div>
+
+    <!-- Search Bar (hidden by default) -->
+    <div id="search-bar" class="hidden bg-base-300 px-3 py-2 border-b border-base-content/10">
+        <div class="flex flex-wrap items-center gap-2">
+            <div class="flex items-center gap-1">
+                <input id="search-input" type="text" class="input input-xs input-bordered w-48 font-mono" placeholder="Buscar...">
+                <span id="search-count" class="text-xs text-base-content/50 w-12 text-center"></span>
+            </div>
+            <div class="flex items-center gap-1">
+                <input id="replace-input" type="text" class="input input-xs input-bordered w-48 font-mono" placeholder="Reemplazar...">
+            </div>
+            <button id="search-prev" class="btn btn-ghost btn-xs" title="Anterior">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
+            </button>
+            <button id="search-next" class="btn btn-ghost btn-xs" title="Siguiente">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+            </button>
+            <button id="replace-one" class="btn btn-ghost btn-xs text-xs" title="Reemplazar uno">Reemplazar</button>
+            <button id="replace-all" class="btn btn-ghost btn-xs text-xs" title="Reemplazar todo">Todos</button>
+            <div class="flex-1"></div>
+            <label class="flex items-center gap-1 text-xs cursor-pointer">
+                <input id="search-regex" type="checkbox" class="checkbox checkbox-xs">
+                <span>Regex</span>
+            </label>
+            <label class="flex items-center gap-1 text-xs cursor-pointer">
+                <input id="search-case" type="checkbox" class="checkbox checkbox-xs">
+                <span>Case</span>
+            </label>
+            <button id="search-close" class="btn btn-ghost btn-xs" title="Cerrar (Esc)">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Editor Container -->
+    <div id="editor-container" class="flex-1 bg-base-200 rounded-b-box p-1 shadow-lg">
+        <textarea id="editor-textarea" style="display:none;">{{ content }}</textarea>
+    </div>
+    
+    <!-- Status Bar -->
+    <div id="editor-statusbar" class="flex items-center justify-between bg-base-300 rounded-b-box px-3 py-1 text-xs text-base-content/50 border-t border-base-content/10">
+        <div class="flex items-center gap-3">
+            <span id="cursor-position">Ln 1, Col 1</span>
+            <span id="selection-info" class="hidden"></span>
+        </div>
+        <div class="flex items-center gap-3">
+            <span id="line-count">0 líneas</span>
+            <span id="char-count">0 caracteres</span>
+            <span id="file-mode" class="uppercase font-mono"></span>
+        </div>
+    </div>
+
+    <!-- ─── HELP MODAL ─── -->
+    <dialog id="editor-help-modal" class="modal">
+        <div class="modal-box max-w-2xl">
+            <form method="dialog">
+                <button class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3">✕</button>
+            </form>
+
+            <h3 class="font-bold text-xl flex items-center gap-2 mb-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                Ayuda del Editor
+            </h3>
+            <p class="text-base-content/50 text-sm mb-5">Atajos de teclado y controles disponibles</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+
+                <!-- Archivo -->
+                <div class="bg-base-200 rounded-box p-3">
+                    <h4 class="font-semibold text-base-content/80 mb-2 flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        Archivo
+                    </h4>
+                    <table class="w-full">
+                        <tbody class="text-xs">
+                            <tr class="border-b border-base-300">
+                                <td class="py-1.5 text-base-content/70">Guardar archivo</td>
+                                <td class="py-1.5 text-right"><kbd class="kbd kbd-xs">Ctrl</kbd> + <kbd class="kbd kbd-xs">S</kbd></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Edición -->
+                <div class="bg-base-200 rounded-box p-3">
+                    <h4 class="font-semibold text-base-content/80 mb-2 flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                        Edición
+                    </h4>
+                    <table class="w-full">
+                        <tbody class="text-xs">
+                            <tr class="border-b border-base-300">
+                                <td class="py-1.5 text-base-content/70">Deshacer</td>
+                                <td class="py-1.5 text-right"><kbd class="kbd kbd-xs">Ctrl</kbd> + <kbd class="kbd kbd-xs">Z</kbd></td>
+                            </tr>
+                            <tr class="border-b border-base-300">
+                                <td class="py-1.5 text-base-content/70">Rehacer</td>
+                                <td class="py-1.5 text-right"><kbd class="kbd kbd-xs">Ctrl</kbd> + <kbd class="kbd kbd-xs">Y</kbd></td>
+                            </tr>
+                            <tr class="border-b border-base-300">
+                                <td class="py-1.5 text-base-content/70">Indentar</td>
+                                <td class="py-1.5 text-right"><kbd class="kbd kbd-xs">Tab</kbd></td>
+                            </tr>
+                            <tr class="border-b border-base-300">
+                                <td class="py-1.5 text-base-content/70">Desindentar</td>
+                                <td class="py-1.5 text-right"><kbd class="kbd kbd-xs">Shift</kbd> + <kbd class="kbd kbd-xs">Tab</kbd></td>
+                            </tr>
+                            <tr>
+                                <td class="py-1.5 text-base-content/70">Comentar línea</td>
+                                <td class="py-1.5 text-right"><kbd class="kbd kbd-xs">Ctrl</kbd> + <kbd class="kbd kbd-xs">/</kbd></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Búsqueda -->
+                <div class="bg-base-200 rounded-box p-3">
+                    <h4 class="font-semibold text-base-content/80 mb-2 flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        Búsqueda
+                    </h4>
+                    <table class="w-full">
+                        <tbody class="text-xs">
+                            <tr class="border-b border-base-300">
+                                <td class="py-1.5 text-base-content/70">Buscar</td>
+                                <td class="py-1.5 text-right"><kbd class="kbd kbd-xs">Ctrl</kbd> + <kbd class="kbd kbd-xs">F</kbd></td>
+                            </tr>
+                            <tr class="border-b border-base-300">
+                                <td class="py-1.5 text-base-content/70">Siguiente resultado</td>
+                                <td class="py-1.5 text-right"><kbd class="kbd kbd-xs">Enter</kbd></td>
+                            </tr>
+                            <tr class="border-b border-base-300">
+                                <td class="py-1.5 text-base-content/70">Anterior resultado</td>
+                                <td class="py-1.5 text-right"><kbd class="kbd kbd-xs">Shift</kbd> + <kbd class="kbd kbd-xs">Enter</kbd></td>
+                            </tr>
+                            <tr>
+                                <td class="py-1.5 text-base-content/70">Ir a línea</td>
+                                <td class="py-1.5 text-right"><kbd class="kbd kbd-xs">Ctrl</kbd> + <kbd class="kbd kbd-xs">G</kbd></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Vista -->
+                <div class="bg-base-200 rounded-box p-3">
+                    <h4 class="font-semibold text-base-content/80 mb-2 flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                        Vista
+                    </h4>
+                    <table class="w-full">
+                        <tbody class="text-xs">
+                            <tr class="border-b border-base-300">
+                                <td class="py-1.5 text-base-content/70">Aumentar fuente</td>
+                                <td class="py-1.5 text-right"><kbd class="kbd kbd-xs">Ctrl</kbd> + <kbd class="kbd kbd-xs">+</kbd></td>
+                            </tr>
+                            <tr class="border-b border-base-300">
+                                <td class="py-1.5 text-base-content/70">Reducir fuente</td>
+                                <td class="py-1.5 text-right"><kbd class="kbd kbd-xs">Ctrl</kbd> + <kbd class="kbd kbd-xs">-</kbd></td>
+                            </tr>
+                            <tr>
+                                <td class="py-1.5 text-base-content/70">Pantalla completa</td>
+                                <td class="py-1.5 text-right"><kbd class="kbd kbd-xs">F11</kbd></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Navegación -->
+                <div class="bg-base-200 rounded-box p-3 md:col-span-2">
+                    <h4 class="font-semibold text-base-content/80 mb-2 flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                        Navegación y General
+                    </h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
+                        <table class="w-full">
+                            <tbody class="text-xs">
+                                <tr class="border-b border-base-300">
+                                    <td class="py-1.5 text-base-content/70">Subir línea</td>
+                                    <td class="py-1.5 text-right"><kbd class="kbd kbd-xs">Alt</kbd> + <kbd class="kbd kbd-xs">↑</kbd></td>
+                                </tr>
+                                <tr class="border-b border-base-300">
+                                    <td class="py-1.5 text-base-content/70">Bajar línea</td>
+                                    <td class="py-1.5 text-right"><kbd class="kbd kbd-xs">Alt</kbd> + <kbd class="kbd kbd-xs">↓</kbd></td>
+                                </tr>
+                                <tr class="border-b border-base-300">
+                                    <td class="py-1.5 text-base-content/70">Copiar línea arriba</td>
+                                    <td class="py-1.5 text-right"><kbd class="kbd kbd-xs">Ctrl</kbd> + <kbd class="kbd kbd-xs">Alt</kbd> + <kbd class="kbd kbd-xs">↑</kbd></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1.5 text-base-content/70">Copiar línea abajo</td>
+                                    <td class="py-1.5 text-right"><kbd class="kbd kbd-xs">Ctrl</kbd> + <kbd class="kbd kbd-xs">Alt</kbd> + <kbd class="kbd kbd-xs">↓</kbd></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table class="w-full">
+                            <tbody class="text-xs">
+                                <tr class="border-b border-base-300">
+                                    <td class="py-1.5 text-base-content/70">Eliminar línea</td>
+                                    <td class="py-1.5 text-right"><kbd class="kbd kbd-xs">Ctrl</kbd> + <kbd class="kbd kbd-xs">D</kbd></td>
+                                </tr>
+                                <tr class="border-b border-base-300">
+                                    <td class="py-1.5 text-base-content/70">Cerrar barra / salir</td>
+                                    <td class="py-1.5 text-right"><kbd class="kbd kbd-xs">Esc</kbd></td>
+                                </tr>
+                                <tr>
+                                    <td class="py-1.5 text-base-content/70">Esta ayuda</td>
+                                    <td class="py-1.5 text-right"><kbd class="kbd kbd-xs">F1</kbd></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Tips -->
+            <div class="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-box">
+                <p class="text-xs text-base-content/70">
+                    <strong class="text-primary">Consejo:</strong> 
+                    Haz clic en el gutter (margen izquierdo con los números de línea) para plegar/desplegar bloques de código. 
+                    Los pares de llaves, corchetes y paréntesis se resaltan automáticamente al colocar el cursor sobre uno de ellos.
+                </p>
+            </div>
+
+            <div class="modal-action">
+                <form method="dialog">
+                    <button class="btn btn-primary btn-sm">Entendido</button>
+                </form>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button>close</button>
+        </form>
+    </dialog>
 </div>
+
