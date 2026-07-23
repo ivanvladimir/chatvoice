@@ -82,12 +82,6 @@ greet("World")
 
 ---
 
-## Images
-
-![Placeholder image](https://via.placeholder.com/600x300 "Placeholder Image")
-
----
-
 ## Horizontal Rule
 
 Above and below this line are horizontal rules.
