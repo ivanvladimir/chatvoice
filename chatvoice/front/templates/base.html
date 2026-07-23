@@ -40,6 +40,14 @@
                     <li><a href="/">Home</a></li>
                     <li><a href="/about">About</a></li>
                     <li><a href="/contact">Contact</a></li>
+                    <!-- ─── EDITOR ONLY MENU ITEM ─── -->
+                    <template x-if="role === 'editor'">
+                        <li>
+                          <a href="{{url_for('projects_page')}}" class="font-medium">
+                                Proyectos
+                            </a>
+                        </li>
+                    </template>|
                 </ul>
             </div>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="40" height="40">
@@ -54,6 +62,13 @@
                 <li><a href="/">Home</a></li>
                 <li><a href="/about">About</a></li>
                 <li><a href="/contact">Contact</a></li>
+                <template x-if="role === 'editor'">
+                      <li>
+                          <a href="{{url_for('projects_page')}}" class="font-medium">
+                              Proyectos
+                          </a>
+                      </li>
+                  </template>
             </ul>
         </div>
 
@@ -250,6 +265,7 @@
                 isAuthenticated: false,
                 username: null,
                 name: null,
+                role: null,
                 accessToken: localStorage.getItem('accessToken') || null,
                 
                 // UI State
@@ -360,7 +376,7 @@
 
                         if (response.ok) {
                             const data = await response.json();
-                            this.setAuth(data.name, data.username, this.accessToken);
+                            this.setAuth(data.name, data.username, this.accessToken, data.role);
                             return;
                         }
                     } catch (e) {
@@ -393,7 +409,7 @@
                         const data = await response.json();
 
                         if (response.ok) {
-                            this.setAuth(data.name, data.username, data.access_token);
+                            this.setAuth(data.name, data.username, data.access_token, data.role);
                             this.closeLoginModal();
                             this.showToast('¡Inicio de sesión exitoso!', 'success');
                         } else {
@@ -434,7 +450,7 @@
                             });
                             if (meResponse.ok) {
                                 const meData = await meResponse.json();
-                                this.setAuth(meData.name, meData.username, data.access_token);
+                                this.setAuth(meData.name, meData.username, data.access_token, data.role );
                             }
                             return true;
                         }
@@ -456,9 +472,10 @@
                     }
                 },
                
-                setAuth(name, username, accessToken) {
+                setAuth(name, username, accessToken, role) {
                     this.name = name;
                     this.username = username;
+                    this.role = role;
                     this.accessToken = accessToken;
                     this.isAuthenticated = true;
 
@@ -469,6 +486,7 @@
                 clearAuth() {
                     this.name = null;
                     this.username = null;
+                    this.role = null;
                     this.accessToken = null;
                     this.isAuthenticated = false;
                     this.protectedLoaded = false;
