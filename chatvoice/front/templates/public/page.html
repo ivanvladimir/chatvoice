@@ -2,9 +2,6 @@
 
 {% block title %}{{metadata.title[0] | string }}{% endblock %}
 
-{% block protected_htmx_config %}{% endblock %}
-
-
 {% block general_content %}
 <article class="prose max-w-none">
     {{content | safe}}

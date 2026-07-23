@@ -109,8 +109,6 @@
             {% block notlogged_content %} {% endblock %}
         </div>
 
-
-
         <!-- Protected Content (authenticated) -->
         <div x-show="isAuthenticated" x-cloak x-transition:enter="fade-enter"
              x-ref="protectedZone">
@@ -122,7 +120,10 @@
                 {% endblock %}>
                 
                 {# Loading indicator #}
-                <div id="protected-loading" class="flex flex-col items-center justify-center py-12 gap-4">
+                <div id="protected-loading" 
+                    x-show="protectedLoading"
+                    x-cloak
+                    class="flex flex-col items-center justify-center py-12 gap-4">
                     <span class="loading loading-spinner loading-lg text-primary"></span>
                     <span class="text-base-content/50 text-sm">Cargando contenido...</span>
                 </div>
@@ -255,6 +256,7 @@
                 showLoginModal: false,
                 showSessionExpired: false,
                 protectedLoaded: false,  // NEW: Track if protected content was loaded
+                protectedLoading: false,  // ← ADD THIS
                 
                 // Login Form
                 loginForm: { username: '', password: '' },
@@ -281,7 +283,19 @@
                 },
                 
                 // ─── CONTROL MECHANISM: HTMX Interceptors ───
-                setupHtmxInterceptors() {
+              setupHtmxInterceptors() {
+                    // ─── Loading state for protected content ───
+                    document.addEventListener('htmx:beforeRequest', (event) => {
+                        if (event.detail.target?.id === 'protected-content') {
+                            this.protectedLoading = true;
+                        }
+                    });
+
+                    document.addEventListener('htmx:afterRequest', (event) => {
+                        if (event.detail.target?.id === 'protected-content') {
+                            this.protectedLoading = false;
+                        }
+                    });
                     // Add auth header to ALL HTMX requests
                     document.addEventListener('htmx:configRequest', (event) => {
                         if (this.accessToken) {
@@ -452,19 +466,19 @@
                     localStorage.setItem('username', username);
                     localStorage.setItem('name', name);
                 },
-                
                 clearAuth() {
                     this.name = null;
                     this.username = null;
                     this.accessToken = null;
                     this.isAuthenticated = false;
                     this.protectedLoaded = false;
+                    this.protectedLoading = false;  // ← ADD THIS
                     
                     localStorage.removeItem('accessToken');
                     localStorage.removeItem('username');
                     localStorage.removeItem('name');
-                },
-                
+                }, 
+                 
                 closeLoginModal() {
                     this.showLoginModal = false;
                     this.loginForm = { username: '', password: '' };
