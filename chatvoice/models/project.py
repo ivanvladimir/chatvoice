@@ -8,6 +8,7 @@ from uuid6 import uuid7
 
 from ..core.db import Base
 
+
 class ProjectMember(Base):
     """Association table to handle Project <-> User with specific permissions."""
 
@@ -35,9 +36,10 @@ class Project(Base):
     project_name: Mapped[str] = mapped_column(String(500), index=True)
     # The creator/owner of the project
     owner_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"), index=True,#init=False
+        ForeignKey("users.id"),
+        index=True,  # init=False
     )
- 
+
     # The root directory path for this project (e.g., "s3://my-bucket/projects/uuid/" or "/var/www/projects/uuid/")
     is_active: Mapped[bool] = mapped_column(default=True)
     description: Mapped[str | None] = mapped_column(String, default=None, nullable=True)

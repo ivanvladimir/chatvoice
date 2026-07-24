@@ -122,7 +122,7 @@ async def get_current_superuser(
 ) -> UserRead:
     if not current_user["role"] == "superuser":
         raise ForbiddenException("You do not have enough privileges.")
-    
+
     return current_user
 
 

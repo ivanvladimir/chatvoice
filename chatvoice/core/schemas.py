@@ -13,6 +13,7 @@ class HealthCheck(BaseModel):
     uptime_worker: str
     timestamp: str
 
+
 class ReadyCheck(BaseModel):
     status: str
     environment: str
@@ -21,6 +22,7 @@ class ReadyCheck(BaseModel):
     database: str
     redis: str
     timestamp: str
+
 
 class SessionsCheck(BaseModel):
     status: str

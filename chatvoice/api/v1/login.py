@@ -29,7 +29,7 @@ from ...core.security import (
     get_password_hash,
     verify_token,
 )
-from ...core.types import UserRole, UserResponse
+from ...core.types import UserResponse, UserRole
 from ...crud.users import crud_users
 from ...schemas.user import UserCreate, UserCreateInternal, UserRead
 
@@ -55,7 +55,6 @@ class LoginResponse(BaseModel):
     token_type: str = "bearer"
     username: str
     name: str
-
 
 
 class RegisterRequest(BaseModel):

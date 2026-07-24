@@ -1,5 +1,6 @@
 import os
 from enum import Enum
+from pathlib import Path
 
 from pydantic import SecretStr, computed_field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -9,6 +10,7 @@ current_file_dir = os.path.dirname(os.path.realpath(__file__))
 env_path = os.path.join(current_file_dir, "..", "..", ".env")
 config = Config(env_path)
 
+APP_ROOT = Path(__file__).resolve().parent.parent
 
 class AppSettings:
     APP_NAME: str = "Chatvoice"
@@ -109,6 +111,18 @@ class EnvironmentOption(str, Enum):
     STAGING = "staging"
     PRODUCTION = "production"
 
+class PathSettings(BaseSettings):
+    CONVERSATIONS_DIR_PATH: Path = "conversations"
+    APP_ROOT_PATH: Path = APP_ROOT
+    CONTENT_DIR_PATH: Path = APP_ROOT /  'content'
+    STATIC_DIR_PATH: Path = APP_ROOT / 'static'
+    TEMPLATES_FRONT_PATH: Path = APP_ROOT / 'front' / 'templates'
+    TEMPLATES_API_PATH: Path = APP_ROOT / 'api' / 'templates'
+
+    def resolved_conversation_dir(self) -> Path:
+        p = Path(self.CONVERSATIONS_DIR_PATH)
+        return p.resolve() if p.is_absolute() else (APP_ROOT.parent / p).resolve()
+
 
 class EnvironmentSettings(BaseSettings):
     ENVIRONMENT: EnvironmentOption = EnvironmentOption.LOCAL
@@ -187,6 +201,7 @@ class Settings(
     SQLiteSettings,
     MySQLSettings,
     PostgresSettings,
+    PathSettings,
     CRUDAdminSettings,
     EnvironmentSettings,
     CORSSettings,

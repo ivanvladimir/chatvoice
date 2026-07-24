@@ -123,16 +123,6 @@ def server(
     """Run the server chat."""
     log = get_logger(__name__)
 
-    os.environ["CHATVOICE_RUNTIME_CONFIG"] = json.dumps(
-        {
-            "paths": {
-                "content": str(content_path),
-                "templates": str(templates_path),
-                "static": str(static_path),
-            }
-        }
-    )
-
     import uvicorn
 
     log.info("Starting server chat")

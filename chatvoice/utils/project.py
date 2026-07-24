@@ -1,10 +1,12 @@
-import os
 import shutil
 from pathlib import Path
-
+from dataclasses import dataclass
+from pathlib import Path
+from ..core.config import get_settings
 
 ALLOWED_EXTENSIONS = {".yaml", ".yml", ".html", ".md", ".txt"}
 
+settings = get_settings()
 
 def create_project_directory(
     username: str,
@@ -46,6 +48,7 @@ def create_project_directory(
 
     return project_dir
 
+
 def project_directory_exists(
     username: str,
     project_name: str,
@@ -64,6 +67,7 @@ def project_directory_exists(
     """
     project_dir = Path(base_path) / username / project_name
     return project_dir.is_dir()
+
 
 def list_project_files(
     username: str,
@@ -105,21 +109,23 @@ def list_project_files(
 
     for f in project_dir.rglob("*"):
         if f.is_file() and f.suffix.lower() in ALLOWED_EXTENSIONS:
-            
             # Get the path relative to the project root (e.g., "templates/base.html")
             rel_path = f.relative_to(project_dir)
-            
+
             # Extract just the directory part (e.g., "templates" or ".")
             dir_name = str(rel_path.parent)
             if dir_name == ".":
-                dir_name = "./" # Makes the root directory look clean
-            
-            files.append({
-                "name": f.name, 
-                "size": f.stat().st_size,
-                "dir": dir_name,
-                "rel_path": str(rel_path) # Crucial: used for the <a> href
-            })
+                dir_name = "./"  # Makes the root directory look clean
+
+            files.append(
+                {
+                    "name": f.name,
+                    "size": f.stat().st_size,
+                    "dir": dir_name,
+                    "rel_path": str(rel_path),  # Crucial: used for the <a> href
+                }
+            )
 
     return files
+
 

@@ -10,6 +10,7 @@ from fastapi import (
     APIRouter,
     Cookie,
     Depends,
+    HTTPException,
     Request,
     Response,
     WebSocket,
@@ -20,6 +21,7 @@ from fastapi.responses import JSONResponse
 from ...core.interpreter import Interpreter
 from ...core.logger import get_logger
 from ...core.security import TokenType, create_ws_session_token, decode_ws_token
+from ...core.dependencies.paths import RuntimeContext, get_project_context
 from ...sessions.session import ChatSession
 from ...transport.ws import WS
 from ..dependencies import get_current_user, get_session_transport, get_ws_session
@@ -30,14 +32,21 @@ log = get_logger(__name__)
 
 
 @router.post("/ws-session/{script}")
+@router.post("/ws-session/{username}/{script}")
 async def establish_ws_session(
     script: str,
     request: Request,
     response: Response,
     current_user: Annotated[dict, Depends(get_current_user)],
+    ctx: Annotated[RuntimeContext, Depends(get_project_context)],
+    username: str = None,
 ):
     # Validate script exists to fail fast
-    script_path = Path(f"conversations/{script}")
+    if username:
+        script_path = ctx.root / username / script
+    else:
+        script_path = ctx.root / script
+
     if not script_path.exists():
         raise HTTPException(status_code=404, detail=f"Script '{script}' not found")
 
@@ -143,9 +152,11 @@ def tuples_to_json_string(items, sep=":", **json_kwargs):
 
 
 @router.websocket("/ws/{script}")
+@router.websocket("/ws/{username}/{script}")
 async def websocket_endpoint(
     websocket: WebSocket,
     script: str,
+    username: str = None,
     session: ChatSession = Depends(get_ws_session),
     transport: "WS" = Depends(get_session_transport),
     ws_session: str | None = Cookie(default=None),

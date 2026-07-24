@@ -1,6 +1,8 @@
 document.addEventListener('alpine:init', () => {
-    Alpine.data('chatbotApp', () => ({
+    Alpine.data('chatbotApp', (url_start = null, url_ws = null) => ({
         messages: [],
+        url_start: url_start, 
+        url_ws: url_ws,        
         inputText: '',
         isConnected: false,
         chatWs: null,
@@ -15,6 +17,13 @@ document.addEventListener('alpine:init', () => {
             this.$watch('messages', () => {
                 this.$nextTick(() => this.scrollToBottom());
             });
+
+             // Validate URLs are provided
+            if (!this.url_start || !this.url_ws) {
+                this.addSystemMessage('Error: Chat URLs not configured', 'error');
+                return;
+            }
+
             this.startChatSession();
         },
 
@@ -33,6 +42,7 @@ document.addEventListener('alpine:init', () => {
                 });
             }
         },
+
         // ─── Data Registration (Independent of Debug Mode) ───
 
         addSystemMessage(content, sysType = 'info') {
@@ -137,7 +147,7 @@ document.addEventListener('alpine:init', () => {
                 this.addSystemMessage('Establishing secure session...');
                 // REMOVED: this.setThinking(true);  <--- Delete this line!
                 
-                const res = await fetch('/api/v1/ws-session/hello_world', {
+                const res = await fetch(this.url_start, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${jwtToken}` }
                 });
@@ -153,7 +163,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         connectWebSocket() {
-            const wsUrl = `ws://${window.location.host}/api/v1/ws/hello_world`;
+            const wsUrl = this.url_ws;
             this.chatWs = new WebSocket(wsUrl);
 
             this.chatWs.onopen = () => {

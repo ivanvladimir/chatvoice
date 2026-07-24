@@ -1,37 +1,47 @@
 import io
-import zipfile
-from datetime import UTC, datetime
-from typing import Annotated
 import re
 import unicodedata
-
-import os
+import zipfile
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import Annotated
 
-
-from fastapi import APIRouter, Depends, Form, Query, Request, Response, File as FileForm, UploadFile
-from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse, JSONResponse
+from fastapi import (
+    APIRouter,
+    Depends,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    UploadFile,
+)
+from fastapi import File as FileForm
+from fastapi.responses import (
+    FileResponse,
+    HTMLResponse,
+    StreamingResponse,
+)
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-
-
-from fastapi import APIRouter, Depends, Form, Query, Request, Response
-from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi.templating import Jinja2Templates
-
-from ..dependencies import get_current_user
 
 from ...core.db.database import async_get_db
+from ...crud.projects import crud_projects
 from ...models.user import User
 from ...schemas.project import ProjectCreate, ProjectCreateInternal
-from ...crud.projects import crud_projects
-from ...utils.project import create_project_directory, project_directory_exists, list_project_files
+from ...utils.project import (
+    create_project_directory,
+    list_project_files,
+    project_directory_exists,
+)
+from ..dependencies import get_current_user
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 templates = Jinja2Templates(directory="chatvoice/api/templates")
 
 ALLOWED_EXTENSIONS = {".yaml", ".yml", ".html", ".md", ".txt"}
+
 
 # ─── PYDANTIC MODEL FOR CREATE FILE ───
 class CreateFileRequest(BaseModel):
@@ -40,7 +50,9 @@ class CreateFileRequest(BaseModel):
 
 def _get_project_base_path(current_user: dict, project: dict) -> Path:
     """Helper: build and resolve the project base path."""
-    return (Path("conversations") / current_user["username"] / project["project_name"]).resolve()
+    return (
+        Path("conversations") / current_user["username"] / project["project_name"]
+    ).resolve()
 
 
 def _validate_file_path(base_path: Path, file_path_str: str) -> Path:
@@ -56,6 +68,7 @@ def _validate_file_path(base_path: Path, file_path_str: str) -> Path:
         raise HTTPException(status_code=403, detail="Access denied.")
 
     return target
+
 
 # ═══════════════════════════════════════════════════════════════
 #  NEW: Upload file(s)
@@ -75,7 +88,9 @@ async def upload_files(
 
     base_path = _get_project_base_path(current_user, project)
     if not base_path.is_dir():
-        raise HTTPException(status_code=404, detail="Project directory not found on server.")
+        raise HTTPException(
+            status_code=404, detail="Project directory not found on server."
+        )
 
     # Resolve target directory
     dir_clean = directory.strip().strip("/")
@@ -216,7 +231,9 @@ async def download_project(
     base_path = _get_project_base_path(current_user, project)
 
     if not base_path.is_dir():
-        raise HTTPException(status_code=404, detail="Project directory not found on server.")
+        raise HTTPException(
+            status_code=404, detail="Project directory not found on server."
+        )
 
     # Build ZIP in memory – only allowed extensions
     zip_buffer = io.BytesIO()
@@ -230,7 +247,9 @@ async def download_project(
                 file_count += 1
 
     if file_count == 0:
-        raise HTTPException(status_code=404, detail="No supported files found in project.")
+        raise HTTPException(
+            status_code=404, detail="No supported files found in project."
+        )
 
     zip_buffer.seek(0)
 
@@ -288,53 +307,58 @@ async def create_file(
     return {"message": "File created", "path": file_path_str}
 
 
-
 @router.post("/{project_id}/files", response_class=HTMLResponse)
 async def list_project_files_htmx(
-        request: Request, 
-        project_id: int,
-        db: Annotated[AsyncSession, Depends(async_get_db)],
-        current_user: User = Depends(get_current_user),
+    request: Request,
+    project_id: int,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    current_user: User = Depends(get_current_user),
 ):
     # 1. Fetch your project (Replace with your actual dependency/DB call)
     project = await crud_projects.get(db, id=project_id)
-    if not project: 
+    if not project:
         raise HTTPException(status_code=404, detail="Project not found.")
-    
+
     # Mock project for demonstration:
-    
-    if not project_directory_exists(current_user["username"],project['project_name']):
-        raise HTTPException(status_code=404, detail="Project directory not found on server.")
+
+    if not project_directory_exists(current_user["username"], project["project_name"]):
+        raise HTTPException(
+            status_code=404, detail="Project directory not found on server."
+        )
 
     # 2. Scan directory for allowed files
-    files = list_project_files(current_user['username'], project['project_name'], allowed_extensions=ALLOWED_EXTENSIONS)
+    files = list_project_files(
+        current_user["username"],
+        project["project_name"],
+        allowed_extensions=ALLOWED_EXTENSIONS,
+    )
 
     # 3. Render list template
     return templates.TemplateResponse(
         request=request,
         name="projects/partials/files_list_content.html",
-        context={
-        "request": request,
-        "project": project,
-        "files": files
-    })
+        context={"request": request, "project": project, "files": files},
+    )
 
-@router.post("/{project_id}/files/{filename:path}/editor-htmx", response_class=HTMLResponse)
+
+@router.post(
+    "/{project_id}/files/{filename:path}/editor-htmx", response_class=HTMLResponse
+)
 async def get_file_editor_htmx(
-        request: Request, 
-        project_id: int, 
-        filename: str,
-        db: Annotated[AsyncSession, Depends(async_get_db)],
-        current_user: User = Depends(get_current_user),
-        base_path: str = "conversations"
+    request: Request,
+    project_id: int,
+    filename: str,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    current_user: User = Depends(get_current_user),
+    base_path: str = "conversations",
 ):
     """HTMX endpoint that reads the file and returns the partial HTML."""
     # 1. Fetch your project (Replace with your actual dependency/DB call)
     project = await crud_projects.get(db, id=project_id)
-    if not project: 
+    if not project:
         raise HTTPException(status_code=404, detail="Project not found.")
- 
-    base_path = Path(base_path) / current_user['username'] / project['project_name']
+
+    base_path = Path(base_path) / current_user["username"] / project["project_name"]
 
     # SECURITY: Resolve paths to prevent directory traversal
     safe_base = base_path.resolve()
@@ -342,10 +366,12 @@ async def get_file_editor_htmx(
 
     if not str(target_file).startswith(str(safe_base)):
         raise HTTPException(status_code=403, detail="Access denied.")
-    
+
     if not target_file.exists() or target_file.suffix.lower() not in ALLOWED_EXTENSIONS:
         # You could create an error partial here, for simplicity we raise 500
-        raise HTTPException(status_code=404, detail="File not found or unsupported type.")
+        raise HTTPException(
+            status_code=404, detail="File not found or unsupported type."
+        )
 
     try:
         content = target_file.read_text(encoding="utf-8")
@@ -354,33 +380,34 @@ async def get_file_editor_htmx(
 
     return templates.TemplateResponse(
         request=request,
-        name="projects/partials/file_editor_content.html", 
+        name="projects/partials/file_editor_content.html",
         context={
-        "request": request,
-        "project": project,
-        "filename": filename,
-        "content": content
-    })
+            "request": request,
+            "project": project,
+            "filename": filename,
+            "content": content,
+        },
+    )
 
 
 @router.post("/{project_id}/files/{filename:path}")
 async def save_file(
-        request: Request, 
-        project_id: int, 
-        filename: str, 
-        db: Annotated[AsyncSession, Depends(async_get_db)],
-        content: str = Form(...),
-        current_user: User = Depends(get_current_user),
-        base_path: str = "conversations"
+    request: Request,
+    project_id: int,
+    filename: str,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    content: str = Form(...),
+    current_user: User = Depends(get_current_user),
+    base_path: str = "conversations",
 ):
     """Saves the file. Called by standard JS fetch."""
     # project = await crud_projects.get(db, id=project_id)
     # if not project: raise HTTPException(404)
     project = await crud_projects.get(db, id=project_id)
-    if not project: 
+    if not project:
         raise HTTPException(status_code=404, detail="Project not found.")
- 
-    base_path = Path(base_path) / current_user['username'] / project['project_name']
+
+    base_path = Path(base_path) / current_user["username"] / project["project_name"]
 
     # SECURITY CHECK AGAIN
     safe_base = base_path.resolve()
@@ -396,7 +423,6 @@ async def save_file(
         raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
 
 
-
 @router.get("/create-form", response_class=HTMLResponse)
 async def get_create_form(
     request: Request,
@@ -406,8 +432,15 @@ async def get_create_form(
     return templates.TemplateResponse(
         request=request,
         name="projects/partials/create_project_form.html",
-        context={"request": request, "errors": [], "name": "", "project_name": "", "description": ""},
+        context={
+            "request": request,
+            "errors": [],
+            "name": "",
+            "project_name": "",
+            "description": "",
+        },
     )
+
 
 @router.post("/list", response_class=HTMLResponse)
 async def projects_list_htmx(
@@ -421,25 +454,29 @@ async def projects_list_htmx(
     sort_order: str = Query("desc", regex="^(asc|desc)$"),
 ):
     """HTMX endpoint: returns paginated project list HTML fragment."""
-    
-    sort_columns = {"name": "name", "created_at": "created_at", "is_active": "is_active"}
+
+    sort_columns = {
+        "name": "name",
+        "created_at": "created_at",
+        "is_active": "is_active",
+    }
 
     projects_result = await crud_projects.get_multi(
         db,
-        owner_id=current_user['id'],
+        owner_id=current_user["id"],
         is_deleted=False,
-        #page=page,
-        #items_per_page=items_per_page,
-        #search_columns=["name", "description"],
-        #search_string=search,
-        #sort_columns=[sort_columns[sort_by]],
-        #sort_orders=[sort_order],
+        # page=page,
+        # items_per_page=items_per_page,
+        # search_columns=["name", "description"],
+        # search_string=search,
+        # sort_columns=[sort_columns[sort_by]],
+        # sort_orders=[sort_order],
     )
-    
+
     projects = projects_result.get("data", [])
     total_count = projects_result.get("total_count", 0)
     total_pages = projects_result.get("total_pages", 0)
-    
+
     return templates.TemplateResponse(
         request=request,
         name="projects/partials/project_list.html",
@@ -491,6 +528,7 @@ def normalize_project_name(name: str, max_length: int = 100) -> str:
 
     return name
 
+
 @router.post("/create", response_class=HTMLResponse)
 async def create_project_htmx(
     request: Request,
@@ -501,14 +539,14 @@ async def create_project_htmx(
     description: Annotated[str | None, Form()] = None,
 ):
     """HTMX endpoint: create a new project and return updated list or errors."""
-    
+
     # --- Validation ---
     errors: list[str] = []
-    
+
     name = name.strip()
-    project_name=normalize_project_name(project_name.strip())
+    project_name = normalize_project_name(project_name.strip())
     description = description.strip() if description else None
-    
+
     if not name:
         errors.append("El nombre del proyecto es obligatorio")
     elif len(name) > 100:
@@ -517,12 +555,13 @@ async def create_project_htmx(
         errors.append("El nombre clave del proyecto es necessario")
 
     try:
-        project_dir=create_project_directory(current_user['username'], project_name, "conversations/hello_world")
+        project_dir = create_project_directory(
+            current_user["username"], project_name, "conversations/hello_world"
+        )
     except FileNotFoundError:
         errors.append("El directorio con el proyecto base no está disponible")
     except FileExistsError:
         errors.append("Un proyecto con el mismo nombre clave ya esxiste")
-
 
     if errors:
         return templates.TemplateResponse(
@@ -536,7 +575,7 @@ async def create_project_htmx(
                 "description": description,
             },
         )
-    
+
     try:
         # --- Create ---
         project_in = ProjectCreate(
@@ -545,12 +584,10 @@ async def create_project_htmx(
             description=description,
         )
         project_data = project_in.model_dump()
-        project_data["owner_id"] = current_user['id']
+        project_data["owner_id"] = current_user["id"]
         project_data = ProjectCreateInternal(**project_data)
-    
-        await crud_projects.create(
-            db,
-            project_data)
+
+        await crud_projects.create(db, project_data)
 
         # Close modal and reload list
         response = templates.TemplateResponse(
@@ -560,11 +597,11 @@ async def create_project_htmx(
         )
         response.headers["HX-Trigger"] = "projectCreated"
         return response
-        
+
     except Exception as e:
         error_msg = str(e).lower()
-        print(">>>>>>> aaaaa",e)
-        
+        print(">>>>>>> aaaaa", e)
+
         return templates.TemplateResponse(
             request=request,
             name="projects/partials/create_project_form.html",
@@ -586,15 +623,15 @@ async def delete_project_htmx(
     current_user: User = Depends(get_current_user),
 ):
     """HTMX endpoint: soft-delete a project."""
-    
+
     project = await crud_projects.get(db, id=project_id, is_deleted=False)
-    
+
     if not project or project.owner_id != current_user.id:
         return HTMLResponse(
             content='<div class="alert alert-error"><span>Proyecto no encontrado</span></div>',
             status_code=404,
         )
-    
+
     await crud_projects.update(
         db,
         object_to_update={
@@ -603,7 +640,7 @@ async def delete_project_htmx(
         },
         id=project_id,
     )
-    
+
     response = Response(status_code=204)
     response.headers["HX-Trigger"] = "projectDeleted"
     return response
@@ -617,21 +654,21 @@ async def toggle_project_active_htmx(
     current_user: User = Depends(get_current_user),
 ):
     """HTMX endpoint: toggle project active status."""
-    
+
     project = await crud_projects.get(db, id=project_id, is_deleted=False)
-    
+
     if not project or project.owner_id != current_user.id:
         return HTMLResponse(
             content='<div class="alert alert-error"><span>Proyecto no encontrado</span></div>',
             status_code=404,
         )
-    
+
     await crud_projects.update(
         db,
         object_to_update={"is_active": not project.is_active},
         id=project_id,
     )
-    
+
     response = Response(status_code=204)
     response.headers["HX-Trigger"] = "projectUpdated"
     return response

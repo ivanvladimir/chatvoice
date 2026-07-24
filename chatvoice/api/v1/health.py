@@ -7,13 +7,11 @@ from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..dependencies import get_current_user, get_current_superuser
-
 from ...core.config import settings
 from ...core.db.database import async_get_db
 from ...core.health import check_database_health
 from ...core.schemas import HealthCheck, ReadyCheck, SessionsCheck
-
+from ..dependencies import get_current_user
 
 router = APIRouter(tags=["health"])
 
@@ -86,5 +84,3 @@ async def sessions_status(
     }
 
     return JSONResponse(status_code=http_status, content=response)
-
-

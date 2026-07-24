@@ -1,10 +1,10 @@
+import time
 from collections.abc import AsyncGenerator, Callable
 from contextlib import _AsyncGeneratorContextManager, asynccontextmanager
 from pathlib import Path
 from typing import Any
 
 import anyio
-import time
 import fastapi
 
 # import redis.asyncio as redis
@@ -30,12 +30,12 @@ from .config import (
     ClientSideCacheSettings,
     CORSSettings,
     DatabaseSettings,
+    PathSettings,
     EnvironmentOption,
     EnvironmentSettings,
 )
 from .db import Base
 from .db.database import async_engine as engine
-from .dependencies.paths import get_runtime_settings
 
 
 # -------------- database --------------
@@ -118,8 +118,6 @@ def lifespan_factory(
             ws = WS()
             app.state.transport = ws
 
-
-
             # if isinstance(settings, RedisCacheSettings):
             #     await create_redis_cache_pool()
             #
@@ -132,9 +130,8 @@ def lifespan_factory(
             if create_tables_on_start:
                 await create_tables()
 
-            runtime_settings = get_runtime_settings()
             tailwind.compile(
-                runtime_settings.paths.static / "output.css",
+                settings.STATIC_DIR_PATH / "output.css",
                 tailwind_stylesheet_path=Path("chatvoice/resources/input.css"),
             )
 
@@ -239,13 +236,12 @@ def create_application(
             settings, create_tables_on_start=create_tables_on_start
         )
 
-    runtime_settings = get_runtime_settings()
-
-    static_files = StaticFiles(directory=runtime_settings.paths.static)
+    static_files = StaticFiles(directory=settings.STATIC_DIR_PATH)
     application = FastAPI(lifespan=lifespan, **kwargs)
     application.include_router(api_router)
     application.include_router(front_router)
-    application.mount("/static", static_files, name="static")
+    if isinstance(settings, PathSettings):
+        application.mount('/static', static_files, name="static")
 
     if isinstance(settings, ClientSideCacheSettings):
         application.add_middleware(

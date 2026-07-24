@@ -84,8 +84,11 @@ class ProjectCreate(ProjectBase):
 
 class ProjectCreateInternal(ProjectCreate):
     """Internal schema with owner_id added server-side."""
-    
-    owner_id: int = Field(..., gt=0, description="ID of the project owner (set server-side)")
+
+    owner_id: int = Field(
+        ..., gt=0, description="ID of the project owner (set server-side)"
+    )
+
 
 class ProjectUpdate(BaseModel):
     """Schema for updating a project. All fields are optional."""
@@ -150,10 +153,9 @@ class ProjectDetailWithUsers(ProjectDetail):
 
     member_links: list[ProjectMemberReadWithUser] = Field(default_factory=list)
 
+
 class ProjectDelete(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     is_deleted: bool
     deleted_at: datetime
-
-

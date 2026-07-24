@@ -48,3 +48,4 @@ skip-magic-trailing-comma = false
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]        # pycodestyle, pyflakes, isort
+ignore = ["E501"]

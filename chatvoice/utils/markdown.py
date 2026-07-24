@@ -13,9 +13,9 @@ def markdown_page(
     ctx: RuntimeContext,  # We now pass the single aggregate object
 ) -> HTMLResponse:
     safe_filename = f"{Path(view_name).stem}.md"
-    file_path = (ctx.content_path / safe_filename).resolve()
+    file_path = (ctx.content_dir / safe_filename).resolve()
 
-    if not str(file_path).startswith(str(ctx.content_path)):
+    if not str(file_path).startswith(str(ctx.content_dir)):
         raise HTTPException(status_code=400, detail="Invalid page name")
 
     if not file_path.is_file():
