@@ -37,7 +37,7 @@
 {%endif%}
 
 {% block protected_htmx_config %}
-hx-post="{{ url_for('chatbot_interface', script=script, username=username) }}"
+hx-post="{{ url_for('chatbot_interface', script=script, username=username) if username else request.url_for('chatbot_interface_', script=script) }}"
 |hx-trigger="load-protected"
 hx-swap="innerHTML"
 hx-target="this"

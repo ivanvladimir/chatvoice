@@ -31,8 +31,8 @@ router = APIRouter(tags=["health"])
 log = get_logger(__name__)
 
 
-@router.post("/ws-session/{script}")
-@router.post("/ws-session/{username}/{script}")
+@router.post("/ws-session/{script}", name="establish_ws_session_")
+@router.post("/ws-session/{username}/{script}", name="establish_ws_session")
 async def establish_ws_session(
     script: str,
     request: Request,
@@ -151,8 +151,8 @@ def tuples_to_json_string(items, sep=":", **json_kwargs):
     return json.dumps(tuples_to_json(items, sep=sep), **json_kwargs)
 
 
-@router.websocket("/ws/{script}")
-@router.websocket("/ws/{username}/{script}")
+@router.websocket("/ws/{script}", name="websocket_endpoint_")
+@router.websocket("/ws/{username}/{script}", name="websocket_endpoint")
 async def websocket_endpoint(
     websocket: WebSocket,
     script: str,

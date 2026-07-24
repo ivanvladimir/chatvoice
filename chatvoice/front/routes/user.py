@@ -24,8 +24,10 @@ async def chat(
             "username": username,
             "active_page": "main",
             "active_menu": None,
-            'url_start': request.url_for('establish_ws_session', script=script, username=username), 
-            'url_ws': request.url_for('websocket_endpoint', script=script, username=username)
+            'url_start': 
+            request.url_for('establish_ws_session', script=script, username=username) if username else request.url_for('establish_ws_session_', script=script), 
+            'url_ws':
+            request.url_for('websocket_endpoint', script=script, username=username) if username else request.url_for('websocket_endpoint_', script=script) 
         }
     )
 
