@@ -29,7 +29,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ...core.db.database import async_get_db
 from ...crud.projects import crud_projects
 from ...models.user import User
-from ...schemas.project import ProjectCreate, ProjectCreateInternal
+from ...schemas.project import ProjectCreate, ProjectCreateInternal, ProjectUpdate, ProjectUpdateInternal
 from ...utils.project import (
     create_project_directory,
     list_project_files,
@@ -651,13 +651,13 @@ async def toggle_project_active_htmx(
     project_id: int,
     request: Request,
     db: Annotated[AsyncSession, Depends(async_get_db)],
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
 ):
     """HTMX endpoint: toggle project active status."""
 
     project = await crud_projects.get(db, id=project_id, is_deleted=False)
 
-    if not project or project.owner_id != current_user.id:
+    if not project or project['owner_id'] != current_user['id']:
         return HTMLResponse(
             content='<div class="alert alert-error"><span>Proyecto no encontrado</span></div>',
             status_code=404,
@@ -665,8 +665,7 @@ async def toggle_project_active_htmx(
 
     await crud_projects.update(
         db,
-        object_to_update={"is_active": not project.is_active},
-        id=project_id,
+        object=ProjectUpdateInternal(**{"is_active": not project['is_active'],"id":project['id']})
     )
 
     response = Response(status_code=204)

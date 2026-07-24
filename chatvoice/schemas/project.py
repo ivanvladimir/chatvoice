@@ -100,7 +100,7 @@ class ProjectUpdate(BaseModel):
 
 
 class ProjectUpdateInternal(ProjectUpdate):
-    udated_at: datetime
+    udated_at: datetime = None
 
 
 class ProjectRead(BaseModel):

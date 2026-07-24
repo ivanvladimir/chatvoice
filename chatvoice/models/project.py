@@ -1,7 +1,7 @@
 import uuid as uuid_pkg
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid6 import uuid7
@@ -52,13 +52,16 @@ class Project(Base):
         UUID(as_uuid=True), default_factory=uuid7, unique=True
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default_factory=lambda: datetime.now(UTC)
+        DateTime(timezone=True), server_default=func.now(), init=False
     )
     updated_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), default=None
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        init=False,
     )
     deleted_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), default=None
+        DateTime(timezone=True), nullable=True, init=False
     )
     is_deleted: Mapped[bool] = mapped_column(default=False, index=True)
 
