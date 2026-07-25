@@ -4,13 +4,15 @@
 
 {% block protected_htmx_config %}
 hx-post="{{ url_for('projects_list_htmx') }}"
-hx-trigger="load-protected"
+hx-trigger="load-protected, projectCreated, projectDeleted, projectUpdated"
+hx-include="#search-form"
 hx-swap="innerHTML"
 hx-target="this"
 hx-indicator="#protected-loading"
 {% endblock %}
 
 {% block protected_content %}
+{{super()}}
 {# Initial content before HTMX loads #}
 {% endblock %}
 
@@ -78,3 +80,4 @@ function projectModal() {
 }
 </script>
 {% endblock %}
+

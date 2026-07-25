@@ -30,7 +30,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ...core.db.database import async_get_db
 from ...crud.projects import crud_projects
 from ...models.user import User
-from ...schemas.project import ProjectCreate, ProjectCreateInternal, ProjectUpdate, ProjectUpdateInternal
+from ...schemas.user import UserBrief
+from ...schemas.project import ProjectCreate, ProjectCreateInternal, ProjectUpdate, ProjectUpdateInternal, ProjectRead, ProjectListItem
 from ...utils.project import (
     create_project_directory,
     list_project_files,
@@ -443,6 +444,67 @@ async def get_create_form(
         },
     )
 
+@router.post("/links", response_class=HTMLResponse)
+async def project_links_htmx(
+    request: Request,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    current_user: User = Depends(get_current_user),
+    # --- CHANGED Query TO Form HERE ---
+    page: int = Form(1, ge=1),
+    items_per_page: int = Form(12, ge=1, le=50),
+    search: str | None = Form(None),
+    sort_by: str = Form("created_at", pattern="^(name|created_at|is_active)$"),
+    sort_order: str = Form("desc", pattern="^(asc|desc)$"),
+):
+    """HTMX endpoint: returns paginated project list HTML fragment."""
+    sort_columns = {
+        "name": "name",
+        "created_at": "created_at",
+        "is_active": "is_active",
+    }
+
+    # WARNING: Make sure to remove the hardcoded f"%mi%" in your actual code!
+    # You probably want: name__ilike=f"%{search}%" if search else None
+    projects_result = await crud_projects.get_multi_joined(
+        db,
+        offset=(page-1)*items_per_page,
+        limit=(page)*items_per_page,
+        sort_columns=[sort_columns[sort_by]],
+        sort_orders=[sort_order],
+        schema_to_select=ProjectListItem,
+        join_model=User,
+        join_prefix="owner_",                    # or see nested option below
+        join_schema_to_select=UserBrief,
+        is_deleted=False,
+        is_active=True,
+        _or ={
+            "name__ilike":f"%{search}%",
+            "description__ilike":f"%{search}%",
+        } if search else {}
+    )
+
+    projects = [p for p in projects_result.get("data", []) if not p['owner_is_deleted']]
+    total_count = projects_result.get("total_count", 0)
+
+    # Fixed math to return an integer instead of a float (e.g., 5 instead of 5.0)
+    total_pages = math.ceil(total_count / items_per_page) if total_count > 0 else 1
+
+    return templates.TemplateResponse(
+        request=request,
+        name="projects/partials/project_links.html",
+        context={
+            "request": request,
+            "projects": projects,
+            "total_count": total_count,
+            "total_pages": total_pages,
+            "page": page,
+            "items_per_page": items_per_page,
+            "search": search or "",
+            "sort_by": sort_by,
+            "sort_order": sort_order,
+        },
+    )
+
 @router.post("/list", response_class=HTMLResponse)
 async def projects_list_htmx(
     request: Request,
@@ -499,6 +561,8 @@ async def projects_list_htmx(
             "sort_order": sort_order,
         },
     )
+
+
 
 
 def normalize_project_name(name: str, max_length: int = 100) -> str:

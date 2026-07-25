@@ -3,12 +3,11 @@
      id="project-card-{{ project.id }}">
     
     <div class="card-body p-4">
-        
         {# ─── HEADER: Status + Actions ─── #}
         <div class="flex items-start justify-between gap-2">
             
-            {# ── CLICKABLE AREA (Title & Badge) ── #}
-            <a href="/projects/{{ project.id }}/files" class="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity">
+            {# ── CLICKABLE AREA (Title & Badge) ── pro#}
+            <a href="{{url_for('show_list_project_files', project_id=project.id)}}" class="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity">
                 {# Status Badge #}
                 <span class="badge {{ 'badge-success' if project.is_active else 'badge-ghost' }} badge-sm pointer-events-none">
                     {{ 'Activo' if project.is_active else 'Inactivo' }}
@@ -26,7 +25,7 @@
                 <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-300">
                     <li>
                         {# ── UPDATED "ABRIR" LINK ── #}
-                        <a href="/projects/{{ project.id }}/files">
+                        <a href="{{url_for('show_list_project_files', project_id=project.id)}}">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                             </svg>
@@ -34,7 +33,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="/projects/{{ project.uuid }}/settings">
+                        <a href="">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -43,7 +42,8 @@
                         </a>
                     </li>
                     <li>
-                        <a href="#" @click.prevent="htmx.ajax('PATCH', '{{ url_for("toggle_project_active_htmx", project_id=project.id) }}', {target: '#protected-content', swap: 'innerHTML'})">
+                        <a role="button" tabindex="0"
+                          hx-patch="{{ url_for('toggle_project_active_htmx', project_id=project.id) }}">
                             {% if project.is_active %}
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
@@ -73,7 +73,7 @@
         </div>
         
         {# ─── DESCRIPTION (Also Clickable) ─── #}
-        <a href="/projects/{{ project.uuid }}/files" class="block mt-1 hover:opacity-80 transition-opacity">
+        <a href="{{url_for('show_list_project_files', project_id=project.id)}}" class="block mt-1 hover:opacity-80 transition-opacity">
             {% if project.description %}
             <p class="text-sm text-base-content/60 line-clamp-2 pointer-events-none">{{ project.description }}</p>
             {% else %}

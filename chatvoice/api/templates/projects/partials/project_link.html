@@ -1,0 +1,32 @@
+<li>
+    <a href="{{url_for('chat', username = project.owner_username, script=project.project_name )}}" 
+       class="flex items-start gap-3 py-3 px-4 group">
+        
+        {# ─── Icon ─── #}
+        <span class="mt-0.5 text-base-content/30 group-hover:text-primary transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+        </span>
+        
+        {# ─── Content ─── #}
+        <span class="flex-1 min-w-0">
+            <span class="font-medium group-hover:text-primary transition-colors">
+                {{ project.name }}
+            </span>
+            <span class="text-base-content/40 text-xs ml-2">{{ project.owner_name }}</span>
+            {% if project.description %}
+            <span class="block text-xs text-base-content/50 mt-0.5 truncate">
+                {{ project.description }}
+            </span>
+            {% endif %}
+        </span>
+        
+        {# ─── Arrow ─── #}
+        <span class="mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity text-base-content/30">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+        </span>
+    </a>
+</li>

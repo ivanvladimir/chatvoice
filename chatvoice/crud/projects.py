@@ -5,6 +5,8 @@ from ..schemas.project import (
     ProjectCreateInternal,
     ProjectDelete,
     ProjectRead,
+    ProjectDetail,
+    ProjectListItem,
     ProjectUpdate,
     ProjectUpdateInternal,
 )
@@ -15,6 +17,6 @@ CRUDProject = FastCRUD[
     ProjectUpdate,
     ProjectUpdateInternal,
     ProjectDelete,
-    ProjectRead,
+    ProjectListItem,
 ]
 crud_projects = CRUDProject(Project)

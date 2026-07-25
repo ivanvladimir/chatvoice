@@ -6,6 +6,30 @@ from ...utils.markdown import markdown_page, render_markdown_page
 
 router = APIRouter(tags=["main"])
 
+@router.get("/", response_class=HTMLResponse)
+async def main(
+    request: Request,
+    ctx: RuntimeContext = Depends(get_project_context),  # Single injection
+) -> HTMLResponse:
+    """Principal"""
+    md, notlogged_content = markdown_page("main_notlogged", ctx)
+
+    context = {
+        "notlogged_content": notlogged_content,
+        "metadata": md.Meta,
+        "active_page": md.Meta.get("active_page", [None])[0],
+        "active_menu": md.Meta.get("active_menu", [None])[0],
+    }
+
+    return ctx.templates_front.TemplateResponse(
+        request=request,
+        name="user/main.html",
+        context=context,
+    )
+
+
+
+
 @router.get("/chat/{script}", response_class=HTMLResponse)
 @router.get("/chat/{username}/{script}", response_class=HTMLResponse)
 async def chat(

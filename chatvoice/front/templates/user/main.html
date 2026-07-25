@@ -11,10 +11,15 @@
 {% endblock %}
 {%endif%}
 
+{% block protected_htmx_config %}
+hx-post="{{ url_for('project_links_htmx') }}"
+hx-trigger="load-protected"
+hx-swap="innerHTML"
+hx-target="this"
+hx-indicator="#protected-loading"
+{% endblock %}
+
 {% block protected_content %}
-<ul class="menu bg-base-200 rounded-box w-full">
-  <li><a href="{{url_for('chat',script='hello_world')}}">Hello world</a></li>
-</ul>
 {% endblock %}
 
 {% block scripts %}

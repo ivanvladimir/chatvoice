@@ -4,7 +4,8 @@ from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
-
+from ..models.user import User
+from .user import UserBrief
 
 class ProjectPermission(str, Enum):
     VIEW = "view"
@@ -70,7 +71,6 @@ class ProjectBase(BaseModel):
         default=None, description="Optional project description"
     )
 
-
 class ProjectCreate(ProjectBase):
     """Schema for creating a new project."""
 
@@ -114,6 +114,7 @@ class ProjectRead(BaseModel):
     is_active: bool
     description: str | None
     owner_id: int
+    owner: User
     uuid: UUID
     created_at: datetime
     updated_at: datetime | None
@@ -133,8 +134,7 @@ class ProjectListItem(BaseModel):
     uuid: UUID
     created_at: datetime
 
-    # Optional: include owner brief if needed
-    # owner: "UserBrief"
+    owner: UserBrief
 
 
 class ProjectDetail(ProjectRead):
@@ -143,8 +143,7 @@ class ProjectDetail(ProjectRead):
     model_config = ConfigDict(from_attributes=True)
 
     # Import from your user schemas
-    # from .user import UserBrief
-    # owner: UserBrief
+    owner: UserBrief
     member_links: list[ProjectMemberRead] = Field(default_factory=list)
 
 

@@ -160,30 +160,3 @@
 
 </div>{# End of relative wrapper #}
 
-{# ─── HTMX EVENT HANDLERS ─── #}
-<script>
-document.addEventListener('projectCreated', () => {
-    htmx.ajax('POST', '{{ url_for("projects_list_htmx") }}', {
-        target: '#protected-content',
-        swap: 'innerHTML',
-        values: htmx.values('#search-form')
-    });
-});
-
-document.addEventListener('projectDeleted', () => {
-    htmx.ajax('POST', '{{ url_for("projects_list_htmx") }}', {
-        target: '#protected-content',
-        swap: 'innerHTML',
-        values: htmx.values('#search-form')
-    });
-});
-
-document.addEventListener('projectUpdated', () => {
-    htmx.ajax('POST', '{{ url_for("projects_list_htmx") }}', {
-        target: '#protected-content',
-        swap: 'innerHTML',
-        values: htmx.values('#search-form')
-    });
-});
-</script>
-
