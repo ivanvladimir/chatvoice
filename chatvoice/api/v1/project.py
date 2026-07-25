@@ -5,6 +5,7 @@ import zipfile
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
+import math
 
 from fastapi import (
     APIRouter,
@@ -16,7 +17,7 @@ from fastapi import (
     Response,
     UploadFile,
 )
-from fastapi import File as FileForm
+from fastapi import Form, File as FileForm
 from fastapi.responses import (
     FileResponse,
     HTMLResponse,
@@ -342,7 +343,8 @@ async def list_project_files_htmx(
 
 
 @router.post(
-    "/{project_id}/files/{filename:path}/editor-htmx", response_class=HTMLResponse
+    "/{project_id}/files/{filename:path}/editor-htmx",
+    response_class=HTMLResponse
 )
 async def get_file_editor_htmx(
     request: Request,
@@ -441,41 +443,46 @@ async def get_create_form(
         },
     )
 
-
 @router.post("/list", response_class=HTMLResponse)
 async def projects_list_htmx(
     request: Request,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     current_user: User = Depends(get_current_user),
-    page: int = Query(1, ge=1),
-    items_per_page: int = Query(12, ge=1, le=50),
-    search: str | None = Query(None),
-    sort_by: str = Query("created_at", regex="^(name|created_at|is_active)$"),
-    sort_order: str = Query("desc", regex="^(asc|desc)$"),
+    # --- CHANGED Query TO Form HERE ---
+    page: int = Form(1, ge=1),
+    items_per_page: int = Form(12, ge=1, le=50),
+    search: str | None = Form(None),
+    sort_by: str = Form("created_at", pattern="^(name|created_at|is_active)$"),
+    sort_order: str = Form("desc", pattern="^(asc|desc)$"),
 ):
     """HTMX endpoint: returns paginated project list HTML fragment."""
-
     sort_columns = {
         "name": "name",
         "created_at": "created_at",
         "is_active": "is_active",
     }
 
+    # WARNING: Make sure to remove the hardcoded f"%mi%" in your actual code!
+    # You probably want: name__ilike=f"%{search}%" if search else None
     projects_result = await crud_projects.get_multi(
         db,
-        owner_id=current_user["id"],
         is_deleted=False,
-        # page=page,
-        # items_per_page=items_per_page,
-        # search_columns=["name", "description"],
-        # search_string=search,
-        # sort_columns=[sort_columns[sort_by]],
-        # sort_orders=[sort_order],
+        offset=(page-1)*items_per_page,
+        limit=(page)*items_per_page,
+        sort_columns=[sort_columns[sort_by]],
+        sort_orders=[sort_order],
+        owner_id=current_user["id"],
+        _or ={
+            "name__ilike":f"%{search}%",
+            "description__ilike":f"%{search}%",
+        } if search else {}
     )
 
     projects = projects_result.get("data", [])
     total_count = projects_result.get("total_count", 0)
-    total_pages = projects_result.get("total_pages", 0)
+
+    # Fixed math to return an integer instead of a float (e.g., 5 instead of 5.0)
+    total_pages = math.ceil(total_count / items_per_page) if total_count > 0 else 1
 
     return templates.TemplateResponse(
         request=request,
@@ -600,7 +607,6 @@ async def create_project_htmx(
 
     except Exception as e:
         error_msg = str(e).lower()
-        print(">>>>>>> aaaaa", e)
 
         return templates.TemplateResponse(
             request=request,

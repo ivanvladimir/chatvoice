@@ -1,168 +1,189 @@
-{# ─── TOOLBAR ─── #}
-<div class="flex flex-col sm:flex-row gap-3 mb-6">
-    
-    <!-- Search -->
-    <div class="form-control flex-1">
-        <div class="join w-full">
-            <input type="text" 
-                   name="search" 
-                   placeholder="Buscar proyectos..." 
-                   class="input input-bordered join-item w-full"
-                   value="{{ search }}"
-                   hx-post="{{ url_for('projects_list_htmx') }}"
-                   hx-trigger="keyup changed delay:300ms, search"
-                   hx-target="#protected-content"
-                   hx-include="this"
-                   hx-indicator="#search-spinner" />
-            <button class="btn join-item"
-                    hx-post="{{ url_for('projects_list_htmx') }}"
-                    hx-target="#protected-content"
-                    hx-include="[name='search']"
-                    hx-indicator="#search-spinner">
-                <span id="search-spinner" class="loading loading-spinner loading-xs hidden"></span>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-            </button>
-        </div>
-    </div>
-   
-    {# ─── Sort Dropdown ─── #}
-    <div class="dropdown dropdown-end">
-        <div tabindex="0" role="button" class="btn btn-ghost">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
-            </svg>
-            Ordenar
-        </div>
-        <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
-            <li>
-                <a hx-post="{{ url_for('projects_list_htmx') }}?sort_by=created_at&sort_order=desc&search={{ search }}"
-                  hx-target="#protected-content"
-                  class="{{ 'active' if sort_by == 'created_at' and sort_order == 'desc' else '' }}">
-                    Más recientes
-                </a>
-            </li>
-            <li>
-                <a hx-post="{{ url_for('projects_list_htmx') }}?sort_by=created_at&sort_order=asc&search={{ search }}"
-                  hx-target="#protected-content"
-                  class="{{ 'active' if sort_by == 'created_at' and sort_order == 'asc' else '' }}">
-                    Más antiguos
-                </a>
-            </li>
-            <li>
-                <a hx-post="{{ url_for('projects_list_htmx') }}?sort_by=name&sort_order=asc&search={{ search }}"
-                  hx-target="#protected-content"
-                  class="{{ 'active' if sort_by == 'name' and sort_order == 'asc' else '' }}">
-                    Nombre A-Z
-                </a>
-            </li>
-            <li>
-                <a hx-post="{{ url_for('projects_list_htmx') }}?sort_by=name&sort_order=desc&search={{ search }}"
-                  hx-target="#protected-content"
-                  class="{{ 'active' if sort_by == 'name' and sort_order == 'desc' else '' }}">
-                    Nombre Z-A
-                </a>
-            </li>
-        </ul>
-    </div>
+{# ─── LOADING INDICATOR (Always in DOM to prevent HTMX warnings) ─── #}
+<div class="relative">
+    <span id="protected-loading" class="loading loading-spinner loading-lg absolute top-24 left-1/2 -translate-x-1/2 hidden z-50 text-primary"></span>
 
-    <!-- Create Button -->
-    <button class="btn btn-primary"
-            @click="document.dispatchEvent(new CustomEvent('openCreateModal'))">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-        </svg>
-        Nuevo
-    </button>
-</div>
-
-{# ─── PROJECTS GRID ─── #}
-{% if projects %}
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-    {% for project in projects %}
-        {% include "projects/partials/project_card.html" %}
-    {% endfor %}
-</div>
-
-{# ─── PAGINATION ─── #}
-{% if total_pages > 1 %}
-<div class="flex justify-center mt-8">
-    <div class="join">
-        {% if page > 1 %}
-        <button class="join-item btn btn-sm"
-                hx-post="{{ url_for('projects_list_htmx') }}" {# ?page={{ page - 1 }}&search={{ search }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}" #}
-                hx-target="#protected-content"
-                hx-indicator="#protected-loading">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-            </svg>
-        </button>
-        {% endif %}
+    {# ─── TOOLBAR ─── #}
+    <div class="flex flex-col sm:flex-row gap-3 mb-6">
         
-        {% for p in range(1, total_pages + 1) %}
-            {% if p == page %}
-            <button class="join-item btn btn-sm btn-primary">{{ p }}</button>
-            {% elif p <= 3 or p >= total_pages - 2 or (p >= page - 1 and p <= page + 1) %}
+        <!-- Search -->
+        <div class="form-control flex-1">
+            <form id="search-form" class="join w-full"
+                  hx-post="{{ url_for('projects_list_htmx') }}"
+                  hx-target="#protected-content"
+                  hx-indicator="#search-spinner">
+                
+                <input type="hidden" name="sort_by" value="{{ sort_by }}">
+                <input type="hidden" name="sort_order" value="{{ sort_order }}">
+
+                <input type="text" 
+                       name="search" 
+                       placeholder="Buscar proyectos..." 
+                       class="input input-bordered join-item w-full"
+                       value="{{ search }}"
+                       hx-trigger="keyup changed delay:300ms, search" />
+                       
+                <button type="submit" class="btn join-item">
+                    <span id="search-spinner" class="loading loading-spinner loading-xs hidden"></span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </button>
+            </form>
+        </div>
+       
+        {# ─── Sort Dropdown ─── #}
+        <div class="dropdown dropdown-end">
+            <div tabindex="0" role="button" class="btn btn-ghost">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                </svg>
+                Ordenar
+            </div>
+            <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+                <li>
+                    <a hx-post="{{ url_for('projects_list_htmx') }}"
+                       hx-include="#search-form"
+                       hx-vals='{"sort_by": "created_at", "sort_order": "desc"}'
+                       hx-target="#protected-content"
+                       class="{{ 'active' if sort_by == 'created_at' and sort_order == 'desc' else '' }}">
+                        Más recientes
+                    </a>
+                </li>
+                <li>
+                    <a hx-post="{{ url_for('projects_list_htmx') }}"
+                       hx-include="#search-form"
+                       hx-vals='{"sort_by": "created_at", "sort_order": "asc"}'
+                       hx-target="#protected-content"
+                       class="{{ 'active' if sort_by == 'created_at' and sort_order == 'asc' else '' }}">
+                        Más antiguos
+                    </a>
+                </li>
+                <li>
+                    <a hx-post="{{ url_for('projects_list_htmx') }}"
+                       hx-include="#search-form"
+                       hx-vals='{"sort_by": "name", "sort_order": "asc"}'
+                       hx-target="#protected-content"
+                       class="{{ 'active' if sort_by == 'name' and sort_order == 'asc' else '' }}">
+                        Nombre A-Z
+                    </a>
+                </li>
+                <li>
+                    <a hx-post="{{ url_for('projects_list_htmx') }}"
+                       hx-include="#search-form"
+                       hx-vals='{"sort_by": "name", "sort_order": "desc"}'
+                       hx-target="#protected-content"
+                       class="{{ 'active' if sort_by == 'name' and sort_order == 'desc' else '' }}">
+                        Nombre Z-A
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Create Button -->
+        <button class="btn btn-primary"
+                @click="document.dispatchEvent(new CustomEvent('openCreateModal'))">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Nuevo
+        </button>
+    </div>
+
+    {# ─── PROJECTS GRID ─── #}
+    {% if projects %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for project in projects %}
+            {% include "projects/partials/project_card.html" %}
+        {% endfor %}
+    </div>
+
+    {# ─── PAGINATION ─── #}
+    {% if total_pages > 1 %}
+    <div class="flex justify-center mt-8">
+        <div class="join">
+            {% if page > 1 %}
             <button class="join-item btn btn-sm"
-                    hx-post="{{ url_for('projects_list_htmx') }}" {#?page={{ p }}&search={{ search }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"#}
+                    hx-post="{{ url_for('projects_list_htmx') }}"
+                    hx-include="#search-form"
+                    hx-vals='{"page": {{ page - 1 }}}'
                     hx-target="#protected-content"
                     hx-indicator="#protected-loading">
-                {{ p }}
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
             </button>
-            {% elif p == 4 or p == total_pages - 3 %}
-            <button class="join-item btn btn-sm btn-disabled">...</button>
             {% endif %}
-        {% endfor %}
-        
-        {% if page < total_pages %}
-        <button class="join-item btn btn-sm"
-                hx-post="{{ url_for('projects_list_htmx') }}" {#?page={{ page + 1 }}&search={{ search }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}"#}
-                hx-target="#protected-content"
-                hx-indicator="#protected-loading">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-        </button>
-        {% endif %}
+            
+            {% for p in range(1, total_pages + 1) %}
+                {% if p == page %}
+                <button class="join-item btn btn-sm btn-primary">{{ p }}</button>
+                {% elif p <= 3 or p >= total_pages - 2 or (p >= page - 1 and p <= page + 1) %}
+                <button class="join-item btn btn-sm"
+                        hx-post="{{ url_for('projects_list_htmx') }}"
+                        hx-include="#search-form"
+                        hx-vals='{"page": {{ p }}}'
+                        hx-target="#protected-content"
+                        hx-indicator="#protected-loading">
+                    {{ p }}
+                </button>
+                {% elif p == 4 or p == total_pages - 3 %}
+                <button class="join-item btn btn-sm btn-disabled">...</button>
+                {% endif %}
+            {% endfor %}
+            
+            {% if page < total_pages %}
+            <button class="join-item btn btn-sm"
+                    hx-post="{{ url_for('projects_list_htmx') }}"
+                    hx-include="#search-form"
+                    hx-vals='{"page": {{ page + 1 }}}'
+                    hx-target="#protected-content"
+                    hx-indicator="#protected-loading">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </button>
+            {% endif %}
+        </div>
     </div>
-</div>
-{% endif %}
+    {% endif %}
 
-{# ─── RESULTS COUNT ─── #}
-<div class="text-center text-base-content/50 text-sm mt-4">
-    {{ total_count }} proyecto{{ 's' if total_count != 1 }} encontrado{{ 's' if total_count != 1 }}
-    {% if search %}para "<span class="text-base-content/70">{{ search }}</span>"{% endif %}
-</div>
+    {# ─── RESULTS COUNT ─── #}
+    <div class="text-center text-base-content/50 text-sm mt-4">
+        {{ total_count }} proyecto{{ 's' if total_count != 1 }} encontrado{{ 's' if total_count != 1 }}
+        {% if search %}para "<span class="text-base-content/70">{{ search }}</span>"{% endif %}
+    </div>
 
-{% else %}
-{# ─── EMPTY STATE ─── #}
-{% include "projects/partials/empty_state.html" %}
-{% endif %}
+    {% else %}
+    {# ─── EMPTY STATE ─── #}
+    {% include "projects/partials/empty_state.html" %}
+    {% endif %}
+
+</div>{# End of relative wrapper #}
 
 {# ─── HTMX EVENT HANDLERS ─── #}
 <script>
 document.addEventListener('projectCreated', () => {
-    // Reload the list when a project is created
     htmx.ajax('POST', '{{ url_for("projects_list_htmx") }}', {
         target: '#protected-content',
-        swap: 'innerHTML'
+        swap: 'innerHTML',
+        values: htmx.values('#search-form')
     });
 });
 
 document.addEventListener('projectDeleted', () => {
-    // Reload the list when a project is deleted
     htmx.ajax('POST', '{{ url_for("projects_list_htmx") }}', {
         target: '#protected-content',
-        swap: 'innerHTML'
+        swap: 'innerHTML',
+        values: htmx.values('#search-form')
     });
 });
 
 document.addEventListener('projectUpdated', () => {
-    // Reload the list when a project is updated
     htmx.ajax('POST', '{{ url_for("projects_list_htmx") }}', {
         target: '#protected-content',
-        swap: 'innerHTML'
+        swap: 'innerHTML',
+        values: htmx.values('#search-form')
     });
 });
 </script>
+
