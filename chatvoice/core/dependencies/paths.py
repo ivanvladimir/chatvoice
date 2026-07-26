@@ -15,12 +15,14 @@ class RuntimeContext:
     content_dir: Path
     templates_front: Jinja2Templates
     templates_api: Jinja2Templates
+    default: bool
 
 default_runtime_context = RuntimeContext(
             root = settings.resolved_conversation_dir(),
             content_dir = settings.CONTENT_DIR_PATH,
             templates_front = Jinja2Templates(settings.TEMPLATES_FRONT_PATH),
-            templates_api = Jinja2Templates(settings.TEMPLATES_API_PATH)
+            templates_api = Jinja2Templates(settings.TEMPLATES_API_PATH),
+            default = True
         )
 
 
@@ -44,7 +46,8 @@ def _build_jinja(username: Path, project_name: str) -> RuntimeContext:
             root = directory,
             content_dir = directory / data.get('content_dir', settings.CONTENT_DIR_PATH),
             templates_front = Jinja2Templates(directory / data.get("templates_front", settings.TEMPLATES_FRONT_PATH)),
-            templates_api = Jinja2Templates(directory / data.get("templates_api", settings.TEMPLATES_API_PATH))
+            templates_api = Jinja2Templates(directory / data.get("templates_api", settings.TEMPLATES_API_PATH)),
+            default = False
         )
     else:
         return default_runtime_context
