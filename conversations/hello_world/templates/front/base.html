@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="emerald">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Home{% endblock %} | Chatvoice</title>
+
+    <!-- Tailwind CSS + DaisyUI -->
+    <link rel="stylesheet" href="{{ url_for('static', path='output.css') }}" />
+
+    <link rel="icon" type="image/png" href="{{ url_for('static', path='favicon-96x96.png') }}" sizes='96x96' />
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', path='favicon.svg') }}" />
+    <link rel="shortcut icon" href="{{ url_for('static', path='favicon.ico') }}" />
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', path='apple-touch-icon.png') }}" />
+    <meta name="apple-mobile-web-app-title" content="Chatvoice" />
+    <link rel="manifest" href="{{ url_for('static', path='site.webmanifest') }}" />
+
+    <!-- HTMX -->
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js" 
+          integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
+          crossorigin="anonymous"></script>
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    {% block head %}{% endblock %}
+</head>
+<body class="min-h-screen flex flex-col" x-data="authApp()" x-init="init()">
+
+    <!-- Navbar -->
+    <nav class="navbar bg-base-100 shadow-sm">
+        <div class="navbar-start">
+            <div class="dropdown">
+                <div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" />
+                    </svg>
+                </div>
+                <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/about">About</a></li>
+                    <li><a href="/contact">Contact</a></li>
+                    <!-- ─── EDITOR ONLY MENU ITEM ─── -->
+                    <template x-if="role === 'editor'">
+                        <li>
+                          <a href="{{url_for('projects_page')}}" class="font-medium">
+                                Proyectos
+                            </a>
+                        </li>
+                    </template>|
+                </ul>
+            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="40" height="40">
+                <path d="M 62 82 C 50 70, 42 58, 43 46 C 44 38, 51 32, 59 34 C 66 36, 70 43, 65 48 C 62 51, 57 50, 58 46"
+                    fill="none" stroke="#000000" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
+            </svg>
+            <a href="/" class="btn btn-ghost text-xl">Chatvoice</a>
+        </div>
+
+        <div class="navbar-center hidden lg:flex">
+            <ul class="menu menu-horizontal px-1">
+                <li><a href="/">Home</a></li>
+                <li><a href="/about">About</a></li>
+                <li><a href="/contact">Contact</a></li>
+                <template x-if="role === 'editor'">
+                      <li>
+                          <a href="{{url_for('projects_page')}}" class="font-medium">
+                              Proyectos
+                          </a>
+                      </li>
+                  </template>
+            </ul>
+        </div>
+
+        <!-- Auth Section -->
+        <div class="navbar-end">
+            
+            <!-- Login Button (not authenticated) -->
+            <template x-if="!isAuthenticated">
+                <button class="btn btn-primary" @click="showLoginModal = true">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                    </svg>
+                    Entrar
+                </button>
+            </template>
+
+            <!-- User Menu (authenticated) -->
+            <template x-if="isAuthenticated">
+                <div class="dropdown dropdown-end">
+                    <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar placeholder">
+                        <div class="bg-primary text-primary-content rounded-full w-10">
+                            <span class="text-sm font-bold" x-text="username?.charAt(0).toUpperCase()"></span>
+                        </div>
+                    </div>
+                    <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+                        <li class="menu-title">
+                            <span x-text="username"></span>
+                        </li>
+                        <li><a href="#">Perfil</a></li>
+                        <li><a href="#">Configuración</a></li>
+                        <li><hr class="my-1"></li>
+                        <li>
+                            <a href="#" class="text-error" @click.prevent="logout()">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                </svg>
+                                Salir
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </template>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-1 container mx-auto px-4 py-8">
+        
+        {% block general_content %} {% endblock %}
+
+        <!-- Public Content (not authenticated) -->
+        <div x-show="!isAuthenticated" x-cloak x-transition:enter="fade-enter">
+            {% block notlogged_content %} {% endblock %}
+        </div>
+
+        <!-- Protected Content (authenticated) -->
+        <div x-show="isAuthenticated" x-cloak x-transition:enter="fade-enter"
+             x-ref="protectedZone">
+
+            {# ─── PROTECTED HTMX LOADER ─── #}
+            <div id="protected-content"
+                {% block protected_htmx_config %}
+                {# Child templates MUST override this block to enable HTMX loading #}
+                {% endblock %}>
+                
+                {# Loading indicator #}
+                <div id="protected-loading" 
+                    x-show="protectedLoading"
+                    x-cloak
+                    class="flex flex-col items-center justify-center py-12 gap-4">
+                    <span class="loading loading-spinner loading-lg text-primary"></span>
+                    <span class="text-base-content/50 text-sm">Cargando contenido...</span>
+                </div>
+                
+                <div id="protected-disabled-overlay" class="hidden"></div>
+
+                {% block protected_content %} {% endblock %}
+            </div>
+
+        </div>
+
+        {% block extra_content %}{% endblock %}
+    </main>
+
+    <!-- Login Modal -->
+    <dialog x-ref="loginModal" 
+            class="modal" 
+            :class="{ 'modal-open': showLoginModal }"
+            @click.self="closeLoginModal()">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                Entrar
+            </h3>
+            <p class="py-2 text-base-content/60">Ingresa tu usuario y contraseña para entrar</p>
+            
+            <form @submit.prevent="handleLogin()">
+                <div class="form-control w-full">
+                    <label class="label">
+                        <span class="label-text font-medium">Usuario</span>
+                    </label>
+                    <input type="text" 
+                           x-model="loginForm.username"
+                           placeholder="Teclea tu usuario" 
+                           class="input input-bordered w-full" 
+                           autocomplete="username"
+                           required />
+                </div>
+                
+                <div class="form-control w-full mt-4">
+                    <label class="label">
+                        <span class="label-text font-medium">Contraseña</span>
+                    </label>
+                    <input type="password" 
+                           x-model="loginForm.password"
+                           placeholder="Teclea tu contraseña" 
+                           class="input input-bordered w-full" 
+                           autocomplete="current-password"
+                           required />
+                </div>
+                
+                <!-- Error message -->
+                <div x-show="loginError" x-cloak class="mt-4">
+                    <div class="alert alert-error">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span x-text="loginError"></span>
+                    </div>
+                </div>
+                
+                <div class="modal-action">
+                    <button type="button" 
+                            class="btn" 
+                            @click="closeLoginModal()"
+                            :disabled="loginLoading">
+                        Cancelar
+                    </button>
+                    <button type="submit" 
+                            class="btn btn-primary"
+                            :class="{ 'btn-loading': loginLoading }"
+                            :disabled="loginLoading">
+                        Entrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <!-- Session Expired Modal -->
+    <dialog x-ref="sessionModal" 
+            class="modal" 
+            :class="{ 'modal-open': showSessionExpired }">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg text-warning flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                Session Expired
+            </h3>
+            <p class="py-4">Your session has expired. Please sign in again to continue.</p>
+            <div class="modal-action">
+                <button class="btn btn-primary" @click="showSessionExpired = false; showLoginModal = true">
+                    Sign In Again
+                </button>
+            </div>
+            <form method="dialog" class="modal-backdrop">
+                <button @click="showSessionExpired = false">close</button>
+            </form>
+        </div>
+    </dialog>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast toast-top toast-end z-50">
+        <template x-for="toast in toasts" :key="toast.id">
+            <div class="alert shadow-lg" :class="`alert-${toast.type}`" x-text="toast.message"
+                 x-show="toast.show"
+                 x-transition:enter="fade-enter"
+                 x-transition:leave="fade-leave">
+            </div>
+        </template>
+    </div>
+
+    <!-- Footer -->
+    {% include "footer.html" %}
+
+    <!-- Alpine.js Auth Component -->
+    <script>
+        function authApp() {
+            return {
+                // State
+                isAuthenticated: false,
+                username: null,
+                name: null,
+                role: null,
+                accessToken: localStorage.getItem('accessToken') || null,
+                
+                // UI State
+                showLoginModal: false,
+                showSessionExpired: false,
+                protectedLoaded: false,  // NEW: Track if protected content was loaded
+                protectedLoading: false,  // ← ADD THIS
+                
+                // Login Form
+                loginForm: { username: '', password: '' },
+                loginError: '',
+                loginLoading: false,
+                
+                // Toasts
+                toasts: [],
+                
+                // Initialize
+                async init() {
+                    this.setupHtmxInterceptors();
+                    this.setupProtectedEvents();
+
+                    // Fires automatically the instant auth becomes true —
+                    // removes the race with the manual nextTick calls.
+                    this.$watch('isAuthenticated', (isAuth) => {
+                        if (isAuth) this.loadProtectedContent();
+                    });
+
+                    if (this.accessToken) {
+                        await this.checkAuth();
+                    }
+                },
+                
+                // ─── CONTROL MECHANISM: HTMX Interceptors ───
+              setupHtmxInterceptors() {
+                    // ─── Loading state for protected content ───
+                    document.addEventListener('htmx:beforeRequest', (event) => {
+                        if (event.detail.target?.id === 'protected-content') {
+                            this.protectedLoading = true;
+                        }
+                    });
+
+                    document.addEventListener('htmx:afterRequest', (event) => {
+                        if (event.detail.target?.id === 'protected-content') {
+                            this.protectedLoading = false;
+                        }
+                    });
+                    // Add auth header to ALL HTMX requests
+                    document.addEventListener('htmx:configRequest', (event) => {
+                        if (this.accessToken) {
+                            event.detail.headers['Authorization'] = `Bearer ${this.accessToken}`;
+                        }
+                        // Add request timestamp for replay protection
+                        event.detail.headers['X-Request-Timestamp'] = Date.now().toString();
+                    });
+
+                    // Handle auth errors on ALL HTMX requests
+                    document.addEventListener('htmx:responseError', (event) => {
+                        if (event.detail.xhr.status === 401) {
+                            const url = event.detail.xhr.responseURL;
+                            // Skip if it's an auth endpoint itself
+                            if (!url.includes('/api/auth/')) {
+                                this.handleUnauthorized();
+                            }
+                        }
+                    });
+
+                    // Handle successful protected content load
+                    document.addEventListener('htmx:afterOnLoad', (event) => {
+                        if (event.detail.target?.id === 'protected-content') {
+                            this.protectedLoaded = true;
+                        }
+                    });
+                },
+                
+                // ─── NEW: Protected Content Events ───
+                setupProtectedEvents() {
+                    // Listen for custom event to reload protected content
+                    document.addEventListener('reload-protected', () => {
+                        this.loadProtectedContent();
+                    });
+                },
+                
+                // ─── NEW: Trigger Protected Content Load ───
+                loadProtectedContent() {
+                    this.$nextTick(() => {
+                        const protectedEl = document.getElementById('protected-content');
+                        // Only trigger if hx-post attribute exists
+                        if (protectedEl && this.isAuthenticated && protectedEl.hasAttribute('hx-post')) {
+                            this.protectedLoaded = false;
+                            htmx.ajax('POST', protectedEl.getAttribute('hx-post'), {
+                                target: protectedEl,
+                                swap: protectedEl.getAttribute('hx-swap') || 'innerHTML'
+                            });
+                        }
+                    });
+                },
+                
+                async checkAuth() {
+                    if (!this.accessToken) {
+                        this.clearAuth();
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch('{{ url_for("get_current_user_info") }}', {
+                            headers: { 'Authorization': `Bearer ${this.accessToken}` }
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.setAuth(data.name, data.username, this.accessToken, data.role);
+                            return;
+                        }
+                    } catch (e) {
+                        console.error('Auth check failed:', e);
+                    }
+
+                    const refreshed = await this.refreshAccessToken();
+                    if (!refreshed) {
+                        this.clearAuth();
+                    }
+                },
+                
+                async handleLogin() {
+                    if (!this.loginForm.username || !this.loginForm.password) {
+                        this.loginError = 'Por favor complete todos los campos';
+                        return;
+                    }
+
+                    this.loginLoading = true;
+                    this.loginError = '';
+
+                    try {
+                        const response = await fetch('{{ url_for("login_json") }}', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.loginForm),
+                            credentials: 'same-origin'
+                        });
+
+                        const data = await response.json();
+
+                        if (response.ok) {
+                            this.setAuth(data.name, data.username, data.access_token, data.role);
+                            this.closeLoginModal();
+                            this.showToast('¡Inicio de sesión exitoso!', 'success');
+                        } else {
+                            this.loginError = data.detail || 'Error al iniciar sesión';
+                        }
+                    } catch (e) {
+                        this.loginError = 'Error de conexión. Intente nuevamente.';
+                    } finally {
+                        this.loginLoading = false;
+                    }
+                },
+                
+                async logout() {
+                    try {
+                        await fetch('{{ url_for("logout") }}', {
+                            method: 'POST',
+                            credentials: 'same-origin'
+                        });
+                    } catch (e) {
+                        console.error('Logout failed:', e);
+                    }
+                    
+                    this.clearAuth();
+                    this.showToast('Sesión cerrada correctamente', 'info');
+                },
+                
+                async refreshAccessToken() {
+                    try {
+                        const response = await fetch('{{ url_for("refresh_access_token") }}', {
+                            method: 'POST',
+                            credentials: 'same-origin'
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            const meResponse = await fetch('{{ url_for("get_current_user_info") }}', {
+                                headers: { 'Authorization': `Bearer ${data.access_token}` }
+                            });
+                            if (meResponse.ok) {
+                                const meData = await meResponse.json();
+                                this.setAuth(meData.name, meData.username, data.access_token, data.role );
+                            }
+                            return true;
+                        }
+                        return false;
+                    } catch (e) {
+                        console.error('Token refresh failed:', e);
+                        return false;
+                    }
+                },
+                
+                async handleUnauthorized() {
+                    const refreshed = await this.refreshAccessToken();
+                    if (!refreshed) {
+                        this.clearAuth();
+                        this.showSessionExpired = true;
+                    } else {
+                        // Retry the protected content load after refresh
+                        this.loadProtectedContent();
+                    }
+                },
+               
+                setAuth(name, username, accessToken, role) {
+                    this.name = name;
+                    this.username = username;
+                    this.role = role;
+                    this.accessToken = accessToken;
+                    this.isAuthenticated = true;
+
+                    localStorage.setItem('accessToken', accessToken);
+                    localStorage.setItem('username', username);
+                    localStorage.setItem('name', name);
+                },
+                clearAuth() {
+                    this.name = null;
+                    this.username = null;
+                    this.role = null;
+                    this.accessToken = null;
+                    this.isAuthenticated = false;
+                    this.protectedLoaded = false;
+                    this.protectedLoading = false;  // ← ADD THIS
+                    
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('username');
+                    localStorage.removeItem('name');
+                }, 
+                 
+                closeLoginModal() {
+                    this.showLoginModal = false;
+                    this.loginForm = { username: '', password: '' };
+                    this.loginError = '';
+                    this.loginLoading = false;
+                },
+                
+                showToast(message, type = 'info') {
+                    const id = Date.now();
+                    this.toasts.push({ id, message, type, show: true });
+                    
+                    setTimeout(() => {
+                        const toast = this.toasts.find(t => t.id === id);
+                        if (toast) toast.show = false;
+                        setTimeout(() => {
+                            this.toasts = this.toasts.filter(t => t.id !== id);
+                        }, 300);
+                    }, 3000);
+                }
+            }
+        }
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>
+

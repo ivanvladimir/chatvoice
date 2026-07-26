@@ -5,18 +5,17 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.db.database import async_get_db
-from ...core.dependencies.paths import RuntimeContext, get_project_context
+from ...core.dependencies.paths import RuntimeContext, get_default_context
 from ...crud.projects import crud_projects
 
 router = APIRouter(prefix="/projects", tags=["projects"])
-
 
 @router.get("/{project_id}/files", response_class=HTMLResponse)
 async def show_list_project_files(
     request: Request,
     project_id: int,
     db: Annotated[AsyncSession, Depends(async_get_db)],
-    ctx: RuntimeContext = Depends(get_project_context),  # Single injection
+    ctx: RuntimeContext = Depends(get_default_context),  # Single injection
 ):
     project = await crud_projects.get(db, id=project_id)
     if not project:
@@ -35,7 +34,7 @@ async def view_project_files_page(
     project_id: int,
     filename: str,
     db: Annotated[AsyncSession, Depends(async_get_db)],
-    ctx: RuntimeContext = Depends(get_project_context),  # Single injection
+    ctx: RuntimeContext = Depends(get_default_context),  # Single injection
 ):
     """Renders the base template with the skeleton loader."""
     project = await crud_projects.get(db, id=project_id)
@@ -52,7 +51,7 @@ async def view_project_files_page(
 @router.get("/", response_class=HTMLResponse)
 async def projects_page(
     request: Request,
-    ctx: RuntimeContext = Depends(get_project_context),  # Single injection
+    ctx: RuntimeContext = Depends(get_default_context),  # Single injection
 ):
     context = {}
 

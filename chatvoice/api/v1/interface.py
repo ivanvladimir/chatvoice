@@ -5,11 +5,9 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from ...api.dependencies import get_current_user
+from ...core.dependencies.paths import RuntimeContext, get_project_context
 
 router = APIRouter(tags=["chatbot"])
-
-templates = Jinja2Templates(directory="chatvoice/api/templates")
-
 
 @router.post("/chatbot/{script}", name="chatbot_interface_")
 @router.post("/chatbot/{username}/{script}", name="chatbot_interface")
@@ -17,9 +15,10 @@ async def chatbot_interface(
     script: str,
     request: Request,
     current_user: Annotated[dict, Depends(get_current_user)],
+    ctx: RuntimeContext = Depends(get_project_context),
     username: str = None,
 ) -> HTMLResponse:
-    return templates.TemplateResponse(
+    return ctx.templates_api.TemplateResponse(
         request=request,
         name="user/chatbot_interface.html",
         context={

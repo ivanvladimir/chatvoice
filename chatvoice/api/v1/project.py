@@ -28,6 +28,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.db.database import async_get_db
+from ...core.dependencies.paths import RuntimeContext, get_default_context
 from ...crud.projects import crud_projects
 from ...models.user import User
 from ...schemas.user import UserBrief
@@ -72,9 +73,6 @@ def _validate_file_path(base_path: Path, file_path_str: str) -> Path:
     return target
 
 
-# ═══════════════════════════════════════════════════════════════
-#  NEW: Upload file(s)
-# ═══════════════════════════════════════════════════════════════
 @router.post("/api/{project_id}/files/upload")
 async def upload_files(
     request: Request,
@@ -141,9 +139,6 @@ async def upload_files(
     }
 
 
-# ═══════════════════════════════════════════════════════════════
-#  NEW: Delete a file
-# ═══════════════════════════════════════════════════════════════
 @router.delete("/api/{project_id}/files")
 async def delete_file(
     request: Request,
@@ -184,9 +179,6 @@ async def delete_file(
     return {"message": "File deleted", "path": body.path}
 
 
-# ═══════════════════════════════════════════════════════════════
-#  NEW ENDPOINT 1: Download single file
-# ═══════════════════════════════════════════════════════════════
 @router.get("/{project_id}/files/{file_path:path}/download")
 async def download_file(
     request: Request,
@@ -216,9 +208,6 @@ async def download_file(
     )
 
 
-# ═══════════════════════════════════════════════════════════════
-#  NEW ENDPOINT 2: Download project as ZIP
-# ═══════════════════════════════════════════════════════════════
 @router.get("/{project_id}/download")
 async def download_project(
     request: Request,
@@ -266,9 +255,6 @@ async def download_project(
     )
 
 
-# ═══════════════════════════════════════════════════════════════
-#  NEW ENDPOINT 3: Create empty file
-# ═══════════════════════════════════════════════════════════════
 @router.post("/api/{project_id}/files")
 async def create_file(
     request: Request,
@@ -314,31 +300,27 @@ async def list_project_files_htmx(
     request: Request,
     project_id: int,
     db: Annotated[AsyncSession, Depends(async_get_db)],
+    ctx: RuntimeContext = Depends(get_default_context),  # Single injection
     current_user: User = Depends(get_current_user),
 ):
-    # 1. Fetch your project (Replace with your actual dependency/DB call)
     project = await crud_projects.get(db, id=project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found.")
-
-    # Mock project for demonstration:
 
     if not project_directory_exists(current_user["username"], project["project_name"]):
         raise HTTPException(
             status_code=404, detail="Project directory not found on server."
         )
 
-    # 2. Scan directory for allowed files
     files = list_project_files(
         current_user["username"],
         project["project_name"],
         allowed_extensions=ALLOWED_EXTENSIONS,
     )
 
-    # 3. Render list template
-    return templates.TemplateResponse(
+    return ctx.templates_api.TemplateResponse(
         request=request,
-        name="projects/partials/files_list_content.html",
+        name="projects/files_list_content.html",
         context={"request": request, "project": project, "files": files},
     )
 
@@ -352,6 +334,7 @@ async def get_file_editor_htmx(
     project_id: int,
     filename: str,
     db: Annotated[AsyncSession, Depends(async_get_db)],
+    ctx: RuntimeContext = Depends(get_default_context),  # Single injection
     current_user: User = Depends(get_current_user),
     base_path: str = "conversations",
 ):
@@ -381,9 +364,9 @@ async def get_file_editor_htmx(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reading file: {str(e)}")
 
-    return templates.TemplateResponse(
+    return ctx.templates_api.TemplateResponse(
         request=request,
-        name="projects/partials/file_editor_content.html",
+        name="projects/file_editor_content.html",
         context={
             "request": request,
             "project": project,
@@ -429,12 +412,13 @@ async def save_file(
 @router.get("/create-form", response_class=HTMLResponse)
 async def get_create_form(
     request: Request,
+    ctx: RuntimeContext = Depends(get_default_context),  # Single injection
     current_user: User = Depends(get_current_user),
 ):
     """Return empty form for the create modal."""
-    return templates.TemplateResponse(
+    return ctx.templates_api.TemplateResponse(
         request=request,
-        name="projects/partials/create_project_form.html",
+        name="projects/create_project_form.html",
         context={
             "request": request,
             "errors": [],
@@ -448,6 +432,7 @@ async def get_create_form(
 async def project_links_htmx(
     request: Request,
     db: Annotated[AsyncSession, Depends(async_get_db)],
+    ctx: RuntimeContext = Depends(get_default_context),  # Single injection
     current_user: User = Depends(get_current_user),
     # --- CHANGED Query TO Form HERE ---
     page: int = Form(1, ge=1),
@@ -489,9 +474,9 @@ async def project_links_htmx(
     # Fixed math to return an integer instead of a float (e.g., 5 instead of 5.0)
     total_pages = math.ceil(total_count / items_per_page) if total_count > 0 else 1
 
-    return templates.TemplateResponse(
+    return ctx.templates_api.TemplateResponse(
         request=request,
-        name="projects/partials/project_links.html",
+        name="projects/project_links.html",
         context={
             "request": request,
             "projects": projects,
@@ -509,6 +494,7 @@ async def project_links_htmx(
 async def projects_list_htmx(
     request: Request,
     db: Annotated[AsyncSession, Depends(async_get_db)],
+    ctx: RuntimeContext = Depends(get_default_context),  # Single injection
     current_user: User = Depends(get_current_user),
     # --- CHANGED Query TO Form HERE ---
     page: int = Form(1, ge=1),
@@ -546,9 +532,9 @@ async def projects_list_htmx(
     # Fixed math to return an integer instead of a float (e.g., 5 instead of 5.0)
     total_pages = math.ceil(total_count / items_per_page) if total_count > 0 else 1
 
-    return templates.TemplateResponse(
+    return ctx.templates_api.TemplateResponse(
         request=request,
-        name="projects/partials/project_list.html",
+        name="projects/project_list.html",
         context={
             "request": request,
             "projects": projects,
@@ -606,6 +592,7 @@ async def create_project_htmx(
     name: Annotated[str, Form()],
     db: Annotated[AsyncSession, Depends(async_get_db)],
     project_name: Annotated[str, Form()],
+    ctx: RuntimeContext = Depends(get_default_context),  # Single injection
     current_user: User = Depends(get_current_user),
     description: Annotated[str | None, Form()] = None,
 ):
@@ -635,9 +622,9 @@ async def create_project_htmx(
         errors.append("Un proyecto con el mismo nombre clave ya esxiste")
 
     if errors:
-        return templates.TemplateResponse(
+        return ctx.templates_api.TemplateResponse(
             request=request,
-            name="projects/partials/create_project_form.html",
+            name="projects/create_project_form.html",
             context={
                 "request": request,
                 "errors": errors,
@@ -661,9 +648,9 @@ async def create_project_htmx(
         await crud_projects.create(db, project_data)
 
         # Close modal and reload list
-        response = templates.TemplateResponse(
+        response = ctx.templates_api.TemplateResponse(
             request=request,
-            name="projects/partials/create_success.html",
+            name="projects/create_success.html",
             context={"request": request, "project_name": name},
         )
         response.headers["HX-Trigger"] = "projectCreated"
@@ -672,9 +659,9 @@ async def create_project_htmx(
     except Exception as e:
         error_msg = str(e).lower()
 
-        return templates.TemplateResponse(
+        return ctx.templates_api.TemplateResponse(
             request=request,
-            name="projects/partials/create_project_form.html",
+            name="projects/create_project_form.html",
             context={
                 "request": request,
                 "errors": errors,

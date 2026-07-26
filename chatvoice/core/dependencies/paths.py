@@ -44,3 +44,6 @@ def _build_jinja(username: Path, project_name: str) -> RuntimeContext:
      
 def get_project_context(username: str = None, project_name: str = None) -> RuntimeContext:
     return _build_jinja(username, project_name)
+
+def get_default_context() -> RuntimeContext:
+    return default_runtime_context

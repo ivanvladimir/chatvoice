@@ -4,18 +4,19 @@ from pathlib import Path
 import markdown
 from fastapi import HTTPException, Request
 from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 
 from ..core.dependencies.paths import RuntimeContext
 
 
 def markdown_page(
     view_name: str,
-    ctx: RuntimeContext,  # We now pass the single aggregate object
+    content_dir: Path,  # We now pass the single aggregate object
 ) -> HTMLResponse:
     safe_filename = f"{Path(view_name).stem}.md"
-    file_path = (ctx.content_dir / safe_filename).resolve()
+    file_path = (content_dir / safe_filename).resolve()
 
-    if not str(file_path).startswith(str(ctx.content_dir)):
+    if not str(file_path).startswith(str(content_dir)):
         raise HTTPException(status_code=400, detail="Invalid page name")
 
     if not file_path.is_file():
@@ -35,12 +36,13 @@ def render_markdown_page(
     view_name: str,
     template_file: Path,
     request: Request,
-    ctx: RuntimeContext,  # We now pass the single aggregate object
+    templates_front: Jinja2Templates,
+    content_dir: Path,
     is_main: bool = False,
 ) -> HTMLResponse:
     start_time = time.time()
 
-    md, content_html = markdown_page(view_name, ctx)
+    md, content_html = markdown_page(view_name, content_dir)
 
     context = {
         "content": content_html,
@@ -51,7 +53,7 @@ def render_markdown_page(
         "elapsed_time_seconds": f"{time.time() - start_time:2.3f}",
     }
 
-    return ctx.templates_engine.TemplateResponse(
+    return templates_front.TemplateResponse(
         request=request,
         name=template_file,
         context=context,
