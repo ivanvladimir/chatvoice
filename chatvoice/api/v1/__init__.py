@@ -1,6 +1,5 @@
 from fastapi import APIRouter
 
-from .default import router as default_router
 from .health import router as health_router
 from .interface import router as interface_router
 from .login import router as login_router
@@ -19,7 +18,6 @@ router = APIRouter(prefix="/v1")
 router.include_router(health_router)
 router.include_router(login_router)
 router.include_router(ws_router)
-router.include_router(default_router)
 router.include_router(interface_router)
 router.include_router(project_router)
 # router.include_router(logout_router)

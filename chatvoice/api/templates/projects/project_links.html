@@ -68,7 +68,7 @@
         {% if projects %}
         <ul class="menu bg-base-200 rounded-box">
             {% for project in projects %}
-                {% include "projects/partials/project_link.html" %}
+                {% include "projects/project_link.html" %}
             {% endfor %}
         </ul>
 
@@ -130,7 +130,7 @@
 
         {% else %}
         {# ─── EMPTY STATE ─── #}
-        {% include "projects/partials/empty_state.html" %}
+        {% include "projects/empty_state.html" %}
         {% endif %}
     </section>
 </div>

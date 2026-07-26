@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 
-from ...core.dependencies.paths import RuntimeContext, get_project_context
+from ...core.dependencies.paths import RuntimeContext, get_default_context, get_project_context
 from ...utils.markdown import markdown_page, render_markdown_page
 
 router = APIRouter(tags=["main"])
@@ -9,10 +9,10 @@ router = APIRouter(tags=["main"])
 @router.get("/", response_class=HTMLResponse)
 async def main(
     request: Request,
-    ctx: RuntimeContext = Depends(get_project_context),  # Single injection
+    ctx: RuntimeContext = Depends(get_default_context),  # Single injection
 ) -> HTMLResponse:
     """Principal"""
-    md, notlogged_content = markdown_page("main_notlogged", ctx)
+    md, notlogged_content = markdown_page("main_notlogged", ctx.content_dir)
 
     context = {
         "notlogged_content": notlogged_content,

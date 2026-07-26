@@ -93,7 +93,7 @@
     {% if projects %}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {% for project in projects %}
-            {% include "projects/partials/project_card.html" %}
+            {% include "projects/project_card.html" %}
         {% endfor %}
     </div>
 
@@ -155,7 +155,7 @@
 
     {% else %}
     {# ─── EMPTY STATE ─── #}
-    {% include "projects/partials/empty_state.html" %}
+    {% include "projects/empty_state.html" %}
     {% endif %}
 
 </div>{# End of relative wrapper #}
