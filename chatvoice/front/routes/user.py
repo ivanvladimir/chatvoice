@@ -28,8 +28,6 @@ async def main(
     )
 
 
-
-
 @router.get("/chat/{script}", response_class=HTMLResponse)
 @router.get("/chat/{username}/{script}", response_class=HTMLResponse)
 async def chat(
