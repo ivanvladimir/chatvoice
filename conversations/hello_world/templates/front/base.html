@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Home{% endblock %} | Chatvoice</title>
+    <title>{% block title %}Home{% endblock %} | Hola mundo</title>
 
     <!-- Tailwind CSS + DaisyUI -->
     <link rel="stylesheet" href="{{ url_for('static', path='output.css') }}" />
@@ -37,38 +37,21 @@
                     </svg>
                 </div>
                 <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
-                    <li><a href="/">Home</a></li>
-                    <li><a href="/about">About</a></li>
-                    <li><a href="/contact">Contact</a></li>
-                    <!-- ─── EDITOR ONLY MENU ITEM ─── -->
-                    <template x-if="role === 'editor'">
-                        <li>
-                          <a href="{{url_for('projects_page')}}" class="font-medium">
-                                Proyectos
-                            </a>
-                        </li>
-                    </template>|
+                  <li><a href="{{url_for("page_project_", view="main", script=script) }}">Home</a></li>
+                  <li><a href="{{url_for("page_project_", view="about", script=script) }}">Acerca</a></li>
                 </ul>
             </div>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="40" height="40">
                 <path d="M 62 82 C 50 70, 42 58, 43 46 C 44 38, 51 32, 59 34 C 66 36, 70 43, 65 48 C 62 51, 57 50, 58 46"
                     fill="none" stroke="#000000" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
             </svg>
-            <a href="/" class="btn btn-ghost text-xl">Chatvoice</a>
+            <a href="{{url_for("page_project_", view="main", script=script) }}" class="btn btn-ghost text-xl">Hola mundo</a>
         </div>
 
         <div class="navbar-center hidden lg:flex">
             <ul class="menu menu-horizontal px-1">
-                <li><a href="/">Home</a></li>
-                <li><a href="/about">About</a></li>
-                <li><a href="/contact">Contact</a></li>
-                <template x-if="role === 'editor'">
-                      <li>
-                          <a href="{{url_for('projects_page')}}" class="font-medium">
-                              Proyectos
-                          </a>
-                      </li>
-                  </template>
+                <li><a href="{{url_for("page_project_", view="main", script=script) }}">Home</a></li>
+                <li><a href="{{url_for("page_project_", view="about", script=script) }}">Acerca</a></li>
             </ul>
         </div>
 

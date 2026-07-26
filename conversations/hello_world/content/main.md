@@ -2,4 +2,6 @@
 title: Principal
 ---
 
-# Hello world
+# Hola mundo
+
+Este es un pequeño ejemplo de como funciona Chatvoice

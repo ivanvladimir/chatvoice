@@ -38,13 +38,14 @@ def render_markdown_page(
     request: Request,
     templates_front: Jinja2Templates,
     content_dir: Path,
+    context:dict ={},
     is_main: bool = False,
 ) -> HTMLResponse:
     start_time = time.time()
 
     md, content_html = markdown_page(view_name, content_dir)
 
-    context = {
+    context_ = {
         "content": content_html,
         "metadata": md.Meta,
         "scope": "public",
@@ -52,9 +53,10 @@ def render_markdown_page(
         "active_menu": None if is_main else md.Meta.get("active_menu", [None])[0],
         "elapsed_time_seconds": f"{time.time() - start_time:2.3f}",
     }
+    context_.update(context)
 
     return templates_front.TemplateResponse(
         request=request,
         name=template_file,
-        context=context,
+        context=context_,
     )

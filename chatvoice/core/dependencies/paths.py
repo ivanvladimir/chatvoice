@@ -24,26 +24,33 @@ default_runtime_context = RuntimeContext(
         )
 
 
-@lru_cache(maxsize=None)
+#@lru_cache(maxsize=None)
 def _build_jinja(username: Path, project_name: str) -> RuntimeContext:
-    if not username or not project_name:
+    if not project_name:
         return default_runtime_context
-    directory = Path(settings.resolved_conversation_dir()) / username / projectname
+    if username:
+        directory = Path(settings.resolved_conversation_dir()) / username / project_name
+    else:
+        directory = Path(settings.resolved_conversation_dir()) / project_name
+
     config_path = directory / "config.toml"
     if config_path.exists():
-        with open(config_path, "rb") as f:  # must open in binary mode
-            data = tomllib.load(f)
+        try:
+            with open(config_path, "rb") as f:  # must open in binary mode
+                data = tomllib.load(f)
+        except tomllib.TOMLDecodeError:
+            return default_runtime_context
         return RuntimeContext(
             root = directory,
-            content_dir = directory / data['content'],
-            templates_front = Jinja2Templates(directory / data['templates_front']),
-            templates_api = Jinja2Templates(directory / data['templates_api'])
+            content_dir = directory / data.get('content_dir', settings.CONTENT_DIR_PATH),
+            templates_front = Jinja2Templates(directory / data.get("templates_front", settings.TEMPLATES_FRONT_PATH)),
+            templates_api = Jinja2Templates(directory / data.get("templates_api", settings.TEMPLATES_API_PATH))
         )
     else:
         return default_runtime_context
      
-def get_project_context(username: str = None, project_name: str = None) -> RuntimeContext:
-    return _build_jinja(username, project_name)
+def get_project_context(username: str = None, script: str = None) -> RuntimeContext:
+    return _build_jinja(username, project_name=script)
 
 def get_default_context() -> RuntimeContext:
     return default_runtime_context

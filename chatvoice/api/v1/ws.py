@@ -42,10 +42,7 @@ async def establish_ws_session(
     username: str = None,
 ):
     # Validate script exists to fail fast
-    if username:
-        script_path = ctx.root / username / script
-    else:
-        script_path = ctx.root / script
+    script_path = ctx.root
 
     if not script_path.exists():
         raise HTTPException(status_code=404, detail=f"Script '{script}' not found")

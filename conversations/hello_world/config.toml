@@ -1,0 +1,3 @@
+templates_front="templates/front"
+templates_api="templates/api"
+content_dir="content"

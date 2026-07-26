@@ -15,13 +15,14 @@ async def page(
     """Páginas de contenido"""
     return render_markdown_page(view, "public/page.html", request, ctx.templates_front, ctx.content_dir)
 
-@router.get("/page/{username}/{script}/{view}", response_class=HTMLResponse)
-async def page(
+@router.get("/page/{script}/{view}", response_class=HTMLResponse, name="page_project_")
+@router.get("/page/{username}/{script}/{view}", response_class=HTMLResponse, name="page_project")
+async def page_project(
     view: str,
-    username: str,
     script: str,
     request: Request,
     ctx: RuntimeContext = Depends(get_project_context),  # Single injection
+    username: str = None,
 ) -> HTMLResponse:
     """Páginas de contenido"""
-    return render_markdown_page(view, "public/page.html", request, ctx.templates_front, ctx.content_dir)
+    return render_markdown_page(view, "public/page.html", request, ctx.templates_front, ctx.content_dir, context={"username":username, 'script':script})
