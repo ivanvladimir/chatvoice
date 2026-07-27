@@ -1,23 +1,22 @@
 import io
+import math
 import re
 import unicodedata
 import zipfile
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
-import math
 
 from fastapi import (
     APIRouter,
     Depends,
     Form,
     HTTPException,
-    Query,
     Request,
     Response,
     UploadFile,
 )
-from fastapi import Form, File as FileForm
+from fastapi import File as FileForm
 from fastapi.responses import (
     FileResponse,
     HTMLResponse,
@@ -31,8 +30,13 @@ from ...core.db.database import async_get_db
 from ...core.dependencies.paths import RuntimeContext, get_default_context
 from ...crud.projects import crud_projects
 from ...models.user import User
+from ...schemas.project import (
+    ProjectCreate,
+    ProjectCreateInternal,
+    ProjectListItem,
+    ProjectUpdateInternal,
+)
 from ...schemas.user import UserBrief
-from ...schemas.project import ProjectCreate, ProjectCreateInternal, ProjectUpdate, ProjectUpdateInternal, ProjectRead, ProjectListItem
 from ...utils.project import (
     create_project_directory,
     list_project_files,
@@ -326,8 +330,7 @@ async def list_project_files_htmx(
 
 
 @router.post(
-    "/{project_id}/files/{filename:path}/editor-htmx",
-    response_class=HTMLResponse
+    "/{project_id}/files/{filename:path}/editor-htmx", response_class=HTMLResponse
 )
 async def get_file_editor_htmx(
     request: Request,
@@ -428,6 +431,7 @@ async def get_create_form(
         },
     )
 
+
 @router.post("/links", response_class=HTMLResponse)
 async def project_links_htmx(
     request: Request,
@@ -452,23 +456,25 @@ async def project_links_htmx(
     # You probably want: name__ilike=f"%{search}%" if search else None
     projects_result = await crud_projects.get_multi_joined(
         db,
-        offset=(page-1)*items_per_page,
-        limit=(page)*items_per_page,
+        offset=(page - 1) * items_per_page,
+        limit=(page) * items_per_page,
         sort_columns=[sort_columns[sort_by]],
         sort_orders=[sort_order],
         schema_to_select=ProjectListItem,
         join_model=User,
-        join_prefix="owner_",                    # or see nested option below
+        join_prefix="owner_",  # or see nested option below
         join_schema_to_select=UserBrief,
         is_deleted=False,
         is_active=True,
-        _or ={
-            "name__ilike":f"%{search}%",
-            "description__ilike":f"%{search}%",
-        } if search else {}
+        _or={
+            "name__ilike": f"%{search}%",
+            "description__ilike": f"%{search}%",
+        }
+        if search
+        else {},
     )
 
-    projects = [p for p in projects_result.get("data", []) if not p['owner_is_deleted']]
+    projects = [p for p in projects_result.get("data", []) if not p["owner_is_deleted"]]
     total_count = projects_result.get("total_count", 0)
 
     # Fixed math to return an integer instead of a float (e.g., 5 instead of 5.0)
@@ -489,6 +495,7 @@ async def project_links_htmx(
             "sort_order": sort_order,
         },
     )
+
 
 @router.post("/list", response_class=HTMLResponse)
 async def projects_list_htmx(
@@ -515,15 +522,17 @@ async def projects_list_htmx(
     projects_result = await crud_projects.get_multi(
         db,
         is_deleted=False,
-        offset=(page-1)*items_per_page,
-        limit=(page)*items_per_page,
+        offset=(page - 1) * items_per_page,
+        limit=(page) * items_per_page,
         sort_columns=[sort_columns[sort_by]],
         sort_orders=[sort_order],
         owner_id=current_user["id"],
-        _or ={
-            "name__ilike":f"%{search}%",
-            "description__ilike":f"%{search}%",
-        } if search else {}
+        _or={
+            "name__ilike": f"%{search}%",
+            "description__ilike": f"%{search}%",
+        }
+        if search
+        else {},
     )
 
     projects = projects_result.get("data", [])
@@ -547,8 +556,6 @@ async def projects_list_htmx(
             "sort_order": sort_order,
         },
     )
-
-
 
 
 def normalize_project_name(name: str, max_length: int = 100) -> str:
@@ -714,7 +721,7 @@ async def toggle_project_active_htmx(
 
     project = await crud_projects.get(db, id=project_id, is_deleted=False)
 
-    if not project or project['owner_id'] != current_user['id']:
+    if not project or project["owner_id"] != current_user["id"]:
         return HTMLResponse(
             content='<div class="alert alert-error"><span>Proyecto no encontrado</span></div>',
             status_code=404,
@@ -722,7 +729,9 @@ async def toggle_project_active_htmx(
 
     await crud_projects.update(
         db,
-        object=ProjectUpdateInternal(**{"is_active": not project['is_active'],"id":project['id']})
+        object=ProjectUpdateInternal(
+            **{"is_active": not project["is_active"], "id": project["id"]}
+        ),
     )
 
     response = Response(status_code=204)

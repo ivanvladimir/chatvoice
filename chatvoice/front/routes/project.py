@@ -10,6 +10,7 @@ from ...crud.projects import crud_projects
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
+
 @router.get("/{project_id}/files", response_class=HTMLResponse)
 async def show_list_project_files(
     request: Request,

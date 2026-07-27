@@ -4,8 +4,10 @@ from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
+
 from ..models.user import User
 from .user import UserBrief
+
 
 class ProjectPermission(str, Enum):
     VIEW = "view"
@@ -70,6 +72,7 @@ class ProjectBase(BaseModel):
     description: str | None = Field(
         default=None, description="Optional project description"
     )
+
 
 class ProjectCreate(ProjectBase):
     """Schema for creating a new project."""

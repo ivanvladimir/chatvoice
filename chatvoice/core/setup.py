@@ -30,9 +30,9 @@ from .config import (
     ClientSideCacheSettings,
     CORSSettings,
     DatabaseSettings,
-    PathSettings,
     EnvironmentOption,
     EnvironmentSettings,
+    PathSettings,
 )
 from .db import Base
 from .db.database import async_engine as engine
@@ -241,7 +241,7 @@ def create_application(
     application.include_router(api_router)
     application.include_router(front_router)
     if isinstance(settings, PathSettings):
-        application.mount('/static', static_files, name="static")
+        application.mount("/static", static_files, name="static")
 
     if isinstance(settings, ClientSideCacheSettings):
         application.add_middleware(

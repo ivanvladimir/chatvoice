@@ -1,12 +1,12 @@
 import shutil
 from pathlib import Path
-from dataclasses import dataclass
-from pathlib import Path
+
 from ..core.config import get_settings
 
 ALLOWED_EXTENSIONS = {".yaml", ".yml", ".html", ".md", ".txt"}
 
 settings = get_settings()
+
 
 def create_project_directory(
     username: str,
@@ -127,5 +127,3 @@ def list_project_files(
             )
 
     return files
-
-

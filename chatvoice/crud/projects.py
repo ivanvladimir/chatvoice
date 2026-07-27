@@ -4,8 +4,6 @@ from ..models.project import Project
 from ..schemas.project import (
     ProjectCreateInternal,
     ProjectDelete,
-    ProjectRead,
-    ProjectDetail,
     ProjectListItem,
     ProjectUpdate,
     ProjectUpdateInternal,

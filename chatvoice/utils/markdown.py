@@ -6,8 +6,6 @@ from fastapi import HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from ..core.dependencies.paths import RuntimeContext
-
 
 def markdown_page(
     view_name: str,
@@ -38,7 +36,7 @@ def render_markdown_page(
     request: Request,
     templates_front: Jinja2Templates,
     content_dir: Path,
-    context:dict ={},
+    context: dict = {},
     is_main: bool = False,
 ) -> HTMLResponse:
     start_time = time.time()

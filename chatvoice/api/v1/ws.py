@@ -2,7 +2,6 @@ import asyncio
 import json
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
-from pathlib import Path
 from typing import Annotated
 
 import markdown
@@ -18,10 +17,10 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse
 
+from ...core.dependencies.paths import RuntimeContext, get_project_context
 from ...core.interpreter import Interpreter
 from ...core.logger import get_logger
 from ...core.security import TokenType, create_ws_session_token, decode_ws_token
-from ...core.dependencies.paths import RuntimeContext, get_project_context
 from ...sessions.session import ChatSession
 from ...transport.ws import WS
 from ..dependencies import get_current_user, get_session_transport, get_ws_session
@@ -42,12 +41,12 @@ async def establish_ws_session(
     username: str = None,
 ):
     # Validate script exists to fail fast
-    if ctx.default :
+    if ctx.default:
         if username:
             script_path = ctx.root / username / script
         else:
             script_path = ctx.root / script
-    else: 
+    else:
         script_path = ctx.root
 
     if not script_path.exists():

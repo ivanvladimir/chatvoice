@@ -12,6 +12,7 @@ config = Config(env_path)
 
 APP_ROOT = Path(__file__).resolve().parent.parent
 
+
 class AppSettings:
     APP_NAME: str = "Chatvoice"
     APP_DESCRIPTION: str | None = None
@@ -111,13 +112,14 @@ class EnvironmentOption(str, Enum):
     STAGING = "staging"
     PRODUCTION = "production"
 
+
 class PathSettings(BaseSettings):
     CONVERSATIONS_DIR_PATH: Path = "conversations"
     APP_ROOT_PATH: Path = APP_ROOT
-    CONTENT_DIR_PATH: Path = APP_ROOT /  'content'
-    STATIC_DIR_PATH: Path = APP_ROOT / 'static'
-    TEMPLATES_FRONT_PATH: Path = APP_ROOT / 'front' / 'templates'
-    TEMPLATES_API_PATH: Path = APP_ROOT / 'api' / 'templates'
+    CONTENT_DIR_PATH: Path = APP_ROOT / "content"
+    STATIC_DIR_PATH: Path = APP_ROOT / "static"
+    TEMPLATES_FRONT_PATH: Path = APP_ROOT / "front" / "templates"
+    TEMPLATES_API_PATH: Path = APP_ROOT / "api" / "templates"
 
     def resolved_conversation_dir(self) -> Path:
         p = Path(self.CONVERSATIONS_DIR_PATH)

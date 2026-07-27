@@ -21,6 +21,7 @@ class UserBase(BaseModel):
     description: Annotated[str | None, Field(default=None)]
     is_verified: bool = False
 
+
 class UserBrief(BaseModel):
     is_deleted: bool = False
     name: Annotated[str, Field(min_length=2, max_length=30, examples=["User Userson"])]
@@ -31,6 +32,7 @@ class UserBrief(BaseModel):
         ),
     ]
     is_verified: bool = False
+
 
 class User(TimestampSchema, UserBase, UUIDSchema, PersistentDeletion):
     profile_image_url: Annotated[str | None, Field(default=None)]
