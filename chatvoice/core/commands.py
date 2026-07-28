@@ -1,6 +1,6 @@
 import logging
 import random
-from typing import Any, Generator
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 from simpleeval import InvalidExpression, NameNotDefined, simple_eval
 
@@ -13,33 +13,59 @@ log = logging.getLogger(__name__)
 
 class CommandError(Exception):
     """Raised when a command fails execution."""
-
     pass
 
 
 class ExecutionState:
     """Mutable container for the current execution flow."""
-
-    def __init__(self, conversation, commands):
-        self.stack = []
+    
+    def __init__(self, conversation: Conversation, commands: List[str]):
+        """
+        Initialize the execution state.
+        
+        Args:
+            conversation: The current conversation object
+            commands: List of commands to execute
+        """
+        self.stack: List[Tuple] = []
         self.conversation = conversation
         self.commands = commands
 
 
 def cmd_solve(
-    args: list, ctx: dict, evaluator: "ExpressionEvaluator", callback: callable
-) -> Generator[dict, Any, dict]:
+    args: List[str], 
+    ctx: Dict[str, Any], 
+    evaluator: ExpressionEvaluator, 
+    callback: callable
+) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
     """
     Jumps into a sub-conversation or a strategy.
+    
     Modifies the ExecutionState to push the current context onto the stack.
+    
+    Args:
+        args: Command arguments, expected: [strategy_name]
+        ctx: Execution context containing 'state' with ExecutionState
+        evaluator: Expression evaluator for variable resolution
+        callback: Callback function for user interaction
+        
+    Returns:
+        Generator yielding command status dictionaries
+        
+    Raises:
+        CommandError: If strategy_name is missing or unknown
     """
+    # Validate arguments
     if not args:
         raise CommandError("Solve command requires a strategy or conversation name.")
-
+    
+    if len(args) > 1:
+        log.warning(f"cmd_solve expects 1 argument, but received {len(args)}. Extra arguments will be ignored.")
+    
     strategy_name = args[0]
 
     # Extract what we need from ctx
-    state: "ExecutionState" = ctx["state"]  # Our mutable state object
+    state: ExecutionState = ctx["state"]  # Our mutable state object
     strategies = state.conversation.strategies
     conversations = state.conversation.conversations
 
@@ -64,35 +90,49 @@ def cmd_solve(
         state.commands = list(strategies[strategy_name])
 
     # 3. Return status (yielded as the final value of the generator)
-    yield from ()  # Yield once to maintain the Generator pattern, even if no output is sent to user
+    yield from ()  # Yield once to maintain the Generator pattern
     return {"command": "solve", "ok": True}
 
 
 def cmd_return(
-    args: list, ctx: dict, evaluator: "ExpressionEvaluator", callback: callable
-) -> Generator[dict, Any, dict]:
+    args: List[str], 
+    ctx: Dict[str, Any], 
+    evaluator: ExpressionEvaluator, 
+    callback: callable
+) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
     """
     Saves a variable from the current slots into the conversation's 'return'
     dictionary so it can be passed back to the parent caller.
+    
+    Args:
+        args: Command arguments, expected: [slot_name]
+        ctx: Execution context containing 'state' with ExecutionState
+        evaluator: Expression evaluator for variable resolution
+        callback: Callback function for user interaction
+        
+    Returns:
+        Generator yielding command status dictionaries
     """
+    # Validate arguments
     if not args:
-        yield from ()  # Maintain generator pattern
+        yield from ()
         return {"command": "return", "ok": False, "error": "Missing slot name"}
+    
+    if len(args) > 1:
+        log.warning(f"cmd_return expects 1 argument, but received {len(args)}. Extra arguments will be ignored.")
 
     slot_name = args[0]
 
     # 1. Check if the variable exists in the evaluator's slots
     if slot_name not in evaluator.slots:
         yield from ()
-        # Note: In your original code, ok=False triggers the interpreter to stop.
-        # If you prefer it to just silently fail without stopping, change ok to True.
+        # Note: ok=False triggers the interpreter to stop
         return {"command": "return", "value": slot_name, "ok": False}
 
     # 2. Get the value
     value = evaluator.slots[slot_name]
 
     # 3. Mutate the conversation state via the ctx dictionary
-    # state.conversation points to the active Conversation object
     ctx["state"].conversation.return_[slot_name] = value
 
     # 4. Yield to maintain generator protocol, then return the status
@@ -106,14 +146,30 @@ def cmd_return(
 
 
 def cmd_llm(
-    args: list, ctx: dict, evaluator: "ExpressionEvaluator", callback: callable
-) -> Generator[dict, Any, dict]:
+    args: List[str], 
+    ctx: Dict[str, Any], 
+    evaluator: ExpressionEvaluator, 
+    callback: callable
+) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
     """
     Resolves a prompt, sends it to the LLM client, and optionally saves the response to a slot.
+    
+    Args:
+        args: Command arguments, expected: [prompt_key_or_text] or [prompt_key_or_text, variable_name]
+        ctx: Execution context containing 'prompts', 'llm_client'
+        evaluator: Expression evaluator for variable resolution
+        callback: Callback function for user interaction
+        
+    Returns:
+        Generator yielding command status dictionaries
     """
+    # Validate arguments
     if not args:
         yield from ()
         return {"command": "llm", "ok": False, "error": "Missing prompt key or text"}
+    
+    if len(args) > 2:
+        log.warning(f"cmd_llm expects 1-2 arguments, but received {len(args)}. Extra arguments will be ignored.")
 
     key = args[0]
     prompts = ctx.get("prompts", {})
@@ -158,8 +214,7 @@ def cmd_llm(
         variable = args[1]
 
         # CRITICAL: Use update_slots() so the evaluator rebuilds its internal
-        # simpleeval context. If you just do `evaluator.slots[var] = response`,
-        # the next simpleeval call won't know about this new variable!
+        # simpleeval context.
         evaluator.update_slots({variable: response})
 
         yield {"cmd": "llm", "args": [response]}
@@ -172,9 +227,33 @@ def cmd_llm(
 
 
 def cmd_say(
-    args, context: dict, evaluator: ExpressionEvaluator, callback
-) -> Generator[dict, Any, None]:
+    args: List[str], 
+    context: Dict[str, Any], 
+    evaluator: ExpressionEvaluator, 
+    callback: callable
+) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
+    """
+    Outputs text to the user, either from a template or directly.
+    
+    Args:
+        args: Command arguments, expected: [template_key] or [text]
+        context: Execution context containing 'templates', 'is_continuation', 'prev_status'
+        evaluator: Expression evaluator for variable resolution
+        callback: Callback function for user interaction
+        
+    Returns:
+        Generator yielding command status dictionaries
+    """
     texts = None
+    
+    # Validate arguments
+    if not args and not context.get("is_continuation"):
+        yield from ()
+        return {"command": "say", "ok": False, "error": "Missing template key or text"}
+    
+    if len(args) > 1:
+        log.warning(f"cmd_say expects 0-1 arguments, but received {len(args)}. Extra arguments will be ignored.")
+
     if len(args) == 0 and context["is_continuation"]:
         texts = context["prev_status"]["value"]
     elif len(args) == 1:
@@ -183,13 +262,39 @@ def cmd_say(
             texts = resolve_template(key, context, evaluator)
         else:
             texts = [key.format_map(evaluator.slots)]
+    
     yield {"cmd": "say", "args": texts}
     return {"command": "say", "value": texts, "ok": True}
 
 
 def cmd_listen(
-    args, context: dict, evaluator: ExpressionEvaluator, callback
-) -> Generator[dict, Any, None]:
+    args: List[str], 
+    context: Dict[str, Any], 
+    evaluator: ExpressionEvaluator, 
+    callback: callable
+) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
+    """
+    Listens for user input and stores it in a variable.
+    
+    Args:
+        args: Command arguments, expected: [variable_name]
+        context: Execution context
+        evaluator: Expression evaluator for variable resolution
+        callback: Callback function for user interaction
+        
+    Returns:
+        Generator yielding command status dictionaries
+        
+    Raises:
+        CommandError: If variable name is missing
+    """
+    # Validate arguments
+    if not args:
+        raise CommandError("Listen command requires a variable name.")
+    
+    if len(args) > 1:
+        log.warning(f"cmd_listen expects 1 argument, but received {len(args)}. Extra arguments will be ignored.")
+
     variable = str(args[0])
     yield {"cmd": "listen"}
     user_input = callback()
@@ -203,16 +308,35 @@ def cmd_listen(
 
 
 def cmd_set(
-    args, context: dict, evaluator: ExpressionEvaluator, callback
-) -> Generator[dict, Any, None]:
+    args: List[str], 
+    context: Dict[str, Any], 
+    evaluator: ExpressionEvaluator, 
+    callback: callable
+) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
+    """
+    Sets a variable to a specific value.
+    
+    Args:
+        args: Command arguments, expected: [variable_name] or [variable_name, value...]
+        context: Execution context containing 'is_continuation', 'prev_status'
+        evaluator: Expression evaluator for variable resolution
+        callback: Callback function for user interaction
+        
+    Returns:
+        Generator yielding command status dictionaries
+    """
+    # Validate arguments
     if not args:
         yield from ()
-        return {"command": "set", "ok": False}
+        return {"command": "set", "ok": False, "error": "Missing variable name"}
 
     variable = str(args[0])
     if len(args) == 1 and context["is_continuation"]:
         value = context["prev_status"].get("value")
     else:
+        if len(args) < 2:
+            yield from ()
+            return {"command": "set", "ok": False, "error": "Missing value for variable"}
         value = args[1:]
 
     evaluator.slots[variable] = value
@@ -221,11 +345,27 @@ def cmd_set(
 
 
 def cmd_exec(
-    args: list, ctx: dict, evaluator: "ExpressionEvaluator", callback: callable
-) -> Generator[dict, Any, dict]:
+    args: List[str], 
+    ctx: Dict[str, Any], 
+    evaluator: ExpressionEvaluator, 
+    callback: callable
+) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
     """
     Evaluates arguments safely, finds a restricted function, and executes it.
+    
+    Args:
+        args: Command arguments, expected: [function_name, arg1, arg2, ...]
+        ctx: Execution context containing 'is_continuation', 'prev_status'
+        evaluator: Expression evaluator for variable resolution
+        callback: Callback function for user interaction
+        
+    Returns:
+        Generator yielding command status dictionaries
+        
+    Raises:
+        CommandError: If function name is missing, undefined, or execution fails
     """
+    # Validate arguments
     if not args:
         yield from ()
         return {"command": "exec", "ok": False, "error": "Missing function name"}
@@ -233,15 +373,12 @@ def cmd_exec(
     func_name = args[0]
 
     # 1. Evaluate the arguments passed to the function
-    # The evaluator automatically has access to both slots and _restricted_locals!
     try:
         evaluated_args = [evaluator.eval_expression(arg) for arg in args[1:]]
     except Exception as e:
-        # Raising CommandError automatically tells the Interpreter to halt
         raise CommandError(f"Exec argument evaluation failed for '{func_name}': {e}")
 
     # 2. Handle 'continuation' (piping the previous command's output into this one)
-    # The Interpreter will inject 'is_continuation' and 'prev_status' into ctx
     if ctx.get("is_continuation"):
         prev_value = ctx.get("prev_status", {}).get("value")
         evaluated_args.append(prev_value)
@@ -253,7 +390,6 @@ def cmd_exec(
     # 4. Execute the restricted function safely
     try:
         output = evaluator.context[func_name](*evaluated_args)
-
         yield from ()  # Maintain generator protocol
         return {"command": "exec", "value": output, "ok": True}
     except Exception as e:
@@ -261,10 +397,25 @@ def cmd_exec(
 
 
 def cmd_remember(
-    args: list, ctx: dict, evaluator: "ExpressionEvaluator", callback: callable
-) -> Generator[dict, Any, dict]:
+    args: List[str], 
+    ctx: Dict[str, Any], 
+    evaluator: ExpressionEvaluator, 
+    callback: callable
+) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
     """
     Saves a variable to memory (slots) and persists it to the database via the MemoryStore.
+    
+    Args:
+        args: Command arguments, expected: [variable_name, value] or [variable_name] (with continuation)
+        ctx: Execution context containing 'is_continuation', 'prev_status', 'memory_store'
+        evaluator: Expression evaluator for variable resolution
+        callback: Callback function for user interaction
+        
+    Returns:
+        Generator yielding command status dictionaries
+        
+    Raises:
+        CommandError: If variable or value is missing, or database operation fails
     """
     is_continuation = ctx.get("is_continuation")
     prev_status = ctx.get("prev_status", {})
@@ -307,7 +458,6 @@ def cmd_remember(
             value=value,
         )
     except Exception as e:
-        # Let the interpreter catch this and halt execution gracefully
         raise CommandError(f"Database remember failed for '{variable}': {e}")
 
     yield from ()
@@ -315,68 +465,105 @@ def cmd_remember(
 
 
 def cmd_info(
-    args: list, ctx: dict, evaluator: "ExpressionEvaluator", callback: callable
-) -> Generator[dict, Any, dict]:
+    args: List[str], 
+    ctx: Dict[str, Any], 
+    evaluator: ExpressionEvaluator, 
+    callback: callable
+) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
     """
     Formats and yields requested diagnostic information (slots, name, status).
+    
+    Args:
+        args: Command arguments, expected: [info_type1, info_type2, ...]
+               Valid info_types: "slots", "name", "strategies", "status"
+        ctx: Execution context containing 'state', 'prev_status'
+        evaluator: Expression evaluator for variable resolution
+        callback: Callback function for user interaction
+        
+    Returns:
+        Generator yielding command status dictionaries
     """
     info_data = []
+    
+    # Validate arguments
+    if not args:
+        yield from ()
+        return {"command": "info", "ok": False, "error": "Missing info type(s)"}
 
-    # Iterate through requested info types, cleaning up strings (e.g. handling "slots,name")
+    # Iterate through requested info types
     for raw_type in args:
         info_type = str(raw_type).replace(",", "")
 
         if info_type == "slots":
-            # Get the current, up-to-date slots directly from the evaluator
             info_data.append(("slots", evaluator.slots))
-
         elif info_type == "name":
-            # Fallback to 'unknown' if the interpreter forgot to pass the name in ctx
             state = ctx.get("state")
-            info_data.append(("name", state.conversation.name))
-
+            info_data.append(("name", state.conversation.name if state else "unknown"))
         elif info_type == "strategies":
-            # Fallback to 'unknown' if the interpreter forgot to pass the name in ctx
             state = ctx.get("state")
-            info_data.append(("strategies", list(state.conversation.strategies.keys())))
-
+            info_data.append(("strategies", list(state.conversation.strategies.keys()) if state else []))
         elif info_type == "status":
-            # Grab the previous command's status from the context payload
             info_data.append(("status", ctx.get("prev_status", {})))
+        else:
+            log.warning(f"Unknown info type requested: {info_type}")
 
-    # Yield the actual payload to the UI/callback stream FIRST
+    # Yield the actual payload to the UI/callback stream
     yield {"cmd": "info", "args": info_data}
 
-    # Return the internal status tracker SECOND
+    # Return the internal status tracker
     return {
         "command": "info",
         "value": info_data[-1] if info_data else [],
-        "ok": bool(info_data),  # False if no valid args were passed
+        "ok": bool(info_data),
     }
 
 
 def cmd_tag(
-    args: list, ctx: dict, evaluator: "ExpressionEvaluator", callback: callable
-) -> Generator[dict, Any, dict]:
+    args: List[str], 
+    ctx: Dict[str, Any], 
+    evaluator: ExpressionEvaluator, 
+    callback: callable
+) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
     """
-    Adds a tag to the conversation flow intended to analyse segments of the converstions
+    Adds a tag to the conversation flow intended to analyze segments of the conversations.
+    
+    Args:
+        args: Command arguments, expected: [tag1, tag2, ...]
+        ctx: Execution context
+        evaluator: Expression evaluator for variable resolution
+        callback: Callback function for user interaction
+        
+    Returns:
+        Generator yielding command status dictionaries
     """
+    # Validate arguments
     if not args:
         yield from ()
-        return {"command": "tag", "ok": False, "error": "Missing arguments"}
+        return {"command": "tag", "ok": False, "error": "Missing tag(s)"}
 
-    # Yield the actual payload to the UI/callback stream FIRST
+    # Yield the actual payload to the UI/callback stream
     yield {"cmd": "tag", "args": args}
 
-    # Return the internal status tracker SECOND
+    # Return the internal status tracker
     return {
         "command": "tag",
         "value": args[-1],
-        "ok": True,  # False if no valid args were passed
+        "ok": True,
     }
 
 
-def resolve_template(name: str, ctx: dict, evaluator: "ExpressionEvaluator"):
+def resolve_template(name: str, ctx: Dict[str, Any], evaluator: ExpressionEvaluator) -> List[str]:
+    """
+    Resolves a template by name and returns a list of formatted strings.
+    
+    Args:
+        name: Template name to resolve
+        ctx: Execution context containing 'templates'
+        evaluator: Expression evaluator for variable resolution
+        
+    Returns:
+        List of formatted strings from the template
+    """
     t = ctx["templates"][name]
 
     try:
@@ -405,3 +592,4 @@ def resolve_template(name: str, ctx: dict, evaluator: "ExpressionEvaluator"):
     except (NameNotDefined, InvalidExpression, KeyError) as e:
         log.error(f"Failed to resolve template {name}: {e}")
         return [f"[Error resolving template {name}]"]
+

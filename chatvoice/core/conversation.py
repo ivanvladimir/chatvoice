@@ -168,3 +168,4 @@ class Conversation:
     def load_settings(self, settings_: dict):
         self.settings = {"_name_user": "USER", "_name_system": "SYSTEM"}
         self.settings.update(settings_)
+
