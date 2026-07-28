@@ -1,10 +1,9 @@
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
 
 from alembic import context
-from chatvoice.core.config import settings, DatabaseOption
+from chatvoice.core.config import DatabaseOption, settings
 from chatvoice.core.db import Base
 
 # this is the Alembic Config object, which provides
@@ -30,7 +29,7 @@ target_metadata = Base.metadata
 if settings.DATABASE == DatabaseOption.SQLITE:
     DATABASE_URI = settings.SQLITE_URI
     DATABASE_PREFIX = settings.SQLITE_SYNC_PREFIX
-elif settings.DATABASE ==  DatabaseOption.MYSQL:
+elif settings.DATABASE == DatabaseOption.MYSQL:
     DATABASE_URI = settings.MYSQL_URI
     DATABASE_PREFIX = settings.MYSQL_SYNC_PREFIX
 elif settings.DATABASE == DatabaseOption.POSTGRES:
@@ -39,6 +38,7 @@ elif settings.DATABASE == DatabaseOption.POSTGRES:
 DATABASE_URL = f"{DATABASE_PREFIX}{DATABASE_URI}"
 
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -78,9 +78,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

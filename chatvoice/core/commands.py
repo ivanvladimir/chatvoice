@@ -1,6 +1,6 @@
 import logging
 import random
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, List, Tuple
 
 from simpleeval import InvalidExpression, NameNotDefined, simple_eval
 
@@ -13,16 +13,17 @@ log = logging.getLogger(__name__)
 
 class CommandError(Exception):
     """Raised when a command fails execution."""
+
     pass
 
 
 class ExecutionState:
     """Mutable container for the current execution flow."""
-    
+
     def __init__(self, conversation: Conversation, commands: List[str]):
         """
         Initialize the execution state.
-        
+
         Args:
             conversation: The current conversation object
             commands: List of commands to execute
@@ -33,35 +34,37 @@ class ExecutionState:
 
 
 def cmd_solve(
-    args: List[str], 
-    ctx: Dict[str, Any], 
-    evaluator: ExpressionEvaluator, 
-    callback: callable
+    args: List[str],
+    ctx: Dict[str, Any],
+    evaluator: ExpressionEvaluator,
+    callback: callable,
 ) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
     """
     Jumps into a sub-conversation or a strategy.
-    
+
     Modifies the ExecutionState to push the current context onto the stack.
-    
+
     Args:
         args: Command arguments, expected: [strategy_name]
         ctx: Execution context containing 'state' with ExecutionState
         evaluator: Expression evaluator for variable resolution
         callback: Callback function for user interaction
-        
+
     Returns:
         Generator yielding command status dictionaries
-        
+
     Raises:
         CommandError: If strategy_name is missing or unknown
     """
     # Validate arguments
     if not args:
         raise CommandError("Solve command requires a strategy or conversation name.")
-    
+
     if len(args) > 1:
-        log.warning(f"cmd_solve expects 1 argument, but received {len(args)}. Extra arguments will be ignored.")
-    
+        log.warning(
+            f"cmd_solve expects 1 argument, but received {len(args)}. Extra arguments will be ignored."
+        )
+
     strategy_name = args[0]
 
     # Extract what we need from ctx
@@ -95,21 +98,21 @@ def cmd_solve(
 
 
 def cmd_return(
-    args: List[str], 
-    ctx: Dict[str, Any], 
-    evaluator: ExpressionEvaluator, 
-    callback: callable
+    args: List[str],
+    ctx: Dict[str, Any],
+    evaluator: ExpressionEvaluator,
+    callback: callable,
 ) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
     """
     Saves a variable from the current slots into the conversation's 'return'
     dictionary so it can be passed back to the parent caller.
-    
+
     Args:
         args: Command arguments, expected: [slot_name]
         ctx: Execution context containing 'state' with ExecutionState
         evaluator: Expression evaluator for variable resolution
         callback: Callback function for user interaction
-        
+
     Returns:
         Generator yielding command status dictionaries
     """
@@ -117,9 +120,11 @@ def cmd_return(
     if not args:
         yield from ()
         return {"command": "return", "ok": False, "error": "Missing slot name"}
-    
+
     if len(args) > 1:
-        log.warning(f"cmd_return expects 1 argument, but received {len(args)}. Extra arguments will be ignored.")
+        log.warning(
+            f"cmd_return expects 1 argument, but received {len(args)}. Extra arguments will be ignored."
+        )
 
     slot_name = args[0]
 
@@ -146,20 +151,20 @@ def cmd_return(
 
 
 def cmd_llm(
-    args: List[str], 
-    ctx: Dict[str, Any], 
-    evaluator: ExpressionEvaluator, 
-    callback: callable
+    args: List[str],
+    ctx: Dict[str, Any],
+    evaluator: ExpressionEvaluator,
+    callback: callable,
 ) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
     """
     Resolves a prompt, sends it to the LLM client, and optionally saves the response to a slot.
-    
+
     Args:
         args: Command arguments, expected: [prompt_key_or_text] or [prompt_key_or_text, variable_name]
         ctx: Execution context containing 'prompts', 'llm_client'
         evaluator: Expression evaluator for variable resolution
         callback: Callback function for user interaction
-        
+
     Returns:
         Generator yielding command status dictionaries
     """
@@ -167,9 +172,11 @@ def cmd_llm(
     if not args:
         yield from ()
         return {"command": "llm", "ok": False, "error": "Missing prompt key or text"}
-    
+
     if len(args) > 2:
-        log.warning(f"cmd_llm expects 1-2 arguments, but received {len(args)}. Extra arguments will be ignored.")
+        log.warning(
+            f"cmd_llm expects 1-2 arguments, but received {len(args)}. Extra arguments will be ignored."
+        )
 
     key = args[0]
     prompts = ctx.get("prompts", {})
@@ -227,32 +234,34 @@ def cmd_llm(
 
 
 def cmd_say(
-    args: List[str], 
-    context: Dict[str, Any], 
-    evaluator: ExpressionEvaluator, 
-    callback: callable
+    args: List[str],
+    context: Dict[str, Any],
+    evaluator: ExpressionEvaluator,
+    callback: callable,
 ) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
     """
     Outputs text to the user, either from a template or directly.
-    
+
     Args:
         args: Command arguments, expected: [template_key] or [text]
         context: Execution context containing 'templates', 'is_continuation', 'prev_status'
         evaluator: Expression evaluator for variable resolution
         callback: Callback function for user interaction
-        
+
     Returns:
         Generator yielding command status dictionaries
     """
     texts = None
-    
+
     # Validate arguments
     if not args and not context.get("is_continuation"):
         yield from ()
         return {"command": "say", "ok": False, "error": "Missing template key or text"}
-    
+
     if len(args) > 1:
-        log.warning(f"cmd_say expects 0-1 arguments, but received {len(args)}. Extra arguments will be ignored.")
+        log.warning(
+            f"cmd_say expects 0-1 arguments, but received {len(args)}. Extra arguments will be ignored."
+        )
 
     if len(args) == 0 and context["is_continuation"]:
         texts = context["prev_status"]["value"]
@@ -262,38 +271,40 @@ def cmd_say(
             texts = resolve_template(key, context, evaluator)
         else:
             texts = [key.format_map(evaluator.slots)]
-    
+
     yield {"cmd": "say", "args": texts}
     return {"command": "say", "value": texts, "ok": True}
 
 
 def cmd_listen(
-    args: List[str], 
-    context: Dict[str, Any], 
-    evaluator: ExpressionEvaluator, 
-    callback: callable
+    args: List[str],
+    context: Dict[str, Any],
+    evaluator: ExpressionEvaluator,
+    callback: callable,
 ) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
     """
     Listens for user input and stores it in a variable.
-    
+
     Args:
         args: Command arguments, expected: [variable_name]
         context: Execution context
         evaluator: Expression evaluator for variable resolution
         callback: Callback function for user interaction
-        
+
     Returns:
         Generator yielding command status dictionaries
-        
+
     Raises:
         CommandError: If variable name is missing
     """
     # Validate arguments
     if not args:
         raise CommandError("Listen command requires a variable name.")
-    
+
     if len(args) > 1:
-        log.warning(f"cmd_listen expects 1 argument, but received {len(args)}. Extra arguments will be ignored.")
+        log.warning(
+            f"cmd_listen expects 1 argument, but received {len(args)}. Extra arguments will be ignored."
+        )
 
     variable = str(args[0])
     yield {"cmd": "listen"}
@@ -308,20 +319,20 @@ def cmd_listen(
 
 
 def cmd_set(
-    args: List[str], 
-    context: Dict[str, Any], 
-    evaluator: ExpressionEvaluator, 
-    callback: callable
+    args: List[str],
+    context: Dict[str, Any],
+    evaluator: ExpressionEvaluator,
+    callback: callable,
 ) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
     """
     Sets a variable to a specific value.
-    
+
     Args:
         args: Command arguments, expected: [variable_name] or [variable_name, value...]
         context: Execution context containing 'is_continuation', 'prev_status'
         evaluator: Expression evaluator for variable resolution
         callback: Callback function for user interaction
-        
+
     Returns:
         Generator yielding command status dictionaries
     """
@@ -336,7 +347,11 @@ def cmd_set(
     else:
         if len(args) < 2:
             yield from ()
-            return {"command": "set", "ok": False, "error": "Missing value for variable"}
+            return {
+                "command": "set",
+                "ok": False,
+                "error": "Missing value for variable",
+            }
         value = args[1:]
 
     evaluator.slots[variable] = value
@@ -345,23 +360,23 @@ def cmd_set(
 
 
 def cmd_exec(
-    args: List[str], 
-    ctx: Dict[str, Any], 
-    evaluator: ExpressionEvaluator, 
-    callback: callable
+    args: List[str],
+    ctx: Dict[str, Any],
+    evaluator: ExpressionEvaluator,
+    callback: callable,
 ) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
     """
     Evaluates arguments safely, finds a restricted function, and executes it.
-    
+
     Args:
         args: Command arguments, expected: [function_name, arg1, arg2, ...]
         ctx: Execution context containing 'is_continuation', 'prev_status'
         evaluator: Expression evaluator for variable resolution
         callback: Callback function for user interaction
-        
+
     Returns:
         Generator yielding command status dictionaries
-        
+
     Raises:
         CommandError: If function name is missing, undefined, or execution fails
     """
@@ -397,23 +412,23 @@ def cmd_exec(
 
 
 def cmd_remember(
-    args: List[str], 
-    ctx: Dict[str, Any], 
-    evaluator: ExpressionEvaluator, 
-    callback: callable
+    args: List[str],
+    ctx: Dict[str, Any],
+    evaluator: ExpressionEvaluator,
+    callback: callable,
 ) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
     """
     Saves a variable to memory (slots) and persists it to the database via the MemoryStore.
-    
+
     Args:
         args: Command arguments, expected: [variable_name, value] or [variable_name] (with continuation)
         ctx: Execution context containing 'is_continuation', 'prev_status', 'memory_store'
         evaluator: Expression evaluator for variable resolution
         callback: Callback function for user interaction
-        
+
     Returns:
         Generator yielding command status dictionaries
-        
+
     Raises:
         CommandError: If variable or value is missing, or database operation fails
     """
@@ -465,26 +480,26 @@ def cmd_remember(
 
 
 def cmd_info(
-    args: List[str], 
-    ctx: Dict[str, Any], 
-    evaluator: ExpressionEvaluator, 
-    callback: callable
+    args: List[str],
+    ctx: Dict[str, Any],
+    evaluator: ExpressionEvaluator,
+    callback: callable,
 ) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
     """
     Formats and yields requested diagnostic information (slots, name, status).
-    
+
     Args:
         args: Command arguments, expected: [info_type1, info_type2, ...]
                Valid info_types: "slots", "name", "strategies", "status"
         ctx: Execution context containing 'state', 'prev_status'
         evaluator: Expression evaluator for variable resolution
         callback: Callback function for user interaction
-        
+
     Returns:
         Generator yielding command status dictionaries
     """
     info_data = []
-    
+
     # Validate arguments
     if not args:
         yield from ()
@@ -501,7 +516,12 @@ def cmd_info(
             info_data.append(("name", state.conversation.name if state else "unknown"))
         elif info_type == "strategies":
             state = ctx.get("state")
-            info_data.append(("strategies", list(state.conversation.strategies.keys()) if state else []))
+            info_data.append(
+                (
+                    "strategies",
+                    list(state.conversation.strategies.keys()) if state else [],
+                )
+            )
         elif info_type == "status":
             info_data.append(("status", ctx.get("prev_status", {})))
         else:
@@ -519,20 +539,20 @@ def cmd_info(
 
 
 def cmd_tag(
-    args: List[str], 
-    ctx: Dict[str, Any], 
-    evaluator: ExpressionEvaluator, 
-    callback: callable
+    args: List[str],
+    ctx: Dict[str, Any],
+    evaluator: ExpressionEvaluator,
+    callback: callable,
 ) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
     """
     Adds a tag to the conversation flow intended to analyze segments of the conversations.
-    
+
     Args:
         args: Command arguments, expected: [tag1, tag2, ...]
         ctx: Execution context
         evaluator: Expression evaluator for variable resolution
         callback: Callback function for user interaction
-        
+
     Returns:
         Generator yielding command status dictionaries
     """
@@ -552,15 +572,17 @@ def cmd_tag(
     }
 
 
-def resolve_template(name: str, ctx: Dict[str, Any], evaluator: ExpressionEvaluator) -> List[str]:
+def resolve_template(
+    name: str, ctx: Dict[str, Any], evaluator: ExpressionEvaluator
+) -> List[str]:
     """
     Resolves a template by name and returns a list of formatted strings.
-    
+
     Args:
         name: Template name to resolve
         ctx: Execution context containing 'templates'
         evaluator: Expression evaluator for variable resolution
-        
+
     Returns:
         List of formatted strings from the template
     """
@@ -592,4 +614,3 @@ def resolve_template(name: str, ctx: Dict[str, Any], evaluator: ExpressionEvalua
     except (NameNotDefined, InvalidExpression, KeyError) as e:
         log.error(f"Failed to resolve template {name}: {e}")
         return [f"[Error resolving template {name}]"]
-
