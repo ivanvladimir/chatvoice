@@ -25,11 +25,13 @@ from fastapi.responses import (
 )
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.db.database import async_get_db
 from ...core.dependencies.paths import RuntimeContext, get_default_context
 from ...crud.projects import crud_projects
+from ...models.project import Project, ProjectMember
 from ...models.user import User
 from ...schemas.project import (
     ProjectCreate,
@@ -43,12 +45,7 @@ from ...utils.project import (
     list_project_files,
     project_directory_exists,
 )
-from ..dependencies import get_current_user, get_current_editor
-
-from sqlalchemy import select, and_
-from ...models.project import Project, ProjectMember
-from ...models.user import User
-from ...schemas.project import ProjectMemberCreate
+from ..dependencies import get_current_editor, get_current_user
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 templates = Jinja2Templates(directory="chatvoice/api/templates")
@@ -71,11 +68,11 @@ async def get_project_base(
     project = await crud_projects.get(db, id=project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found.")
-    
+
     base_path = (
         Path("conversations") / current_user["username"] / project["project_name"]
     ).resolve()
-    
+
     return base_path, project
 
 
@@ -93,7 +90,9 @@ def _validate_file_path(base_path: Path, file_path_str: str) -> Path:
     return target
 
 
-def _create_zip_sync(base_path: Path, allowed_extensions: set) -> tuple[io.BytesIO, int]:
+def _create_zip_sync(
+    base_path: Path, allowed_extensions: set
+) -> tuple[io.BytesIO, int]:
     """Synchronous ZIP creation to be run in a thread."""
     zip_buffer = io.BytesIO()
     file_count = 0
@@ -142,9 +141,11 @@ async def upload_files(
     directory: str = Form(""),
 ):
     base_path, project = await get_project_base(project_id, db, current_user)
-    
+
     if not base_path.is_dir():
-        raise HTTPException(status_code=404, detail="Project directory not found on server.")
+        raise HTTPException(
+            status_code=404, detail="Project directory not found on server."
+        )
 
     # Resolve target directory
     dir_clean = directory.strip().strip("/")
@@ -174,8 +175,8 @@ async def upload_files(
             continue
 
         try:
-            content = await file.read() # Async read
-            await asyncio.to_thread(dest.write_bytes, content) # Sync write offloaded
+            content = await file.read()  # Async read
+            await asyncio.to_thread(dest.write_bytes, content)  # Sync write offloaded
             uploaded += 1
         except Exception as e:
             skipped.append(f"{filename} (error: {e})")
@@ -254,7 +255,9 @@ async def download_project(
     base_path, project = await get_project_base(project_id, db, current_user)
 
     if not base_path.is_dir():
-        raise HTTPException(status_code=404, detail="Project directory not found on server.")
+        raise HTTPException(
+            status_code=404, detail="Project directory not found on server."
+        )
 
     # Offload blocking ZIP creation to a thread
     zip_buffer, file_count = await asyncio.to_thread(
@@ -262,7 +265,9 @@ async def download_project(
     )
 
     if file_count == 0:
-        raise HTTPException(status_code=404, detail="No supported files found in project.")
+        raise HTTPException(
+            status_code=404, detail="No supported files found in project."
+        )
 
     timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     zip_filename = f"{project['project_name']}_{timestamp}.zip"
@@ -284,7 +289,7 @@ async def create_file(
 ):
     base_path, project = await get_project_base(project_id, db, current_user)
     file_path_str = body.path.strip()
-    
+
     if not file_path_str:
         raise HTTPException(status_code=400, detail="Path is required.")
 
@@ -322,7 +327,9 @@ async def list_project_files_htmx(
         raise HTTPException(status_code=404, detail="Project not found.")
 
     if not project_directory_exists(current_user["username"], project["project_name"]):
-        raise HTTPException(status_code=404, detail="Project directory not found on server.")
+        raise HTTPException(
+            status_code=404, detail="Project directory not found on server."
+        )
 
     files = list_project_files(
         current_user["username"],
@@ -353,7 +360,9 @@ async def get_file_editor_htmx(
     target_file = _validate_file_path(base_path, filename)
 
     if not target_file.exists() or target_file.suffix.lower() not in ALLOWED_EXTENSIONS:
-        raise HTTPException(status_code=404, detail="File not found or unsupported type.")
+        raise HTTPException(
+            status_code=404, detail="File not found or unsupported type."
+        )
 
     try:
         content = await asyncio.to_thread(target_file.read_text, encoding="utf-8")
@@ -423,7 +432,11 @@ async def project_links_htmx(
     sort_by: str = Form("created_at", pattern="^(name|created_at|is_active)$"),
     sort_order: str = Form("desc", pattern="^(asc|desc)$"),
 ):
-    sort_columns = {"name": "name", "created_at": "created_at", "is_active": "is_active"}
+    sort_columns = {
+        "name": "name",
+        "created_at": "created_at",
+        "is_active": "is_active",
+    }
 
     projects_result = await crud_projects.get_multi_joined(
         db,
@@ -478,7 +491,11 @@ async def projects_list_htmx(
     sort_by: str = Form("created_at", pattern="^(name|created_at|is_active)$"),
     sort_order: str = Form("desc", pattern="^(asc|desc)$"),
 ):
-    sort_columns = {"name": "name", "created_at": "created_at", "is_active": "is_active"}
+    sort_columns = {
+        "name": "name",
+        "created_at": "created_at",
+        "is_active": "is_active",
+    }
 
     projects_result = await crud_projects.get_multi(
         db,
@@ -647,9 +664,7 @@ async def toggle_project_active_htmx(
     # FIXED: Pass id as kwarg, don't inject it into the schema object
     await crud_projects.update(
         db,
-        object=ProjectUpdateInternal(
-            is_active=not project["is_active"]
-        ),
+        object=ProjectUpdateInternal(is_active=not project["is_active"]),
         id=project_id,
     )
 
@@ -682,7 +697,12 @@ async def get_members_list_htmx(
 
     # Format for template: list of dicts
     members = [
-        {"id": m.ProjectMember.id, "user_id": m.ProjectMember.user_id, "username": m.username, "permission": m.ProjectMember.permission}
+        {
+            "id": m.ProjectMember.id,
+            "user_id": m.ProjectMember.user_id,
+            "username": m.username,
+            "permission": m.ProjectMember.permission,
+        }
         for m in members_data
     ]
     print(members)
@@ -716,13 +736,15 @@ async def add_member_htmx(
 
     # Prevent adding the owner as a member
     if user_id == project["owner_id"]:
-        raise HTTPException(status_code=400, detail="Cannot add the project owner as a member.")
+        raise HTTPException(
+            status_code=400, detail="Cannot add the project owner as a member."
+        )
 
     # 1. Fetch the actual ORM User object
     user_stmt = select(User).where(User.id == user_id)
     user_result = await db.execute(user_stmt)
     db_user = user_result.scalar_one_or_none()
-    
+
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -734,19 +756,15 @@ async def add_member_htmx(
     if existing_result.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="User is already a member")
 
-    # 2. Fetch the actual ORM Project object 
+    # 2. Fetch the actual ORM Project object
     # (We do this because crud_projects.get returns a dict, not an ORM object)
     project_stmt = select(Project).where(Project.id == project_id)
     project_orm_result = await db.execute(project_stmt)
     db_project = project_orm_result.scalar_one_or_none()
 
     # 3. Instantiate by passing the ORM objects to the relationships
-    new_member = ProjectMember(
-        project=db_project, 
-        user=db_user, 
-        permission=permission
-    )
-    
+    new_member = ProjectMember(project=db_project, user=db_user, permission=permission)
+
     db.add(new_member)
     await db.commit()
     await db.refresh(new_member)

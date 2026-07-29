@@ -16,7 +16,7 @@ from __future__ import annotations
 import re
 import shlex
 from dataclasses import dataclass, field
-from typing import List, Literal, Optional, Tuple
+from typing import Literal, Optional, Tuple
 
 # ---------------------------------------------------------------------------
 # Data model
@@ -103,9 +103,9 @@ _THEN_RE = re.compile(r"\bthen\b\s*", re.IGNORECASE)
 
 def _tokenize(text: str) -> list[str]:
     """Split *text* into tokens, keeping quoted strings together.
-    
-    Note: This strips quotes, so it should ONLY be used on the command body, 
-    not on the condition, otherwise string literals in conditions (e.g. "good") 
+
+    Note: This strips quotes, so it should ONLY be used on the command body,
+    not on the condition, otherwise string literals in conditions (e.g. "good")
     lose their quotes and become variable names.
     """
     lex = shlex.shlex(text, posix=True)
@@ -127,8 +127,8 @@ def _split_pipe(line: str) -> list[str]:
             current.append(ch)
             escaped = False
             continue
-            
-        if ch == '\\':
+
+        if ch == "\\":
             escaped = True
             current.append(ch)
             continue
@@ -187,54 +187,54 @@ def _parse_condition(text: str) -> Condition:
 def _extract_guard(text: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """
     Safely extract the guard keyword, condition text, and command text.
-    
-    This replaces the single regex approach to prevent bugs where the word "then" 
+
+    This replaces the single regex approach to prevent bugs where the word "then"
     appears inside a quoted string within the condition.
-    
+
     Returns:
-        Tuple of (keyword, condition_text, command_text). 
+        Tuple of (keyword, condition_text, command_text).
         If no valid guard is found, returns (None, None, original_text).
     """
     match = _IF_WHILE_RE.match(text)
     if not match:
         return None, None, text
-        
+
     keyword = match.group(1).lower()
     start_idx = match.end()
-    
+
     # Scan character by character to find 'then' OUTSIDE of quotes
     in_quote = False
     quote_char = ""
     escaped = False
-    
+
     i = start_idx
     while i < len(text):
         ch = text[i]
-        
+
         if escaped:
             escaped = False
             i += 1
             continue
-            
-        if ch == '\\':
+
+        if ch == "\\":
             escaped = True
             i += 1
             continue
-            
+
         if ch in ('"', "'") and not in_quote:
             in_quote, quote_char = True, ch
         elif ch == quote_char and in_quote:
             in_quote = False
-            
+
         if not in_quote:
             then_match = _THEN_RE.match(text[i:])
             if then_match:
                 cond_text = text[start_idx:i].strip()
-                cmd_text = text[i + then_match.end():].strip()
+                cmd_text = text[i + then_match.end() :].strip()
                 return keyword, cond_text, cmd_text
-                
+
         i += 1
-        
+
     # Malformed guard (missing 'then'), fallback to treating whole line as a command
     return None, None, text
 
@@ -242,15 +242,15 @@ def _extract_guard(text: str) -> Tuple[Optional[str], Optional[str], Optional[st
 def _parse_command(text: str) -> Command:
     """Parse one command segment (no ``|`` characters)."""
     text = text.strip()
-    
+
     keyword, cond_text, cmd_text = _extract_guard(text)
-    
+
     if keyword:
         condition = _parse_condition(cond_text)
         tokens = _tokenize(cmd_text)
         if not tokens:
             raise ValueError(f"Empty command body after 'then' in: {text!r}")
-            
+
         cond_type: ConditionType = keyword  # type: ignore[assignment]
         return Command(
             name=tokens[0],
@@ -263,7 +263,7 @@ def _parse_command(text: str) -> Command:
     tokens = _tokenize(text)
     if not tokens:
         raise ValueError(f"Empty command in: {text!r}")
-        
+
     return Command(
         name=tokens[0],
         _command=text,
@@ -294,4 +294,3 @@ def parse_script(source: str) -> list[Line]:
             continue
         lines.append(parse_line(stripped))
     return lines
-
