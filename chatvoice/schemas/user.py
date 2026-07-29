@@ -64,7 +64,7 @@ class UserRead(BaseModel):
 
 
 class UserCreate(UserBase):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
     password: Annotated[
         str,
         Field(
@@ -130,7 +130,7 @@ class UserUpdate(BaseModel):
 
 class UserUpdateInternal(UserUpdate):
     hashed_password: str | None = None
-    updated_at: datetime
+    updated_at: datetime = None
 
 
 class UserRoleUpdate(BaseModel):

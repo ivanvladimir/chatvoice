@@ -36,7 +36,61 @@ hx-indicator="#protected-loading"
             
             <!-- Form Container (HTMX replaces this) -->
             <div id="create-form-container">
-                {% include "projects/partials/create_project_form.html" %}
+                {% include "projects/create_project_form.html" %}
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button @click="close()">close</button>
+        </form>
+    </dialog>
+</div>
+
+<div x-data="memberModal()" x-init="init()">
+    <dialog x-ref="modal" 
+            class="modal" 
+            :class="{ 'modal-open': isOpen }"
+            @click.self="close()">
+        <div class="modal-box max-w-lg">
+            <h3 class="font-bold text-lg flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                </svg>
+                Miembros: <span x-text="projectName" class="font-normal text-base-content/70"></span>
+            </h3>
+            <p class="py-2 text-base-content/60">Añade usuarios para colaborar en el proyecto</p>
+            
+            {# Add Member Form #}
+            <form class="flex flex-col sm:flex-row gap-2 mb-6"
+                  hx-post="{{ url_for('add_member_htmx', project_id='0') }}" 
+                  hx-target="#members-list-container"
+                  hx-swap="outerHTML"
+                  @submit.prevent="handleMemberSubmit($event)">
+                
+                <input type="hidden" name="project_id" :value="projectId" x-model="projectId">
+                
+                <input type="number" 
+                       name="user_id" 
+                       placeholder="ID del usuario" 
+                       class="input input-bordered input-sm flex-1" 
+                       required />
+                
+                <select name="permission" class="select select-bordered select-sm w-full sm:w-auto">
+                    <option value="view">Puede ver</option>
+                    <option value="edit">Puede editar</option>
+                </select>
+
+                <button type="submit" class="btn btn-primary btn-sm">
+                    Añadir
+                </button>
+            </form>
+
+            <div class="divider text-xs">MIEMBROS ACTUALES</div>
+
+            {# Container where the member list will be loaded #}
+            <div id="members-list-container" class="max-h-60 overflow-y-auto">
+                <div class="flex justify-center py-4">
+                    <span class="loading loading-spinner loading-sm text-primary"></span>
+                </div>
             </div>
         </div>
         <form method="dialog" class="modal-backdrop">
@@ -75,6 +129,58 @@ function projectModal() {
                     });
                 }
             }, 300);
+        }
+    }
+}
+
+function memberModal() {
+    return {
+        isOpen: false,
+        projectId: null,
+        projectName: '',
+        
+        init() {
+            document.addEventListener('openMemberModal', (e) => this.open(e.detail));
+            document.addEventListener('memberUpdated', () => this.reloadList());
+        },
+        
+        open(detail) {
+            if (!detail || !detail.id) return;
+            this.projectId = detail.id;
+            this.projectName = detail.name;
+            this.isOpen = true;
+            this.reloadList();
+        },
+        
+        close() {
+            this.isOpen = false;
+            this.projectId = null;
+            this.projectName = '';
+        },
+
+        // Intercept form submit to inject the dynamic project_id into the hx-post url
+        handleMemberSubmit(event) {
+            const form = event.target;
+            const url = form.getAttribute('hx-post').replace('/0', `/${this.projectId}`);
+            form.setAttribute('hx-post', url);
+            
+            // Let HTMX handle the actual submission natively after we fix the URL
+            htmx.ajax('POST', url, {
+                source: form,
+                target: '#members-list-container',
+                swap: 'outerHTML'
+            });
+        },
+
+        reloadList() {
+            if (!this.projectId) return;
+            const listContainer = document.getElementById('members-list-container');
+            if (listContainer) {
+              htmx.ajax('GET', "{{url_for('get_members_list_htmx', project_id='0')}}".replace('/0', `/${this.projectId}`), {
+                    target: listContainer,
+                    swap: 'outerHTML'
+                });
+            }
         }
     }
 }

@@ -41,12 +41,9 @@
         {# ─── SEARCH BAR ─── #}
         <div class="mb-4">
             <form id="search-form" class="join w-full"
-                  hx-post="{{ url_for('projects_list_htmx') }}"
+                  hx-post="{{ url_for('project_links_htmx') }}"
                   hx-target="#protected-content"
                   hx-indicator="#search-spinner">
-                
-                <input type="hidden" name="sort_by" value="{{ sort_by }}">
-                <input type="hidden" name="sort_order" value="{{ sort_order }}">
 
                 <input type="text" 
                        name="search" 
@@ -78,7 +75,7 @@
             <div class="join">
                 {% if page > 1 %}
                 <button class="join-item btn btn-sm"
-                        hx-post="{{ url_for('projects_list_htmx') }}"
+                        hx-post="{{ url_for('project_list_htmx') }}"
                         hx-include="#search-form"
                         hx-vals='{"page": {{ page - 1 }}}'
                         hx-target="#protected-content"

@@ -1,0 +1,41 @@
+{# projects/partials/members_list.html #}
+<div id="members-list-container">
+    {% if members %}
+    <ul class="menu menu-md w-full">
+        {% for member in members %}
+        <li>
+            <div class="flex items-center justify-between w-full">
+                <div class="flex items-center gap-3">
+                    <div class="avatar placeholder">
+                        <div class="bg-neutral text-neutral-content rounded-full w-8">
+                            <span class="text-xs">{{ member.username|first|upper }}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="font-medium text-sm">{{ member.username }}</p>
+                        <p class="text-xs opacity-60">{{ "Editor" if member.permission == "edit" else "Visualizador" }}</p>
+                    </div>
+                </div>
+                
+                {# Don't show delete button for the owner #}
+                {% if member.user_id != owner_id %}
+                <button class="btn btn-ghost btn-xs text-error"
+                        hx-delete="{{ url_for('remove_member_htmx', project_id=project_id, user_id=member.user_id) }}"
+                        hx-target="#members-list-container"
+                        hx-swap="outerHTML"
+                        hx-confirm="¿Seguro que quieres quitar a este miembro?">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+                {% endif %}
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="text-center py-4 text-base-content/50 text-sm">
+        No hay miembros adicionales en este proyecto.
+    </div>
+    {% endif %}
+</div>

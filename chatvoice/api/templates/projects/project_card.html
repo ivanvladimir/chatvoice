@@ -80,7 +80,17 @@
             <p class="text-sm text-base-content/30 italic pointer-events-none">Sin descripción</p>
             {% endif %}
         </a>
-        
+
+        <button class="btn btn-sm btn-ghost"
+                @click="document.dispatchEvent(new CustomEvent('openMemberModal', { 
+                    detail: { id: {{ project.id }}, name: '{{ project.name }}' } 
+                }))">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+            </svg>
+            Miembros
+        </button>
+
         {# ─── FOOTER ─── #}
         <div class="card-actions justify-between items-center mt-3 pt-3 border-t border-base-300/50">
             

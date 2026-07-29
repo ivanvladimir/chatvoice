@@ -17,7 +17,7 @@ from ..schemas.project import ProjectCreate, ProjectUpdate, ProjectUpdateInterna
 
 # from ..schemas.task import TaskUpdate, TaskCreate, TaskCreateInternal
 from ..schemas.tier import TierCreate, TierUpdate
-from ..schemas.user import UserCreate, UserUpdate, UserUpdateInternal
+from ..schemas.user import UserCreate, UserUpdate, UserUpdateInternal, UserCreateInternal
 
 
 class TaskStatus(PyEnum):
