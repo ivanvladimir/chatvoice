@@ -20,7 +20,7 @@
                 {# Don't show delete button for the owner #}
                 {% if member.user_id != owner_id %}
                 <button class="btn btn-ghost btn-xs text-error"
-                        hx-delete="{{ url_for('remove_member_htmx', project_id=project_id, user_id=member.user_id) }}"
+                        hx-delete="{{ url_for('remove_member_htmx', project_uuid=project_uuid, user_id=member.user_id) }}"
                         hx-target="#members-list-container"
                         hx-swap="outerHTML"
                         hx-confirm="¿Seguro que quieres quitar a este miembro?">

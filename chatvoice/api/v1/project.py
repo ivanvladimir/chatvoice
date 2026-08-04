@@ -7,6 +7,7 @@ import zipfile
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import (
     APIRouter,
@@ -60,12 +61,12 @@ class CreateFileRequest(BaseModel):
 
 # ─── DEPENDENCY INJECTION ───
 async def get_project_base(
-    project_id: int,
+    project_uuid: UUID,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     current_user: dict = Depends(get_current_editor),
 ) -> tuple[Path, dict]:
     """DRY helper: Fetches project and resolves base path."""
-    project = await crud_projects.get(db, id=project_id)
+    project = await crud_projects.get(db, uuid=project_uuid)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found.")
 
@@ -131,16 +132,16 @@ def normalize_project_name(name: str, max_length: int = 100) -> str:
 
 
 # ─── ENDPOINTS ───
-@router.post("/api/{project_id}/files/upload")
+@router.post("/api/{project_uuid}/files/upload")
 async def upload_files(
     request: Request,
-    project_id: int,
+    project_uuid: UUID,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     current_user: dict = Depends(get_current_editor),
     files: list[UploadFile] = FileForm(...),
     directory: str = Form(""),
 ):
-    base_path, project = await get_project_base(project_id, db, current_user)
+    base_path, project = await get_project_base(project_uuid, db, current_user)
 
     if not base_path.is_dir():
         raise HTTPException(
@@ -187,15 +188,15 @@ async def upload_files(
     }
 
 
-@router.delete("/api/{project_id}/files")
+@router.delete("/api/{project_uuid}/files")
 async def delete_file(
     request: Request,
-    project_id: int,
+    project_uuid: UUID,
     body: CreateFileRequest,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     current_user: dict = Depends(get_current_editor),
 ):
-    base_path, project = await get_project_base(project_id, db, current_user)
+    base_path, project = await get_project_base(project_uuid, db, current_user)
     target_file = _validate_file_path(base_path, body.path.strip())
 
     if not target_file.exists():
@@ -222,15 +223,15 @@ async def delete_file(
     return {"message": "File deleted", "path": body.path}
 
 
-@router.get("/{project_id}/files/{file_path:path}/download")
+@router.get("/{project_uuid}/files/{file_path:path}/download")
 async def download_file(
     request: Request,
-    project_id: int,
+    project_uuid: UUID,
     file_path: str,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     current_user: dict = Depends(get_current_editor),
 ):
-    base_path, project = await get_project_base(project_id, db, current_user)
+    base_path, project = await get_project_base(project_uuid, db, current_user)
     target_file = _validate_file_path(base_path, file_path)
 
     if not target_file.exists() or not target_file.is_file():
@@ -245,14 +246,14 @@ async def download_file(
     )
 
 
-@router.get("/{project_id}/download")
+@router.get("/{project_uuid}/download")
 async def download_project(
     request: Request,
-    project_id: int,
+    project_uuid: UUID,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     current_user: dict = Depends(get_current_editor),
 ):
-    base_path, project = await get_project_base(project_id, db, current_user)
+    base_path, project = await get_project_base(project_uuid, db, current_user)
 
     if not base_path.is_dir():
         raise HTTPException(
@@ -279,15 +280,15 @@ async def download_project(
     )
 
 
-@router.post("/api/{project_id}/files")
+@router.post("/api/{project_uuid}/files")
 async def create_file(
     request: Request,
-    project_id: int,
+    project_uuid: UUID,
     body: CreateFileRequest,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     current_user: dict = Depends(get_current_editor),
 ):
-    base_path, project = await get_project_base(project_id, db, current_user)
+    base_path, project = await get_project_base(project_uuid, db, current_user)
     file_path_str = body.path.strip()
 
     if not file_path_str:
@@ -313,16 +314,16 @@ async def create_file(
     return {"message": "File created", "path": file_path_str}
 
 
-@router.post("/{project_id}/files", response_class=HTMLResponse)
+@router.post("/{project_uuid}/files", response_class=HTMLResponse)
 async def list_project_files_htmx(
     request: Request,
-    project_id: int,
+    project_uuid: UUID,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     ctx: RuntimeContext = Depends(get_default_context),
     current_user: dict = Depends(get_current_editor),
 ):
     # Kept using utility functions as in original, but removed duplicate DB fetch
-    project = await crud_projects.get(db, id=project_id)
+    project = await crud_projects.get(db, uuid=project_uuid)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found.")
 
@@ -345,18 +346,18 @@ async def list_project_files_htmx(
 
 
 @router.post(
-    "/{project_id}/files/{filename:path}/editor-htmx", response_class=HTMLResponse
+    "/{project_uuid}/files/{filename:path}/editor-htmx", response_class=HTMLResponse
 )
 async def get_file_editor_htmx(
     request: Request,
-    project_id: int,
+    project_uuid: UUID,
     filename: str,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     ctx: RuntimeContext = Depends(get_default_context),
     current_user: dict = Depends(get_current_editor),
 ):
     """HTMX endpoint that reads the file and returns the partial HTML."""
-    base_path, project = await get_project_base(project_id, db, current_user)
+    base_path, project = await get_project_base(project_uuid, db, current_user)
     target_file = _validate_file_path(base_path, filename)
 
     if not target_file.exists() or target_file.suffix.lower() not in ALLOWED_EXTENSIONS:
@@ -381,17 +382,17 @@ async def get_file_editor_htmx(
     )
 
 
-@router.post("/{project_id}/files/{filename:path}")
+@router.post("/{project_uuid}/files/{filename:path}")
 async def save_file(
     request: Request,
-    project_id: int,
+    project_uuid: UUID,
     filename: str,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     content: str = Form(...),
     current_user: dict = Depends(get_current_editor),
 ):
     """Saves the file. Called by standard JS fetch."""
-    base_path, project = await get_project_base(project_id, db, current_user)
+    base_path, project = await get_project_base(project_uuid, db, current_user)
     target_file = _validate_file_path(base_path, filename)
 
     if target_file.suffix.lower() not in ALLOWED_EXTENSIONS:
@@ -621,14 +622,14 @@ async def create_project_htmx(
         )
 
 
-@router.delete("/{project_id}", response_class=Response)
+@router.delete("/{project_uuid}", response_class=Response)
 async def delete_project_htmx(
-    project_id: int,
+    project_uuid: UUID,
     request: Request,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     current_user: dict = Depends(get_current_editor),
 ):
-    project = await crud_projects.get(db, id=project_id, is_deleted=False)
+    project = await crud_projects.get(db, uuid=project_uuid, is_deleted=False)
 
     # FIXED: Standardized dict access for current_user and project
     if not project or project["owner_id"] != current_user["id"]:
@@ -643,7 +644,7 @@ async def delete_project_htmx(
             "is_deleted": True,
             "deleted_at": datetime.now(UTC),
         },
-        id=project_id,
+        uuid=project_uuid,
     )
 
     response = Response(status_code=204)
@@ -651,14 +652,14 @@ async def delete_project_htmx(
     return response
 
 
-@router.patch("/{project_id}/toggle-active", response_class=Response)
+@router.patch("/{project_uuid}/toggle-active", response_class=Response)
 async def toggle_project_active_htmx(
-    project_id: int,
+    project_uuid: UUID,
     request: Request,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     current_user: dict = Depends(get_current_editor),
 ):
-    project = await crud_projects.get(db, id=project_id, is_deleted=False)
+    project = await crud_projects.get(db, uuid=project_uuid, is_deleted=False)
 
     # FIXED: Standardized dict access for current_user and project
     if not project or project["owner_id"] != current_user["id"]:
@@ -671,7 +672,7 @@ async def toggle_project_active_htmx(
     await crud_projects.update(
         db,
         object=ProjectUpdateInternal(is_active=not project["is_active"]),
-        id=project_id,
+        uuid=project_uuid,
     )
 
     response = Response(status_code=204)
@@ -679,16 +680,16 @@ async def toggle_project_active_htmx(
     return response
 
 
-@router.get("/{project_id}/members/list", response_class=HTMLResponse)
+@router.get("/{project_uuid}/members/list", response_class=HTMLResponse)
 async def get_members_list_htmx(
     request: Request,
-    project_id: int,
+    project_uuid: UUID,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     ctx: RuntimeContext = Depends(get_default_context),
     current_user: dict = Depends(get_current_user),
 ):
     """HTMX endpoint: Returns the HTML list of members for the modal."""
-    project = await crud_projects.get(db, id=project_id)
+    project = await crud_projects.get(db, uuid=project_uuid)
     if not project or project["owner_id"] != current_user["id"]:
         raise HTTPException(status_code=404, detail="Project not found")
 
@@ -696,7 +697,7 @@ async def get_members_list_htmx(
     stmt = (
         select(ProjectMember, User.username)
         .join(User, ProjectMember.user_id == User.id)
-        .where(ProjectMember.project_id == project_id)
+        .where(ProjectMember.project_id == project["id"])
     )
     result = await db.execute(stmt)
     members_data = result.all()
@@ -718,17 +719,17 @@ async def get_members_list_htmx(
         name="projects/members_list.html",
         context={
             "request": request,
-            "project_id": project_id,
+            "project_uuid": project_uuid,
             "members": members,
             "owner_id": project["owner_id"],
         },
     )
 
 
-@router.post("/{project_id}/members", response_class=HTMLResponse)
+@router.post("/{project_uuid}/members", response_class=HTMLResponse)
 async def add_member_htmx(
     request: Request,
-    project_id: int,
+    project_uuid: UUID,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     ctx: RuntimeContext = Depends(get_default_context),
     current_user: dict = Depends(get_current_user),
@@ -736,7 +737,7 @@ async def add_member_htmx(
     permission: str = Form(..., pattern="^(view|edit)$"),
 ):
     """HTMX endpoint: Adds a member and returns the updated list."""
-    project = await crud_projects.get(db, id=project_id)
+    project = await crud_projects.get(db, uuid=project_uuid)
     if not project or project["owner_id"] != current_user["id"]:
         raise HTTPException(status_code=404, detail="Project not found")
 
@@ -756,7 +757,9 @@ async def add_member_htmx(
 
     # Check if already a member
     existing_stmt = select(ProjectMember).where(
-        and_(ProjectMember.project_id == project_id, ProjectMember.user_id == user_id)
+        and_(
+            ProjectMember.project_id == project["id"], ProjectMember.user_id == user_id
+        )
     )
     existing_result = await db.execute(existing_stmt)
     if existing_result.scalar_one_or_none():
@@ -764,7 +767,7 @@ async def add_member_htmx(
 
     # 2. Fetch the actual ORM Project object
     # (We do this because crud_projects.get returns a dict, not an ORM object)
-    project_stmt = select(Project).where(Project.id == project_id)
+    project_stmt = select(Project).where(Project.uuid == project_uuid)
     project_orm_result = await db.execute(project_stmt)
     db_project = project_orm_result.scalar_one_or_none()
 
@@ -776,24 +779,26 @@ async def add_member_htmx(
     await db.refresh(new_member)
 
     # Re-fetch the list to return updated HTML
-    return await get_members_list_htmx(request, project_id, db, ctx, current_user)
+    return await get_members_list_htmx(request, project_uuid, db, ctx, current_user)
 
 
-@router.delete("/{project_id}/members/{user_id}", response_class=Response)
+@router.delete("/{project_uuid}/members/{user_id}", response_class=Response)
 async def remove_member_htmx(
     request: Request,
-    project_id: int,
+    project_uuid: UUID,
     user_id: int,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     current_user: dict = Depends(get_current_user),
 ):
     """HTMX endpoint: Removes a member."""
-    project = await crud_projects.get(db, id=project_id)
+    project = await crud_projects.get(db, uuid=project_uuid)
     if not project or project["owner_id"] != current_user["id"]:
         raise HTTPException(status_code=404, detail="Project not found")
 
     stmt = select(ProjectMember).where(
-        and_(ProjectMember.project_id == project_id, ProjectMember.user_id == user_id)
+        and_(
+            ProjectMember.project_id == project["id"], ProjectMember.user_id == user_id
+        )
     )
     result = await db.execute(stmt)
     member = result.scalar_one_or_none()

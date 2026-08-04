@@ -4,7 +4,7 @@
 
 {# ─── HTMX CONFIGURATION ─── #}
 {% block protected_htmx_config %}
-hx-post="{{ url_for('list_project_files_htmx', project_id=project.id) }}"
+hx-post="{{ url_for('list_project_files_htmx', project_uuid=project.uuid) }}"
 hx-trigger="load-protected"
 hx-swap="innerHTML"
 hx-target="this"

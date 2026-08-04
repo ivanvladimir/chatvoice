@@ -61,12 +61,12 @@ hx-indicator="#protected-loading"
             
             {# Add Member Form #}
             <form class="flex flex-col sm:flex-row gap-2 mb-6"
-                  hx-post="{{ url_for('add_member_htmx', project_id='0') }}" 
+                  hx-post="{{ url_for('add_member_htmx', project_uuid='00000000-0000-0000-0000-000000000000') }}"
                   hx-target="#members-list-container"
                   hx-swap="outerHTML"
                   @submit.prevent="handleMemberSubmit($event)">
-                
-                <input type="hidden" name="project_id" :value="projectId" x-model="projectId">
+
+                <input type="hidden" name="project_uuid" :value="projectUuid" x-model="projectUuid">
                 
                 <input type="number" 
                        name="user_id" 
@@ -134,36 +134,37 @@ function projectModal() {
 }
 
 function memberModal() {
+    const placeholderUuid = '00000000-0000-0000-0000-000000000000';
     return {
         isOpen: false,
-        projectId: null,
+        projectUuid: null,
         projectName: '',
-        
+
         init() {
             document.addEventListener('openMemberModal', (e) => this.open(e.detail));
             document.addEventListener('memberUpdated', () => this.reloadList());
         },
-        
+
         open(detail) {
-            if (!detail || !detail.id) return;
-            this.projectId = detail.id;
+            if (!detail || !detail.uuid) return;
+            this.projectUuid = detail.uuid;
             this.projectName = detail.name;
             this.isOpen = true;
             this.reloadList();
         },
-        
+
         close() {
             this.isOpen = false;
-            this.projectId = null;
+            this.projectUuid = null;
             this.projectName = '';
         },
 
-        // Intercept form submit to inject the dynamic project_id into the hx-post url
+        // Intercept form submit to inject the dynamic project_uuid into the hx-post url
         handleMemberSubmit(event) {
             const form = event.target;
-            const url = form.getAttribute('hx-post').replace('/0', `/${this.projectId}`);
+            const url = form.getAttribute('hx-post').replace(placeholderUuid, this.projectUuid);
             form.setAttribute('hx-post', url);
-            
+
             // Let HTMX handle the actual submission natively after we fix the URL
             htmx.ajax('POST', url, {
                 source: form,
@@ -173,10 +174,10 @@ function memberModal() {
         },
 
         reloadList() {
-            if (!this.projectId) return;
+            if (!this.projectUuid) return;
             const listContainer = document.getElementById('members-list-container');
             if (listContainer) {
-              htmx.ajax('GET', "{{url_for('get_members_list_htmx', project_id='0')}}".replace('/0', `/${this.projectId}`), {
+              htmx.ajax('GET', "{{url_for('get_members_list_htmx', project_uuid='00000000-0000-0000-0000-000000000000')}}".replace(placeholderUuid, this.projectUuid), {
                     target: listContainer,
                     swap: 'outerHTML'
                 });

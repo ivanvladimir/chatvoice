@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
@@ -11,14 +12,14 @@ from ...crud.projects import crud_projects
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 
-@router.get("/{project_id}/files", response_class=HTMLResponse)
+@router.get("/{project_uuid}/files", response_class=HTMLResponse)
 async def show_list_project_files(
     request: Request,
-    project_id: int,
+    project_uuid: UUID,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     ctx: RuntimeContext = Depends(get_default_context),  # Single injection
 ):
-    project = await crud_projects.get(db, id=project_id)
+    project = await crud_projects.get(db, uuid=project_uuid)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found.")
 
@@ -29,16 +30,16 @@ async def show_list_project_files(
     )
 
 
-@router.get("/{project_id}/files/{filename:path}", response_class=HTMLResponse)
+@router.get("/{project_uuid}/files/{filename:path}", response_class=HTMLResponse)
 async def view_project_files_page(
     request: Request,
-    project_id: int,
+    project_uuid: UUID,
     filename: str,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     ctx: RuntimeContext = Depends(get_default_context),  # Single injection
 ):
     """Renders the base template with the skeleton loader."""
-    project = await crud_projects.get(db, id=project_id)
+    project = await crud_projects.get(db, uuid=project_uuid)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found.")
 

@@ -52,7 +52,7 @@
 
 {# ─── HTMX CONFIGURATION ─── #}
 {% block protected_htmx_config %}
-hx-post="{{ url_for('get_file_editor_htmx',project_id=project.id, filename=filename)}}"
+hx-post="{{ url_for('get_file_editor_htmx',project_uuid=project.uuid, filename=filename)}}"
 hx-trigger="load-protected"
 hx-swap="innerHTML"
 hx-target="this"
@@ -333,7 +333,7 @@ hx-indicator="#protected-loading"
             const token = localStorage.getItem('accessToken');
 
             try {
-                const response = await fetch("{{url_for('save_file',project_id=project.id, filename=filename)}}", {
+                const response = await fetch("{{url_for('save_file',project_uuid=project.uuid, filename=filename)}}", {
                     method: "POST",
                     headers: { 
                         'Content-Type': 'application/x-www-form-urlencoded',

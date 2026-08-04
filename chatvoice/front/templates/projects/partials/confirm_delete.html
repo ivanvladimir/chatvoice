@@ -15,7 +15,7 @@
             Cancelar
         </button>
         <button class="btn btn-error"
-                hx-delete="{{ url_for('delete_project_htmx', project_id=project_id) }}"
+                hx-delete="{{ url_for('delete_project_htmx', project_uuid=project_uuid) }}"
                 hx-target="#protected-content"
                 hx-indicator="#delete-loading"
                 @click="document.dispatchEvent(new CustomEvent('closeDeleteModal'))">

@@ -7,7 +7,7 @@
         <div class="flex items-start justify-between gap-2">
             
             {# ── CLICKABLE AREA (Title & Badge) ── pro#}
-            <a href="{{url_for('show_list_project_files', project_id=project.id)}}" class="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity">
+            <a href="{{url_for('show_list_project_files', project_uuid=project.uuid)}}" class="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity">
                 {# Status Badge #}
                 <span class="badge {{ 'badge-success' if project.is_active else 'badge-ghost' }} badge-sm pointer-events-none">
                     {{ 'Activo' if project.is_active else 'Inactivo' }}
@@ -25,7 +25,7 @@
                 <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-300">
                     <li>
                         {# ── UPDATED "ABRIR" LINK ── #}
-                        <a href="{{url_for('show_list_project_files', project_id=project.id)}}">
+                        <a href="{{url_for('show_list_project_files', project_uuid=project.uuid)}}">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                             </svg>
@@ -43,7 +43,7 @@
                     </li>
                     <li>
                         <a role="button" tabindex="0"
-                          hx-patch="{{ url_for('toggle_project_active_htmx', project_id=project.id) }}">
+                          hx-patch="{{ url_for('toggle_project_active_htmx', project_uuid=project.uuid) }}">
                             {% if project.is_active %}
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
@@ -61,7 +61,7 @@
                     <li>
                         <a href="#" 
                            class="text-error"
-                           onclick="event.preventDefault(); if(confirm('¿Estás seguro de eliminar este proyecto?')) { htmx.ajax('DELETE', '{{ url_for("delete_project_htmx", project_id=project.id) }}', {target: '#protected-content', swap: 'innerHTML'}); }">
+                           onclick="event.preventDefault(); if(confirm('¿Estás seguro de eliminar este proyecto?')) { htmx.ajax('DELETE', '{{ url_for("delete_project_htmx", project_uuid=project.uuid) }}', {target: '#protected-content', swap: 'innerHTML'}); }">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
@@ -73,7 +73,7 @@
         </div>
         
         {# ─── DESCRIPTION (Also Clickable) ─── #}
-        <a href="{{url_for('show_list_project_files', project_id=project.id)}}" class="block mt-1 hover:opacity-80 transition-opacity">
+        <a href="{{url_for('show_list_project_files', project_uuid=project.uuid)}}" class="block mt-1 hover:opacity-80 transition-opacity">
             {% if project.description %}
             <p class="text-sm text-base-content/60 line-clamp-2 pointer-events-none">{{ project.description }}</p>
             {% else %}
@@ -82,8 +82,8 @@
         </a>
 
         <button class="btn btn-sm btn-ghost"
-                @click="document.dispatchEvent(new CustomEvent('openMemberModal', { 
-                    detail: { id: {{ project.id }}, name: '{{ project.name }}' } 
+                @click="document.dispatchEvent(new CustomEvent('openMemberModal', {
+                    detail: { uuid: '{{ project.uuid }}', name: '{{ project.name }}' }
                 }))">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
