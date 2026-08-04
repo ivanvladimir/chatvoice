@@ -68,10 +68,10 @@ hx-indicator="#protected-loading"
 
                 <input type="hidden" name="project_uuid" :value="projectUuid" x-model="projectUuid">
                 
-                <input type="number" 
-                       name="user_id" 
-                       placeholder="ID del usuario" 
-                       class="input input-bordered input-sm flex-1" 
+                <input type="text"
+                       name="identifier"
+                       placeholder="Usuario o correo"
+                       class="input input-bordered input-sm flex-1"
                        required />
                 
                 <select name="permission" class="select select-bordered select-sm w-full sm:w-auto">

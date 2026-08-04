@@ -26,7 +26,7 @@ from fastapi.responses import (
 )
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from sqlalchemy import and_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.db.database import async_get_db
@@ -733,7 +733,7 @@ async def add_member_htmx(
     db: Annotated[AsyncSession, Depends(async_get_db)],
     ctx: RuntimeContext = Depends(get_default_context),
     current_user: dict = Depends(get_current_user),
-    user_id: int = Form(..., gt=0),
+    identifier: str = Form(..., min_length=1),
     permission: str = Form(..., pattern="^(view|edit)$"),
 ):
     """HTMX endpoint: Adds a member and returns the updated list."""
@@ -741,24 +741,27 @@ async def add_member_htmx(
     if not project or project["owner_id"] != current_user["id"]:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    # Prevent adding the owner as a member
-    if user_id == project["owner_id"]:
-        raise HTTPException(
-            status_code=400, detail="Cannot add the project owner as a member."
-        )
-
-    # 1. Fetch the actual ORM User object
-    user_stmt = select(User).where(User.id == user_id)
+    # 1. Fetch the actual ORM User object by username or email
+    user_stmt = select(User).where(
+        or_(User.username == identifier, User.email == identifier)
+    )
     user_result = await db.execute(user_stmt)
     db_user = user_result.scalar_one_or_none()
 
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    # Prevent adding the owner as a member
+    if db_user.id == project["owner_id"]:
+        raise HTTPException(
+            status_code=400, detail="Cannot add the project owner as a member."
+        )
+
     # Check if already a member
     existing_stmt = select(ProjectMember).where(
         and_(
-            ProjectMember.project_id == project["id"], ProjectMember.user_id == user_id
+            ProjectMember.project_id == project["id"],
+            ProjectMember.user_id == db_user.id,
         )
     )
     existing_result = await db.execute(existing_stmt)

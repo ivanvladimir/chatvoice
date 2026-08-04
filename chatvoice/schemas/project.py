@@ -30,7 +30,9 @@ class ProjectMemberBase(BaseModel):
 class ProjectMemberCreate(ProjectMemberBase):
     """Schema for adding a member to a project."""
 
-    user_id: int = Field(..., gt=0, description="ID of the user to add")
+    identifier: str = Field(
+        ..., min_length=1, description="Username or email of the user to add"
+    )
 
 
 class ProjectMemberUpdate(BaseModel):
