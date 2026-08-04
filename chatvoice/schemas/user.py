@@ -1,10 +1,36 @@
+import re
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    model_validator,
+)
 
 from ..core.schemas import PersistentDeletion, TimestampSchema, UUIDSchema
 from ..core.types import UserRole
+
+# Requires at least 8 characters with at least one lowercase letter, one
+# uppercase letter, one digit, and one special character. pydantic-core's
+# `pattern=` constraint runs on the Rust `regex` crate, which does not support
+# lookaround, so this is enforced via an AfterValidator using Python's `re`
+# instead of Field(pattern=...).
+_PASSWORD_RE = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$")
+_PASSWORD_ERROR = (
+    "Password must be at least 8 characters long and include at least one "
+    "lowercase letter, one uppercase letter, one digit, and one special "
+    "character."
+)
+
+
+def _check_password_strength(value: str | None) -> str | None:
+    if value is not None and not _PASSWORD_RE.match(value):
+        raise ValueError(_PASSWORD_ERROR)
+    return value
 
 
 class UserBase(BaseModel):
@@ -67,10 +93,8 @@ class UserCreate(UserBase):
     model_config = ConfigDict(extra="ignore")
     password: Annotated[
         str,
-        Field(
-            pattern=r"^.{8,}|[0-9]+|[A-Z]+|[a-z]+|[^a-zA-Z0-9]+$",
-            examples=["Str1ngst!"],
-        ),
+        AfterValidator(_check_password_strength),
+        Field(examples=["Str1ngst!"]),
     ]
 
     @model_validator(mode="after")
@@ -112,8 +136,8 @@ class UserUpdate(BaseModel):
     description: Annotated[str | None, Field(default=None)]
     password: Annotated[
         str | None,
+        AfterValidator(_check_password_strength),
         Field(
-            pattern=r"^.{8,}|[0-9]+|[A-Z]+|[a-z]+|[^a-zA-Z0-9]+$",
             examples=["Str1ngst!"],
             default=None,
         ),

@@ -16,6 +16,7 @@ dependencies = [
     "jinja2>=3.1.6",
     "jose>=1.0.0",
     "markdown>=3.10.2",
+    "nh3>=0.3.6",
     "pydantic-settings>=2.13.1",
     "pydantic[email]>=2.12.5",
     "pymdown-extensions>=11.0.1",

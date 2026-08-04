@@ -22,12 +22,31 @@ class AppSettings:
     CONTACT_EMAIL: str | None = None
 
 
+_INSECURE_DEFAULT_SECRET_KEY = "secret-key"
+
+
 class CryptSettings:
-    SECRET_KEY: SecretStr = SecretStr("secret-key")
+    SECRET_KEY: SecretStr = SecretStr(_INSECURE_DEFAULT_SECRET_KEY)
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     WS_SESSION_EXPIRE_MINUTES: int = 15
+
+    @model_validator(mode="after")
+    def check_secret_key_is_set(self) -> "CryptSettings":
+        # ENVIRONMENT lives on the EnvironmentSettings mixin; default to LOCAL
+        # if this class is ever instantiated on its own (e.g. in a unit test).
+        environment = getattr(self, "ENVIRONMENT", EnvironmentOption.LOCAL)
+        key = self.SECRET_KEY.get_secret_value().strip()
+        if environment != EnvironmentOption.LOCAL and (
+            not key or key == _INSECURE_DEFAULT_SECRET_KEY
+        ):
+            raise ValueError(
+                "SECRET_KEY must be set to a strong, unique value via .env/"
+                "environment when ENVIRONMENT is not 'local' - refusing to "
+                "start with the insecure default JWT signing key."
+            )
+        return self
 
 
 class DatabaseOption(str, Enum):

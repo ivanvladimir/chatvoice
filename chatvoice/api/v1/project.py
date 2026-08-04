@@ -394,6 +394,12 @@ async def save_file(
     base_path, project = await get_project_base(project_id, db, current_user)
     target_file = _validate_file_path(base_path, filename)
 
+    if target_file.suffix.lower() not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Extension not allowed. Use: {', '.join(sorted(ALLOWED_EXTENSIONS))}",
+        )
+
     try:
         await asyncio.to_thread(target_file.write_text, content, encoding="utf-8")
         return {"success": True}

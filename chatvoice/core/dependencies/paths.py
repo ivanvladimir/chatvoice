@@ -2,11 +2,29 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
+import jinja2
 from fastapi.templating import Jinja2Templates
+from jinja2.sandbox import SandboxedEnvironment
 
 from ..config import get_settings
 
 settings = get_settings()
+
+
+def _sandboxed_templates(
+    directory: str | Path | list[str | Path],
+) -> Jinja2Templates:
+    """Build a Jinja2Templates backed by a SandboxedEnvironment.
+
+    Project directories (templates_front/templates_api) are writable by
+    editor-role users via the project file editor, so their templates must
+    be treated as untrusted template source, not just untrusted data.
+    """
+    env = SandboxedEnvironment(
+        loader=jinja2.FileSystemLoader(directory),
+        autoescape=jinja2.select_autoescape(),
+    )
+    return Jinja2Templates(env=env)
 
 
 @dataclass(frozen=True)
@@ -21,8 +39,8 @@ class RuntimeContext:
 default_runtime_context = RuntimeContext(
     root=settings.resolved_conversation_dir(),
     content_dir=settings.CONTENT_DIR_PATH,
-    templates_front=Jinja2Templates(settings.TEMPLATES_FRONT_PATH),
-    templates_api=Jinja2Templates(settings.TEMPLATES_API_PATH),
+    templates_front=_sandboxed_templates(settings.TEMPLATES_FRONT_PATH),
+    templates_api=_sandboxed_templates(settings.TEMPLATES_API_PATH),
     default=True,
 )
 
@@ -46,10 +64,10 @@ def _build_jinja(username: Path, project_name: str) -> RuntimeContext:
         return RuntimeContext(
             root=directory,
             content_dir=directory / data.get("content_dir", settings.CONTENT_DIR_PATH),
-            templates_front=Jinja2Templates(
+            templates_front=_sandboxed_templates(
                 directory / data.get("templates_front", settings.TEMPLATES_FRONT_PATH)
             ),
-            templates_api=Jinja2Templates(
+            templates_api=_sandboxed_templates(
                 directory / data.get("templates_api", settings.TEMPLATES_API_PATH)
             ),
             default=False,

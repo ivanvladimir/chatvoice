@@ -2,9 +2,20 @@ import time
 from pathlib import Path
 
 import markdown
+import nh3
 from fastapi import HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+
+# Project content/*.md is user-authored (editor role, per-project) and rendered
+# with `| safe` on public/authenticated pages, so the converted HTML must be
+# sanitized rather than trusted. Extend nh3's default allowlist with id/class
+# on a few tags so footnote anchors (footnotes extension) and code-block
+# language hints (fenced_code extension) keep working.
+_ALLOWED_ATTRIBUTES = {tag: set(attrs) for tag, attrs in nh3.ALLOWED_ATTRIBUTES.items()}
+for _tag in ("a", "sup", "div", "code", "pre", "h1", "h2", "h3", "h4", "h5", "h6"):
+    _ALLOWED_ATTRIBUTES.setdefault(_tag, set())
+    _ALLOWED_ATTRIBUTES[_tag] |= {"id", "class"}
 
 
 def markdown_page(
@@ -27,6 +38,7 @@ def markdown_page(
 
     md = markdown.Markdown(extensions=["meta", "tables", "fenced_code", "footnotes"])
     content_html = md.convert(content_text)
+    content_html = nh3.clean(content_html, attributes=_ALLOWED_ATTRIBUTES)
     return md, content_html
 
 
