@@ -1,5 +1,6 @@
 import logging
 import random
+import time
 from typing import Any, Dict, Generator, List, Tuple
 
 from simpleeval import InvalidExpression, NameNotDefined, simple_eval
@@ -95,6 +96,35 @@ def cmd_solve(
     # 3. Return status (yielded as the final value of the generator)
     yield from ()  # Yield once to maintain the Generator pattern
     return {"command": "solve", "ok": True}
+
+
+def cmd_sleep(
+ args: List[str],
+    ctx: Dict[str, Any],
+    evaluator: ExpressionEvaluator,
+    callback: callable,
+) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
+    # Validate arguments
+    if not args:
+        yield from ()
+        return {"command": "return", "ok": False, "error": "Missing number of seconds"}
+
+    if len(args) > 1:
+        log.warning(
+            f"cmd_sleep expects 1 argument, but received {len(args)}. Extra arguments will be ignored."
+        )
+
+    seconds = int(args[0])
+
+    time.sleep(seconds)
+
+    yield from ()
+    return {
+        "command": "sleep",
+        "variable": None,
+        "value": seconds,
+        "ok": True,
+    }
 
 
 def cmd_return(

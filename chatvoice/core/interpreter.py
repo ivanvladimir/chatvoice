@@ -15,6 +15,7 @@ from .commands import (
     cmd_set,
     cmd_solve,
     cmd_tag,
+    cmd_sleep,
 )
 from .conversation import Conversation
 from .expresion_evaluator import ExpressionEvaluator
@@ -110,6 +111,7 @@ class Interpreter:
             "exec": cmd_exec,
             "remember": cmd_remember,
             "info": cmd_info,
+            "sleep": cmd_sleep,
         }
 
     def run(
