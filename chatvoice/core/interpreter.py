@@ -13,14 +13,14 @@ from .commands import (
     cmd_return,
     cmd_say,
     cmd_set,
+    cmd_sleep,
     cmd_solve,
     cmd_tag,
-    cmd_sleep,
 )
 from .conversation import Conversation
 from .expresion_evaluator import ExpressionEvaluator
 from .logger import get_logger
-from .parser import Command, parse_line
+from .parser import Command, parse_line, parse_structured_command
 
 log = get_logger(__name__)
 
@@ -75,7 +75,7 @@ class Interpreter:
         )
 
         self.settings: Dict[str, Any] = self.conversation.settings
-        self.commands: List[str] = list(self.conversation.commands)
+        self.commands: List[Union[str, dict]] = list(self.conversation.commands)
 
         self.state = ExecutionState(
             conversation=self.conversation, commands=self.commands
@@ -141,7 +141,11 @@ class Interpreter:
         try:
             while self.state.commands and not self.exit:
                 line = self.state.commands.pop(0)
-                chain = parse_line(line)
+                chain = (
+                    parse_structured_command(line)
+                    if isinstance(line, dict)
+                    else parse_line(line)
+                )
 
                 # Execute the parsed chain (e.g., "say hello | set var 1")
                 yield from self._run_chain(chain, callback)

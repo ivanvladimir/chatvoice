@@ -1,7 +1,7 @@
 import logging
 import random
 import time
-from typing import Any, Dict, Generator, List, Tuple
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 from simpleeval import InvalidExpression, NameNotDefined, simple_eval
 
@@ -21,7 +21,7 @@ class CommandError(Exception):
 class ExecutionState:
     """Mutable container for the current execution flow."""
 
-    def __init__(self, conversation: Conversation, commands: List[str]):
+    def __init__(self, conversation: Conversation, commands: List[Union[str, dict]]):
         """
         Initialize the execution state.
 
@@ -99,7 +99,7 @@ def cmd_solve(
 
 
 def cmd_sleep(
- args: List[str],
+    args: List[str],
     ctx: Dict[str, Any],
     evaluator: ExpressionEvaluator,
     callback: callable,
@@ -180,8 +180,49 @@ def cmd_return(
     }
 
 
+def _resolve_prompt_text(
+    text: str, 
+    prompts: Dict[str, Any], 
+    evaluator: ExpressionEvaluator
+) -> str:
+    """
+    Resolve a prompt key or raw text into its final formatted string.
+
+    If `text` names an entry in the conversation's prompts (resources/prompts.yaml),
+    that entry's text is used as an f-string template evaluated against the
+    current slots. Otherwise `text` itself is treated as raw text and
+    formatted against the slots directly.
+    """
+    if text in prompts:
+        raw_prompt = prompts[text].strip()
+        # Dynamically build an f-string and evaluate it safely using the evaluator
+        fmt_str = f'f"""{raw_prompt}"""' if "\n" in raw_prompt else f'f"{raw_prompt}"'
+
+        try:
+            return evaluator.eval_expression(fmt_str)
+        except Exception:
+            # If simpleeval fails, fall back to the raw text
+            return raw_prompt
+    if text in evaluator.slots:
+        raw_prompt = evaluator.slots[text].strip()
+        # Dynamically build an f-string and evaluate it safely using the evaluator
+        fmt_str = f'f"""{raw_prompt}"""' if "\n" in raw_prompt else f'f"{raw_prompt}"'
+
+        try:
+            return evaluator.eval_expression(fmt_str)
+        except Exception:
+            # If simpleeval fails, fall back to the raw text
+            return raw_prompt
+
+    # Not a defined prompt: treat it as a raw string and format it
+    try:
+        return text.format_map(evaluator.slots)
+    except KeyError:
+        return text  # Fallback if a slot is missing
+
+
 def cmd_llm(
-    args: List[str],
+    args: Union[List[str], Dict[str, Any]],
     ctx: Dict[str, Any],
     evaluator: ExpressionEvaluator,
     callback: callable,
@@ -189,8 +230,24 @@ def cmd_llm(
     """
     Resolves a prompt, sends it to the LLM client, and optionally saves the response to a slot.
 
+    Accepts two forms:
+      - Positional (text-line) form:
+        `llm <prompt_key_or_text> [variable_name]`
+      - Structured (YAML block) form::
+
+            llm:
+              system: <prompt_key_or_text>
+              user: <prompt_key_or_text>
+              output: <variable_name>
+
+        `system` and `user` are each resolved exactly like the positional
+        key -- looked up in the conversation's prompts first, falling back
+        to formatting the raw text against the current slots -- and sent to
+        the LLM client as an ordered `[system, user]` pair.
+
     Args:
-        args: Command arguments, expected: [prompt_key_or_text] or [prompt_key_or_text, variable_name]
+        args: Command arguments; either a tuple of string tokens (positional
+            form) or a dict with `system`/`user`/`output` keys (structured form)
         ctx: Execution context containing 'prompts', 'llm_client'
         evaluator: Expression evaluator for variable resolution
         callback: Callback function for user interaction
@@ -198,38 +255,47 @@ def cmd_llm(
     Returns:
         Generator yielding command status dictionaries
     """
-    # Validate arguments
-    if not args:
-        yield from ()
-        return {"command": "llm", "ok": False, "error": "Missing prompt key or text"}
-
-    if len(args) > 2:
-        log.warning(
-            f"cmd_llm expects 1-2 arguments, but received {len(args)}. Extra arguments will be ignored."
-        )
-
-    key = args[0]
     prompts = ctx.get("prompts", {})
+    variable: Optional[str]
 
-    # 1. Resolve the prompt string
-    if key in prompts:
-        raw_prompt = prompts[key].strip()
-        # Dynamically build an f-string and evaluate it safely using the evaluator
-        fmt_str = f'f"""{raw_prompt}"""' if "\n" in raw_prompt else f'f"{raw_prompt}"'
+    if isinstance(args, dict):
+        system_text = args.get("system")
+        user_text = args.get("user")
+        variable = args.get("output")
 
-        try:
-            prompt = evaluator.eval_expression(fmt_str)
-        except Exception:
-            # If simpleeval fails, fall back to the raw text
-            prompt = raw_prompt
+        if not system_text and not user_text:
+            yield from ()
+            return {
+                "command": "llm",
+                "ok": False,
+                "error": "Missing system/user prompt",
+            }
+
+        prompt: Any = [
+            _resolve_prompt_text(system_text, prompts, evaluator)
+            if system_text
+            else None,
+            _resolve_prompt_text(user_text, prompts, evaluator) if user_text else None,
+        ]
     else:
-        # If it's not a defined prompt, treat the arg as a raw string and format it
-        try:
-            prompt = key.format_map(evaluator.slots)
-        except KeyError:
-            prompt = key  # Fallback if a slot is missing
+        # Validate arguments
+        if not args:
+            yield from ()
+            return {
+                "command": "llm",
+                "ok": False,
+                "error": "Missing prompt key or text",
+            }
 
-    # 2. Call the LLM (Extract client from context)
+        if len(args) > 2:
+            log.warning(
+                f"cmd_llm expects 1-2 arguments, but received {len(args)}. Extra arguments will be ignored."
+            )
+
+        prompt = _resolve_prompt_text(args[0], prompts, evaluator)
+        variable = args[1] if len(args) >= 2 else None
+
+    # Call the LLM (Extract client from context)
     llm_client = ctx.get("llm_client")
     if not llm_client:
         yield from ()
@@ -241,26 +307,20 @@ def cmd_llm(
 
     response = llm_client_response(llm_client, prompt)
 
-    # 3. Handle state mutation based on arguments
-    if len(args) == 1:
-        # Just yield the response to the UI/stream
-        yield {"cmd": "llm", "args": [response]}
-        return {"command": "llm", "value": [response], "ok": True}
+    yield {"cmd": "llm", "args": [response]}
 
-    elif len(args) >= 2:
-        variable = args[1]
-
+    if variable:
         # CRITICAL: Use update_slots() so the evaluator rebuilds its internal
         # simpleeval context.
         evaluator.update_slots({variable: response})
-
-        yield {"cmd": "llm", "args": [response]}
         return {
             "command": "llm",
             "variable": variable,
             "value": [response],
             "ok": True,
         }
+
+    return {"command": "llm", "value": [response], "ok": True}
 
 
 def cmd_say(

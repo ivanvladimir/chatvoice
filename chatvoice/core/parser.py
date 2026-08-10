@@ -9,6 +9,17 @@ Grammar (informal):
     condition  ::= clause ("or" clause)*
     clause     ::= ["not"] WORD [OP WORD]
     OP         ::= "==" | "!=" | "<=" | ">=" | "<" | ">"
+
+A script entry may also be a YAML mapping instead of a text line, e.g.::
+
+    - llm:
+        system: "..."
+        user: "..."
+        output: result
+
+Such structured commands carry their payload as-is in ``args`` (a dict,
+rather than a tuple of string tokens) and don't support guards or piping --
+see :func:`parse_structured_command`.
 """
 
 from __future__ import annotations
@@ -16,7 +27,7 @@ from __future__ import annotations
 import re
 import shlex
 from dataclasses import dataclass, field
-from typing import Literal, Optional, Tuple
+from typing import Any, Literal, Optional, Tuple, Union
 
 # ---------------------------------------------------------------------------
 # Data model
@@ -65,14 +76,16 @@ class Command:
 
     name: str
     _command: str
-    args: tuple[str, ...] = field(default_factory=tuple)
+    args: Union[tuple[str, ...], dict] = field(default_factory=tuple)
     condition: Optional[Condition] = None
     condition_type: Optional[ConditionType] = None
 
     def __str__(self) -> str:
         """Reconstructs a readable string representation of the command."""
-        parts = [self.name] + list(self.args)
-        cmd_str = " ".join(parts)
+        if isinstance(self.args, dict):
+            cmd_str = f"{self.name} {self.args!r}"
+        else:
+            cmd_str = " ".join([self.name] + list(self.args))
         if self.condition and self.condition_type:
             cmd_str = f"{self.condition_type} {self.condition} then {cmd_str}"
         return cmd_str
@@ -283,6 +296,23 @@ def parse_line(line: str) -> Line:
     segments = _split_pipe(line)
     commands = [_parse_command(seg) for seg in segments]
     return Chain(commands=commands)
+
+
+def parse_structured_command(entry: dict[str, Any]) -> Line:
+    """Parse a YAML-mapping script entry into a single-command :class:`Chain`.
+
+    ``entry`` must have exactly one key, the command name, whose value is
+    passed through unchanged as ``Command.args`` -- e.g.
+    ``{"llm": {"system": "...", "user": "...", "output": "result"}}``.
+    Unlike text lines, structured commands don't support ``if``/``while``
+    guards or ``|`` piping.
+    """
+    if len(entry) != 1:
+        raise ValueError(
+            f"Structured command must have exactly one top-level key, got: {entry!r}"
+        )
+    ((name, payload),) = entry.items()
+    return Chain(commands=[Command(name=name, _command=repr(entry), args=payload)])
 
 
 def parse_script(source: str) -> list[Line]:

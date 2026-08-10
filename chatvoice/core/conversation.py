@@ -22,7 +22,7 @@ class Conversation:
     ):
         self.project_pathname = project_pathname
         self.stacks_: list[list] = []
-        self.commands: list[str] = []
+        self.commands: list = []
         self.strategies: dict = {}
         self.templates: dict = {}
         self.prompts: dict = {}
