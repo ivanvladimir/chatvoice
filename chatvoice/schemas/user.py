@@ -109,6 +109,24 @@ class UserCreateInternal(UserBase):
     profile_image_url: str | None = None
 
 
+class UserProfileUpdate(BaseModel):
+    """Self-service update for a user's own 'normal' profile info.
+
+    Deliberately narrower than UserUpdate: excludes username (baked into
+    project directory paths, e.g. conversations/{username}/...), role,
+    password, and is_verified -- none of those are safe for a user to
+    change on themselves through a profile-editing endpoint.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: Annotated[str, Field(min_length=2, max_length=30, examples=["User Userson"])]
+    email: Annotated[EmailStr, Field(examples=["user.userson@example.com"])]
+    institution: Annotated[str | None, Field(default=None, max_length=200)]
+    description: Annotated[str | None, Field(default=None, max_length=1000)]
+    profile_image_url: Annotated[str | None, Field(default=None, max_length=500)]
+
+
 class UserUpdate(BaseModel):
     model_config = ConfigDict(extra="ignore")
 

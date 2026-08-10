@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Chatbot {{script}}{% endblock %}
+{% block title %}{{ chat_room_name|default('Chatbot') }} - {{script}}{% endblock %}
 
 {% block head %}
 <style>
@@ -22,9 +22,28 @@
     
     .streaming-cursor::after { content: '▊'; animation: blink 1s infinite; color: oklch(var(--p)); }
     @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
-    
+
+    /* User typing animation cursor */
+    .user-typing-cursor::after {
+        content: '▊';
+        animation: blink 0.8s infinite;
+        color: currentColor;
+        font-weight: normal;
+        margin-left: 1px;
+    }
     .chat-input { resize: none; field-sizing: content; min-height: 44px; max-height: 150px; }
 </style>
+
+{# Pass configuration to JavaScript #}
+<script>
+    window.chatbotConfig = {
+        roomName: "{{ chat_room_name|default('Chat Room') }}",
+        showDebug: {{ 'true' if show_debug|default(true) else 'false' }},
+        showExport: {{ 'true' if show_export|default(true) else 'false' }},
+        enableUserTypingAnimation: {{ 'true' if enable_user_typing|default(true) else 'false' }},
+        userTypingSpeed: {{ user_typing_speed|default(25) }}
+    };
+</script>
 {% endblock %}
 
 
@@ -38,7 +57,7 @@
 
 {% block protected_htmx_config %}
 hx-post="{{ url_for('chatbot_interface', script=script, username=username) if username else request.url_for('chatbot_interface_', script=script) }}"
-|hx-trigger="load-protected"
+hx-trigger="load-protected"
 hx-swap="innerHTML"
 hx-target="this"
 hx-indicator="#protected-loading"

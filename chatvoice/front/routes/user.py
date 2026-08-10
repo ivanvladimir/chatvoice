@@ -33,6 +33,22 @@ async def main(
     )
 
 
+@router.get("/profile", response_class=HTMLResponse)
+async def profile_page(
+    request: Request,
+    ctx: RuntimeContext = Depends(get_default_context),  # Single injection
+) -> HTMLResponse:
+    """Profile page: view and edit your own account info."""
+    return ctx.templates_front.TemplateResponse(
+        request=request,
+        name="user/profile.html",
+        context={
+            "active_page": "profile",
+            "active_menu": None,
+        },
+    )
+
+
 @router.get("/chat/{script}", response_class=HTMLResponse)
 @router.get("/chat/{username}/{script}", response_class=HTMLResponse)
 async def chat(
@@ -61,5 +77,11 @@ async def chat(
             )
             if username
             else request.url_for("websocket_endpoint_", script=script),
+            # Configure these from your database or settings
+            "chat_room_name": "Customer Support",  # Custom room name
+            "show_debug": True,  # Disable debug button
+            "show_export": False,  # Disable download button
+            "enable_user_typing": True,  # Enable typing animation
+            "user_typing_speed": 30,  # Speed in ms per character
         },
     )

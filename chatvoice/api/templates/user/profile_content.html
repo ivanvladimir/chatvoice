@@ -1,0 +1,152 @@
+{# ─── THIS IS A PARTIAL, NO EXTENDS BASE.HTML ─── #}
+<div id="profile-content-container" class="max-w-2xl mx-auto space-y-6">
+
+    {% if success %}
+    <div class="alert alert-success">
+        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>Perfil actualizado correctamente</span>
+    </div>
+    {% endif %}
+
+    {% if errors %}
+    <div class="alert alert-error">
+        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div>
+            <h4 class="font-bold">No se pudo guardar</h4>
+            <ul class="text-sm mt-1 list-disc list-inside">
+                {% for error in errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ─── READ-ONLY SUMMARY ─── #}
+    <div class="card bg-base-200">
+        <div class="card-body">
+            <div class="flex items-center gap-4">
+                <div class="avatar placeholder">
+                    <div class="bg-primary text-primary-content rounded-full w-16">
+                        {% if user.profile_image_url %}
+                        <img src="{{ user.profile_image_url }}" alt="{{ user.name }}" />
+                        {% else %}
+                        <span class="text-2xl font-bold">{{ user.name[0] | upper }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="min-w-0">
+                    <h2 class="text-xl font-bold truncate">{{ user.name }}</h2>
+                    <p class="text-base-content/60">@{{ user.username }}</p>
+                </div>
+                <div class="ml-auto flex flex-col gap-1 items-end shrink-0">
+                    <span class="badge badge-primary badge-sm">{{ user.role }}</span>
+                    <span class="badge {{ 'badge-success' if user.is_verified else 'badge-ghost' }} badge-sm">
+                        {{ 'Verificado' if user.is_verified else 'No verificado' }}
+                    </span>
+                </div>
+            </div>
+            {% if user.created_at %}
+            <p class="text-xs text-base-content/40 mt-3">
+                Miembro desde {{ user.created_at.strftime('%d/%m/%Y') }}
+            </p>
+            {% endif %}
+        </div>
+    </div>
+
+    {# ─── EDIT FORM ─── #}
+    <div class="card bg-base-200">
+        <div class="card-body">
+            <h3 class="font-bold text-lg mb-2">Editar información</h3>
+            <p class="text-sm text-base-content/60 mb-4">
+                El nombre de usuario (<span class="font-mono">@{{ user.username }}</span>) y el rol no se pueden cambiar aquí.
+            </p>
+
+            <form hx-post="{{ url_for('update_profile_htmx') }}"
+                  hx-target="#profile-content-container"
+                  hx-swap="outerHTML"
+                  hx-indicator="#profile-save-spinner"
+                  class="space-y-4">
+
+                <!-- Name -->
+                <div class="form-control w-full">
+                    <label class="label">
+                        <span class="label-text font-medium">Nombre <span class="text-error">*</span></span>
+                    </label>
+                    <input type="text"
+                           name="name"
+                           class="input input-bordered w-full {{ 'input-error' if errors else '' }}"
+                           value="{{ user.name or '' }}"
+                           required
+                           minlength="2"
+                           maxlength="30" />
+                </div>
+
+                <!-- Email -->
+                <div class="form-control w-full">
+                    <label class="label">
+                        <span class="label-text font-medium">Correo electrónico <span class="text-error">*</span></span>
+                    </label>
+                    <input type="email"
+                           name="email"
+                           class="input input-bordered w-full {{ 'input-error' if errors else '' }}"
+                           value="{{ user.email or '' }}"
+                           required />
+                </div>
+
+                <!-- Institution -->
+                <div class="form-control w-full">
+                    <label class="label">
+                        <span class="label-text font-medium">Institución</span>
+                        <span class="label-text-alt text-base-content/40">Opcional</span>
+                    </label>
+                    <input type="text"
+                           name="institution"
+                           class="input input-bordered w-full"
+                           value="{{ user.institution or '' }}"
+                           maxlength="200" />
+                </div>
+
+                <!-- Description / bio -->
+                <div class="form-control w-full">
+                    <label class="label">
+                        <span class="label-text font-medium">Descripción</span>
+                        <span class="label-text-alt text-base-content/40">Opcional</span>
+                    </label>
+                    <textarea name="description"
+                              class="textarea textarea-bordered w-full h-24"
+                              maxlength="1000">{{ user.description or '' }}</textarea>
+                </div>
+
+                <!-- Avatar URL -->
+                <div class="form-control w-full">
+                    <label class="label">
+                        <span class="label-text font-medium">URL de imagen de perfil</span>
+                        <span class="label-text-alt text-base-content/40">Opcional</span>
+                    </label>
+                    <input type="url"
+                           name="profile_image_url"
+                           placeholder="https://..."
+                           class="input input-bordered w-full"
+                           value="{{ user.profile_image_url or '' }}"
+                           maxlength="500" />
+                </div>
+
+                <!-- Actions -->
+                <div class="flex justify-end pt-2">
+                    <button type="submit" class="btn btn-primary">
+                        <span id="profile-save-spinner" class="loading loading-spinner loading-xs hidden"></span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Guardar cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

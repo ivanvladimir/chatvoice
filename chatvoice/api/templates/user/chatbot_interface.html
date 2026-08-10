@@ -1,5 +1,5 @@
 {# partials/chat_session.html #}
-<div x-data="chatbotApp('{{ url_start }}', '{{ url_ws }}')" 
+<div x-data="chatbotApp('{{ url_start }}', '{{ url_ws }}', window.chatbotConfig || {})" 
      x-init="init()" 
      @click.stop class="w-full h-full">
     <div class="flex flex-col h-[calc(100vh-12rem)] max-w-3xl mx-auto w-full">
@@ -13,7 +13,8 @@
                     </div>
                 </div>
                 <div>
-                    <h2 class="font-semibold text-sm">Chat Room</h2>
+                    {# ─── DYNAMIC ROOM NAME ─── #}
+                    <h2 class="font-semibold text-sm" x-text="roomName"></h2>
                     <div class="flex items-center gap-1.5">
                         <div class="w-2 h-2 rounded-full" :class="isConnected ? 'bg-success' : 'bg-error'"></div>
                         <span class="text-xs text-base-content/60" x-text="isConnected ? 'Conectado' : 'Desconectado'"></span>
@@ -22,26 +23,34 @@
             </div>
             
             <div class="flex items-center gap-2">
-                {# ─── Debug Mode Toggle ─── #}
-                <div class="flex items-center gap-2 px-2 py-1 rounded-lg transition-colors"
-                     :class="debugMode ? 'bg-warning/10 border border-warning/30' : 'hover:bg-base-300/50'">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" 
-                         :class="debugMode ? 'text-warning' : 'text-base-content/40'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                    </svg>
-                    <span class="text-xs font-medium" :class="debugMode ? 'text-warning' : 'text-base-content/40'">Debug</span>
-                    <input type="checkbox" class="toggle toggle-sm toggle-warning" x-model="debugMode">
-                </div>
+                {# ─── CONDITIONAL DEBUG MODE TOGGLE ─── #}
+                <template x-if="showDebug">
+                    <div class="flex items-center gap-2 px-2 py-1 rounded-lg transition-colors"
+                         :class="debugMode ? 'bg-warning/10 border border-warning/30' : 'hover:bg-base-300/50'">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" 
+                             :class="debugMode ? 'text-warning' : 'text-base-content/40'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                        <span class="text-xs font-medium" :class="debugMode ? 'text-warning' : 'text-base-content/40'">Debug</span>
+                        <input type="checkbox" class="toggle toggle-sm toggle-warning" x-model="debugMode">
+                    </div>
+                </template>
                 
-                <div class="divider divider-vertical h-6 before:bg-base-300 after:bg-base-300"></div>
+                {# ─── CONDITIONAL DIVIDER (only shows if both Debug and Export are visible) ─── #}
+                <template x-if="showDebug && showExport">
+                    <div class="divider divider-vertical h-6 before:bg-base-300 after:bg-base-300"></div>
+                </template>
                 
                 <button type="button" class="btn btn-ghost btn-sm btn-square" @click="clearChat()" title="Limpiar chat">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                 </button>
                 
-                <button type="button" class="btn btn-ghost btn-sm btn-square" @click="exportChat()" title="Exportar chat">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                </button>
+                {# ─── CONDITIONAL EXPORT BUTTON ─── #}
+                <template x-if="showExport">
+                    <button type="button" class="btn btn-ghost btn-sm btn-square" @click="exportChat()" title="Exportar chat">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    </button>
+                </template>
             </div>
         </div>
         
@@ -73,14 +82,12 @@
                      {# ─── DIVIDER (Name + Optional Message) ─── #}
                     <template x-if="msg.type === 'divider'">
                         <div x-show="debugMode" class="my-2" style="display: none;">
-                            {# Divider Line and Tag Name #}
                             <div class="flex items-center gap-3">
                                 <div class="flex-1 h-px bg-warning/30"></div>
                                 <span class="text-[10px] text-warning/60 font-mono uppercase tracking-widest flex items-center gap-1.5" x-text="msg.tag || 'debug step'"></span>
                                 <div class="flex-1 h-px bg-warning/30"></div>
                             </div>
                             
-                            {# Optional Message associated with the divider #}
                             <div x-show="msg.message" 
                                  x-transition
                                  class="text-center text-[11px] text-base-content/50 mt-1.5 px-4 whitespace-pre-wrap break-words"
@@ -94,7 +101,6 @@
                         <div x-show="debugMode" class="px-1 py-1" style="display: none;">
                             <div class="flex flex-wrap gap-1.5">
                                 <template x-for="tag in msg.tags" :key="tag.key + tag.value">
-                                    <!-- Dynamically apply color classes based on the tag's assigned color -->
                                     <div class="badge badge-ghost badge-sm gap-1 font-mono text-[10px]"
                                          :class="`border-${tag.color}/20 bg-${tag.color}/10 text-${tag.color}/80`">
                                         <span class="font-semibold opacity-60" x-text="tag.key"></span>
@@ -105,7 +111,7 @@
                             </div>
                         </div>
                     </template>
-                    
+
                     {# ─── MESSAGE: USER (Right Side) ─── #}
                     <template x-if="msg.type === 'message' && msg.side === 'user'">
                         <div class="chat chat-end">
@@ -113,6 +119,7 @@
                                 <time x-text="msg.timestamp" class="text-xs opacity-50"></time>
                                 <span x-text="msg.user || 'Tú'"></span>
                             </div>
+                            {# Notice the cursor class is REMOVED from here #}
                             <div class="chat-bubble chat-bubble-primary">
                                 <p class="whitespace-pre-wrap" x-text="msg.content"></p>
                             </div>
@@ -123,7 +130,7 @@
                             </div>
                         </div>
                     </template>
-                    
+
                     {# ─── MESSAGE: OTHER/BOT (Left Side, renders HTML) ─── #}
                     <template x-if="msg.type === 'message' && msg.side === 'other'">
                         <div class="chat chat-start group">
@@ -136,8 +143,9 @@
                                 <span x-text="msg.user || 'Sistema'"></span>
                                 <time x-text="msg.timestamp" class="text-xs opacity-50"></time>
                             </div>
-                            <div class="chat-bubble">
-                                <div class="whitespace-pre-wrap break-words" x-html="msg.content"></div>
+                            {# ─── UPDATED x-html TO USE THE INDEX ─── #}
+                            <div class="chat-bubble" :class="{ 'user-typing-cursor': msg.isAnimating }">
+                                <div class="whitespace-pre-wrap break-words" x-html="msg.isAnimating ? msg.fullContent.split(/(\s+)/).slice(0, msg._typeIndex + 1).join('') : msg.content"></div>
                             </div>
                             <div class="chat-footer opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button type="button" class="btn btn-ghost btn-xs" @click="copyMessage(msg.content)" title="Copiar">
@@ -146,7 +154,6 @@
                             </div>
                         </div>
                     </template>
-                    
                 </div>
             </template>
         </div>

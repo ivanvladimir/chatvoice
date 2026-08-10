@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block title %}Mi Perfil{% endblock %}
+
+{# ─── HTMX CONFIGURATION ─── #}
+{% block protected_htmx_config %}
+hx-post="{{ url_for('get_profile_htmx') }}"
+hx-trigger="load-protected, profileUpdated"
+hx-swap="innerHTML"
+hx-target="this"
+hx-indicator="#protected-loading"
+{% endblock %}
+
+{# ─── SKELETON FALLBACK (Shown while HTMX fetches) ─── #}
+{% block protected_content %}
+<div class="max-w-2xl mx-auto space-y-6">
+    <div class="skeleton h-32 w-full rounded-box"></div>
+    <div class="skeleton h-80 w-full rounded-box"></div>
+</div>
+{% endblock %}
