@@ -2,6 +2,7 @@ from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
 
+import chatvoice.models  # noqa: F401  (registers models on Base.metadata)
 from alembic import context
 from chatvoice.core.config import DatabaseOption, settings
 from chatvoice.core.db import Base

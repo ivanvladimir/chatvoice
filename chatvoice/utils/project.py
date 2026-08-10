@@ -1,11 +1,120 @@
+import asyncio
 import shutil
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from ..core.config import get_settings
 
 ALLOWED_EXTENSIONS = {".yaml", ".yml", ".html", ".md", ".txt"}
 
+# Hosts allowed for the "import from Git" feature. Kept narrow on purpose:
+# self-hosted git servers or arbitrary schemes (file://, ssh://, git@...)
+# aren't validated the same way and could be used to reach internal hosts.
+ALLOWED_GIT_HOSTS = {"github.com", "www.github.com", "gitlab.com", "www.gitlab.com"}
+
+GIT_CLONE_TIMEOUT_SECONDS = 90
+
 settings = get_settings()
+
+
+class GitImportError(Exception):
+    """Raised when a project cannot be imported from a git repository."""
+
+
+def validate_git_url(git_url: str) -> str:
+    """
+    Validate that git_url is an HTTPS URL pointing at github.com or gitlab.com.
+
+    Returns the URL unchanged (for convenient chaining) or raises ValueError.
+    """
+    git_url = git_url.strip()
+    parsed = urlsplit(git_url)
+
+    if parsed.scheme != "https":
+        raise ValueError("La URL debe usar https://")
+    if parsed.username or parsed.password:
+        raise ValueError("La URL no debe incluir credenciales")
+    if parsed.hostname not in ALLOWED_GIT_HOSTS:
+        raise ValueError("Solo se admiten repositorios de github.com o gitlab.com")
+    if not parsed.path.strip("/"):
+        raise ValueError("La URL debe incluir la ruta del repositorio")
+
+    return git_url
+
+
+def derive_project_name_from_git_url(git_url: str) -> str:
+    """Derive a repo-name slug from a git URL, e.g. .../org/my-repo.git -> my-repo."""
+    path = urlsplit(git_url).path.strip("/")
+    name = path.rsplit("/", 1)[-1]
+    if name.endswith(".git"):
+        name = name[: -len(".git")]
+    return name
+
+
+async def clone_project_directory(
+    username: str,
+    project_name: str,
+    git_url: str,
+    base_path: str | Path = "conversations",
+) -> Path:
+    """
+    Clone git_url into base_path/username/project_name.
+
+    Args:
+        username: Owner's username (used as a subdirectory).
+        project_name: Project's normalized name (used as a subdirectory).
+        git_url: HTTPS URL of the repository to clone. Must already be
+            validated with validate_git_url().
+        base_path: Root directory under which user/project folders live.
+
+    Returns:
+        Path to the newly cloned project directory.
+
+    Raises:
+        FileExistsError: If the target project directory already exists.
+        GitImportError: If the clone fails or times out.
+    """
+    project_dir = Path(base_path) / username / project_name
+
+    if project_dir.exists():
+        raise FileExistsError(f"Project directory already exists: {project_dir}")
+
+    project_dir.parent.mkdir(parents=True, exist_ok=True)
+
+    process = await asyncio.create_subprocess_exec(
+        "git",
+        "clone",
+        "--depth",
+        "1",
+        "--",
+        git_url,
+        str(project_dir),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+
+    try:
+        _, stderr = await asyncio.wait_for(
+            process.communicate(), timeout=GIT_CLONE_TIMEOUT_SECONDS
+        )
+    except TimeoutError:
+        process.kill()
+        await process.wait()
+        shutil.rmtree(project_dir, ignore_errors=True)
+        raise GitImportError("Tiempo de espera agotado al clonar el repositorio")
+
+    if process.returncode != 0:
+        shutil.rmtree(project_dir, ignore_errors=True)
+        message = stderr.decode(errors="replace").strip() or "git clone falló"
+        raise GitImportError(message)
+
+    if not (project_dir / "main.yaml").is_file():
+        shutil.rmtree(project_dir, ignore_errors=True)
+        raise GitImportError(
+            "El repositorio no parece un proyecto chatvoice (falta main.yaml)"
+        )
+
+    return project_dir
 
 
 def create_project_directory(

@@ -95,6 +95,30 @@ class ProjectCreateInternal(ProjectCreate):
     )
 
 
+class ProjectImportGit(BaseModel):
+    """Schema for importing a project by cloning a GitHub/GitLab repo."""
+
+    name: str = Field(..., min_length=1, max_length=100, description="Project name")
+    project_name: str | None = Field(
+        default=None,
+        max_length=500,
+        description="Project key. Derived from the repo name if left blank.",
+    )
+    git_url: str = Field(
+        ...,
+        min_length=1,
+        max_length=1000,
+        description="HTTPS URL of the GitHub or GitLab repository to clone",
+    )
+
+
+class ProjectImportInternal(ProjectCreateInternal):
+    """Internal schema for creating a project row while a git import is running."""
+
+    source_url: str = Field(..., max_length=1000)
+    import_status: str = Field(default="importing", max_length=20)
+
+
 class ProjectUpdate(BaseModel):
     """Schema for updating a project. All fields are optional."""
 
@@ -102,6 +126,8 @@ class ProjectUpdate(BaseModel):
     directory_path: str | None = Field(default=None, min_length=1, max_length=500)
     description: str | None = Field(default=None)
     is_active: bool | None = Field(default=None)
+    import_status: str | None = Field(default=None, max_length=20)
+    import_error: str | None = Field(default=None, max_length=1000)
 
 
 class ProjectUpdateInternal(ProjectUpdate):
@@ -138,6 +164,9 @@ class ProjectListItem(BaseModel):
     is_active: bool
     uuid: UUID
     created_at: datetime
+    source_url: str | None = None
+    import_status: str = "ready"
+    import_error: str | None = None
 
     owner: UserBrief
 

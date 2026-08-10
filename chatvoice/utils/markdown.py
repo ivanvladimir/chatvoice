@@ -18,10 +18,18 @@ for _tag in ("a", "sup", "div", "code", "pre", "h1", "h2", "h3", "h4", "h5", "h6
     _ALLOWED_ATTRIBUTES[_tag] |= {"id", "class"}
 
 
+def render_markdown(content_text: str) -> tuple[markdown.Markdown, str]:
+    """Convert markdown text to sanitized HTML. Returns (md, safe_html)."""
+    md = markdown.Markdown(extensions=["meta", "tables", "fenced_code", "footnotes"])
+    content_html = md.convert(content_text)
+    content_html = nh3.clean(content_html, attributes=_ALLOWED_ATTRIBUTES)
+    return md, content_html
+
+
 def markdown_page(
     view_name: str,
     content_dir: Path,  # We now pass the single aggregate object
-) -> HTMLResponse:
+) -> tuple[markdown.Markdown, str]:
     safe_filename = f"{Path(view_name).stem}.md"
     file_path = (content_dir / safe_filename).resolve()
 
@@ -36,10 +44,7 @@ def markdown_page(
     except Exception:
         raise HTTPException(status_code=500, detail="Error reading page content")
 
-    md = markdown.Markdown(extensions=["meta", "tables", "fenced_code", "footnotes"])
-    content_html = md.convert(content_text)
-    content_html = nh3.clean(content_html, attributes=_ALLOWED_ATTRIBUTES)
-    return md, content_html
+    return render_markdown(content_text)
 
 
 def render_markdown_page(

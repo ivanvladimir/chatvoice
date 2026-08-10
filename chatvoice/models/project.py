@@ -44,6 +44,13 @@ class Project(Base):
     is_active: Mapped[bool] = mapped_column(default=True)
     description: Mapped[str | None] = mapped_column(String, default=None, nullable=True)
 
+    # Git import metadata: set when the project was created by cloning a
+    # GitHub/GitLab repo instead of copying the built-in template.
+    source_url: Mapped[str | None] = mapped_column(String(1000), default=None)
+    # "ready" | "importing" | "error"
+    import_status: Mapped[str] = mapped_column(String(20), default="ready")
+    import_error: Mapped[str | None] = mapped_column(String(1000), default=None)
+
     owner: Mapped["User"] = relationship(
         "User", back_populates="owned_projects", init=False
     )

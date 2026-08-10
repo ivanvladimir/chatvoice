@@ -45,6 +45,33 @@ hx-indicator="#protected-loading"
     </dialog>
 </div>
 
+<div x-data="importModal()" x-init="init()">
+
+    <!-- Modal -->
+    <dialog x-ref="modal"
+            class="modal"
+            :class="{ 'modal-open': isOpen }"
+            @click.self="close()">
+        <div class="modal-box max-w-lg">
+            <h3 class="font-bold text-lg flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Importar Proyecto
+            </h3>
+            <p class="py-2 text-base-content/60">Clona un proyecto chatvoice desde un repositorio de GitHub o GitLab</p>
+
+            <!-- Form Container (HTMX replaces this) -->
+            <div id="import-form-container">
+                {% include "projects/import_project_form.html" %}
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button @click="close()">close</button>
+        </form>
+    </dialog>
+</div>
+
 <div x-data="memberModal()" x-init="init()">
     <dialog x-ref="modal" 
             class="modal" 
@@ -124,6 +151,35 @@ function projectModal() {
                 const container = document.getElementById('create-form-container');
                 if (container) {
                     htmx.ajax('GET', '{{ url_for("get_create_form") }}', {
+                        target: container,
+                        swap: 'innerHTML'
+                    });
+                }
+            }, 300);
+        }
+    }
+}
+
+function importModal() {
+    return {
+        isOpen: false,
+
+        init() {
+            document.addEventListener('openImportModal', () => this.open());
+            document.addEventListener('closeImportModal', () => this.close());
+            document.addEventListener('projectCreated', () => this.close());
+        },
+
+        open() {
+            this.isOpen = true;
+        },
+
+        close() {
+            this.isOpen = false;
+            setTimeout(() => {
+                const container = document.getElementById('import-form-container');
+                if (container) {
+                    htmx.ajax('GET', '{{ url_for("get_import_form") }}', {
                         target: container,
                         swap: 'innerHTML'
                     });

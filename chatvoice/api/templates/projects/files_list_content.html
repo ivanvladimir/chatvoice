@@ -1,5 +1,5 @@
 {# ─── THIS IS A PARTIAL, NO EXTENDS BASE.HTML ─── #}
-<div class="flex flex-col h-full" id="project-files-container" x-data="filesApp({{ project.uuid | string | tojson }})">
+<div class="flex flex-col h-full" id="project-files-container" x-data='filesApp({{ project.uuid | string | tojson }})'>
     
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
@@ -112,6 +112,15 @@
                 {% endfor %}
             </ul>
         {% endif %}
+    </div>
+
+    <!-- README (loaded via HTMX if the project has one) -->
+    <div id="readme-container"
+         hx-get="{{ url_for('get_project_readme_htmx', project_uuid=project.uuid) }}"
+         hx-trigger="load"
+         hx-target="this"
+         hx-swap="innerHTML"
+         hx-indicator="this">
     </div>
 
     <!-- ═══════════════ ADD FILE MODAL ═══════════════ -->

@@ -1,0 +1,91 @@
+{# ─── ERRORS ─── #}
+{% if errors %}
+<div class="alert alert-error mb-4">
+    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    <div>
+        <h4 class="font-bold">Errores</h4>
+        <ul class="text-sm mt-1 list-disc list-inside">
+            {% for error in errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
+{# ─── FORM ─── #}
+<form hx-post="{{ url_for('import_project_htmx') }}"
+      hx-target="#import-form-container"
+      hx-indicator="#import-loading"
+      class="space-y-4">
+
+    <!-- Repository URL -->
+    <div class="form-control w-full">
+        <label class="label">
+            <span class="label-text font-medium">URL del repositorio <span class="text-error">*</span></span>
+        </label>
+        <input type="url"
+               name="git_url"
+               placeholder="https://github.com/usuario/repositorio"
+               class="input input-bordered w-full {{ 'input-error' if errors else '' }}"
+               value="{{ git_url | default('') }}"
+               required
+               maxlength="1000"
+               autofocus />
+        <label class="label">
+            <span class="label-text-alt text-base-content/40">Solo repositorios públicos de GitHub o GitLab (https://)</span>
+        </label>
+    </div>
+
+    <!-- Project Name -->
+    <div class="form-control w-full">
+        <label class="label">
+            <span class="label-text font-medium">Nombre del proyecto <span class="text-error">*</span></span>
+            <span class="label-text-alt text-base-content/40">Máx. 100 caracteres</span>
+        </label>
+        <input type="text"
+               name="name"
+               placeholder="Mi Proyecto"
+               class="input input-bordered w-full {{ 'input-error' if errors else '' }}"
+               value="{{ name | default('') }}"
+               required
+               maxlength="100" />
+    </div>
+
+    <!-- Project key -->
+    <div class="form-control w-full">
+        <label class="label">
+            <span class="label-text font-medium">Nombre clave de proyecto</span>
+            <span class="label-text-alt text-base-content/40">Opcional</span>
+        </label>
+        <div class="join w-full">
+            <span class="join-item bg-base-200 text-base-content/50 px-3 text-sm">📁</span>
+            <input type="text"
+                   name="project_name"
+                   placeholder="Se deriva del repositorio si se deja vacío"
+                   class="input input-bordered join-item w-full {{ 'input-error' if errors else '' }}"
+                   value="{{ project_name | default('') }}"
+                   maxlength="500" />
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="modal-action">
+        <button type="button"
+                class="btn"
+                @click="document.dispatchEvent(new CustomEvent('closeImportModal'))">
+            Cancelar
+        </button>
+        <button type="submit"
+                class="btn btn-primary"
+                id="import-submit-btn">
+            <span id="import-loading" class="loading loading-spinner loading-xs hidden"></span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Importar proyecto
+        </button>
+    </div>
+</form>

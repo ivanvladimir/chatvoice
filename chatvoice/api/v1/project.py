@@ -11,6 +11,7 @@ from uuid import UUID
 
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Depends,
     Form,
     HTTPException,
@@ -29,7 +30,7 @@ from pydantic import BaseModel
 from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...core.db.database import async_get_db
+from ...core.db.database import async_get_db, local_session
 from ...core.dependencies.paths import RuntimeContext, get_default_context
 from ...crud.projects import crud_projects
 from ...models.project import Project, ProjectMember
@@ -37,14 +38,21 @@ from ...models.user import User
 from ...schemas.project import (
     ProjectCreate,
     ProjectCreateInternal,
+    ProjectImportInternal,
     ProjectListItem,
+    ProjectUpdate,
     ProjectUpdateInternal,
 )
 from ...schemas.user import UserBrief
+from ...utils.markdown import render_markdown
 from ...utils.project import (
+    GitImportError,
+    clone_project_directory,
     create_project_directory,
+    derive_project_name_from_git_url,
     list_project_files,
     project_directory_exists,
+    validate_git_url,
 )
 from ..dependencies import get_current_editor, get_current_user
 
@@ -52,6 +60,7 @@ router = APIRouter(prefix="/projects", tags=["projects"])
 templates = Jinja2Templates(directory="chatvoice/api/templates")
 
 ALLOWED_EXTENSIONS = {".yaml", ".yml", ".html", ".md", ".txt", ".toml"}
+README_FILENAMES = ("README.md", "readme.md", "Readme.md", "README")
 
 
 # ─── PYDANTIC MODEL FOR CREATE FILE ───
@@ -345,6 +354,41 @@ async def list_project_files_htmx(
     )
 
 
+@router.get("/{project_uuid}/readme", response_class=HTMLResponse)
+async def get_project_readme_htmx(
+    request: Request,
+    project_uuid: UUID,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    ctx: RuntimeContext = Depends(get_default_context),
+    current_user: dict = Depends(get_current_editor),
+):
+    """HTMX endpoint: renders the project's README (if any) as sanitized HTML."""
+    base_path, project = await get_project_base(project_uuid, db, current_user)
+
+    readme_path = None
+    for filename in README_FILENAMES:
+        candidate = base_path / filename
+        if candidate.is_file():
+            readme_path = candidate
+            break
+
+    if readme_path is None:
+        return HTMLResponse(content="")
+
+    content_text = await asyncio.to_thread(readme_path.read_text, encoding="utf-8")
+    _, content_html = render_markdown(content_text)
+
+    return ctx.templates_api.TemplateResponse(
+        request=request,
+        name="projects/readme_content.html",
+        context={
+            "request": request,
+            "content": content_html,
+            "filename": readme_path.name,
+        },
+    )
+
+
 @router.post(
     "/{project_uuid}/files/{filename:path}/editor-htmx", response_class=HTMLResponse
 )
@@ -425,6 +469,142 @@ async def get_create_form(
             "description": "",
         },
     )
+
+
+@router.get("/import-form", response_class=HTMLResponse)
+async def get_import_form(
+    request: Request,
+    ctx: RuntimeContext = Depends(get_default_context),
+    current_user: dict = Depends(get_current_user),
+):
+    return ctx.templates_api.TemplateResponse(
+        request=request,
+        name="projects/import_project_form.html",
+        context={
+            "request": request,
+            "errors": [],
+            "name": "",
+            "project_name": "",
+            "git_url": "",
+        },
+    )
+
+
+async def _run_git_import(
+    project_uuid: UUID, username: str, project_name: str, git_url: str
+) -> None:
+    """Background task: clones the repo, then updates the project's status."""
+    try:
+        await clone_project_directory(username, project_name, git_url)
+    except (GitImportError, FileExistsError, OSError) as e:
+        async with local_session() as db:
+            await crud_projects.update(
+                db,
+                object=ProjectUpdate(import_status="error", import_error=str(e)[:1000]),
+                uuid=project_uuid,
+            )
+        return
+
+    async with local_session() as db:
+        await crud_projects.update(
+            db,
+            object=ProjectUpdate(import_status="ready"),
+            uuid=project_uuid,
+        )
+
+
+@router.post("/import", response_class=HTMLResponse)
+async def import_project_htmx(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    name: Annotated[str, Form()],
+    git_url: Annotated[str, Form()],
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    ctx: RuntimeContext = Depends(get_default_context),
+    current_user: dict = Depends(get_current_editor),
+    project_name: Annotated[str | None, Form()] = None,
+):
+    errors: list[str] = []
+
+    name = name.strip()
+    if not name:
+        errors.append("El nombre del proyecto es obligatorio")
+    elif len(name) > 100:
+        errors.append("El nombre no puede superar los 100 caracteres")
+
+    try:
+        git_url = validate_git_url(git_url)
+    except ValueError as e:
+        errors.append(str(e))
+
+    resolved_project_name = ""
+    if not errors:
+        try:
+            resolved_project_name = normalize_project_name(
+                (project_name or "").strip()
+                or derive_project_name_from_git_url(git_url)
+            )
+        except ValueError:
+            errors.append("No se pudo derivar el nombre clave del proyecto")
+        else:
+            if project_directory_exists(
+                current_user["username"], resolved_project_name
+            ):
+                errors.append("Un proyecto con el mismo nombre clave ya existe")
+
+    if errors:
+        return ctx.templates_api.TemplateResponse(
+            request=request,
+            name="projects/import_project_form.html",
+            context={
+                "request": request,
+                "errors": errors,
+                "name": name,
+                "project_name": resolved_project_name,
+                "git_url": git_url,
+            },
+        )
+
+    try:
+        project_in = ProjectImportInternal(
+            name=name,
+            project_name=resolved_project_name,
+            owner_id=current_user["id"],
+            source_url=git_url,
+        )
+        new_project = await crud_projects.create(
+            db, project_in, schema_to_select=ProjectListItem
+        )
+
+        background_tasks.add_task(
+            _run_git_import,
+            new_project["uuid"],
+            current_user["username"],
+            resolved_project_name,
+            git_url,
+        )
+
+        response = ctx.templates_api.TemplateResponse(
+            request=request,
+            name="projects/create_success.html",
+            context={"request": request, "project_name": name},
+        )
+        response.headers["HX-Trigger"] = "projectCreated"
+        return response
+
+    except Exception as e:
+        errors.append(f"Error al crear en base de datos: {str(e)}")
+        return ctx.templates_api.TemplateResponse(
+            request=request,
+            name="projects/import_project_form.html",
+            context={
+                "request": request,
+                "errors": errors,
+                "name": name,
+                "project_name": resolved_project_name,
+                "git_url": git_url,
+            },
+        )
 
 
 @router.post("/links", response_class=HTMLResponse)
@@ -537,6 +717,33 @@ async def projects_list_htmx(
             "search": search or "",
             "sort_by": sort_by,
             "sort_order": sort_order,
+            "username": current_user["username"],
+        },
+    )
+
+
+@router.get("/{project_uuid}/card", response_class=HTMLResponse)
+async def get_project_card_htmx(
+    request: Request,
+    project_uuid: UUID,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    ctx: RuntimeContext = Depends(get_default_context),
+    current_user: dict = Depends(get_current_editor),
+):
+    """HTMX endpoint: re-renders a single project card (used to poll import status)."""
+    project = await crud_projects.get(
+        db, uuid=project_uuid, owner_id=current_user["id"], is_deleted=False
+    )
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    return ctx.templates_api.TemplateResponse(
+        request=request,
+        name="projects/project_card.html",
+        context={
+            "request": request,
+            "project": project,
+            "username": current_user["username"],
         },
     )
 
@@ -638,12 +845,8 @@ async def delete_project_htmx(
             status_code=404,
         )
 
-    await crud_projects.update(
+    await crud_projects.delete(
         db,
-        object_to_update={
-            "is_deleted": True,
-            "deleted_at": datetime.now(UTC),
-        },
         uuid=project_uuid,
     )
 
