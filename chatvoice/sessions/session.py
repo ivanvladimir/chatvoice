@@ -107,5 +107,6 @@ class ChatSession:
             self.store.set(
                 self.user_id, final_state, self.interpreter_name, self.session_id
             )
+            interpreter.conversation_store.close(interpreter.conversation_log_id)
             # Signal to WebSocket handler that we're done
             self._outbox.put(None)

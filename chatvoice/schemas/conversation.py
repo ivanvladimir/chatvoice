@@ -1,0 +1,90 @@
+from datetime import datetime
+from typing import Literal
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from .user import UserBrief
+
+
+class ConversationTurnRead(BaseModel):
+    """A single say/listen turn, in order."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    role: Literal["user", "assistant"]
+    text: str
+    sequence: int
+    created_at: datetime
+
+
+class ConversationTurnCreateInternal(BaseModel):
+    """Server-constructed. Not used through the async CRUD in practice --
+    turns are written from the interpreter thread via the sync
+    ConversationLogStore -- but FastCRUD's generic signature needs the slot."""
+
+    conversation_log_id: int = Field(..., gt=0)
+    role: Literal["user", "assistant"]
+    text: str = Field(..., min_length=1)
+    sequence: int = Field(..., ge=0)
+
+
+class ConversationTurnUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class ConversationTurnDelete(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class ConversationLogCreateInternal(BaseModel):
+    """Server-constructed: created once when a chat session starts."""
+
+    user_id: int = Field(..., gt=0)
+    project_id: int | None = Field(default=None)
+    script_name: str = Field(..., min_length=1, max_length=500)
+    session_id: str = Field(..., min_length=1, max_length=64)
+
+
+class ConversationLogUpdate(BaseModel):
+    """Used to close out a conversation once the session ends."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    ended_at: datetime | None = Field(default=None)
+
+
+class ConversationLogUpdateInternal(ConversationLogUpdate):
+    pass
+
+
+class ConversationLogDelete(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class ConversationLogListItem(BaseModel):
+    """Compact schema for list views (my conversations / project conversations)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    uuid: UUID
+    script_name: str
+    started_at: datetime
+    ended_at: datetime | None
+    user: UserBrief
+
+
+class ConversationLogRead(BaseModel):
+    """Full schema for the transcript view: log metadata + ordered turns."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    uuid: UUID
+    script_name: str
+    started_at: datetime
+    ended_at: datetime | None
+    user: UserBrief
+    turns: list[ConversationTurnRead] = Field(default_factory=list)

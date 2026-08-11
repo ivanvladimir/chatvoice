@@ -26,10 +26,13 @@ class WS:
         log.info(f"WS transport initialized with {store_type} store")
 
     def create_session(
-        self, user_id: int | str, interpreter: "Interpreter"
+        self,
+        user_id: int | str,
+        interpreter: "Interpreter",
+        session_id: Optional[str] = None,
     ) -> ChatSession:
         """Create and start a new chat session."""
-        session = self.session_manager.create(user_id, interpreter)
+        session = self.session_manager.create(user_id, interpreter, session_id)
         log.info(f"Created session {session.session_id} for user {user_id}")
         return session
 

@@ -14,8 +14,13 @@ class SessionManager:
         self._sessions: dict[str, ChatSession] = {}
         self._lock = threading.Lock()
 
-    def create(self, user_id: str | int, conversation: Callable) -> ChatSession:
-        session_id = str(uuid.uuid4())
+    def create(
+        self,
+        user_id: str | int,
+        conversation: Callable,
+        session_id: Optional[str] = None,
+    ) -> ChatSession:
+        session_id = session_id or str(uuid.uuid4())
         session = ChatSession(user_id, session_id, conversation, self.store)
 
         with self._lock:

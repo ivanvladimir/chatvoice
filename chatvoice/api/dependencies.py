@@ -144,6 +144,24 @@ async def get_current_editor(
     return current_editor
 
 
+async def get_current_observer(
+    current_observer: Annotated[dict, Depends(get_current_user)],
+) -> dict:
+    if not current_observer["role"] == "observer":
+        raise ForbiddenException("You do not have enough privileges.")
+
+    return current_observer
+
+
+async def get_current_editor_or_observer(
+    current_user: Annotated[dict, Depends(get_current_user)],
+) -> dict:
+    if current_user["role"] not in ("editor", "observer"):
+        raise ForbiddenException("You do not have enough privileges.")
+
+    return current_user
+
+
 async def rate_limiter_dependency(
     request: Request,
     db: Annotated[AsyncSession, Depends(async_get_db)],

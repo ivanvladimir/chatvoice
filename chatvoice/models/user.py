@@ -68,6 +68,12 @@ class User(Base):
     project_memberships: Mapped[list["ProjectMember"]] = relationship(
         "ProjectMember", back_populates="user", lazy="selectin", default_factory=list
     )
+    conversation_logs: Mapped[list["ConversationLog"]] = relationship(
+        "ConversationLog",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        default_factory=list,
+    )
 
     def __repr__(self) -> str:
         return f"<User id={self.id!r} username={self.username!r} email={self.email!r}>"

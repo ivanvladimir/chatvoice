@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 
@@ -44,6 +46,40 @@ async def profile_page(
         name="user/profile.html",
         context={
             "active_page": "profile",
+            "active_menu": None,
+        },
+    )
+
+
+@router.get("/conversations", response_class=HTMLResponse)
+async def conversations_page(
+    request: Request,
+    ctx: RuntimeContext = Depends(get_default_context),  # Single injection
+) -> HTMLResponse:
+    """My conversations: past chat sessions the current user has had."""
+    return ctx.templates_front.TemplateResponse(
+        request=request,
+        name="user/conversations.html",
+        context={
+            "active_page": "conversations",
+            "active_menu": None,
+        },
+    )
+
+
+@router.get("/conversations/{conversation_uuid}", response_class=HTMLResponse)
+async def conversation_view(
+    request: Request,
+    conversation_uuid: UUID,
+    ctx: RuntimeContext = Depends(get_default_context),  # Single injection
+) -> HTMLResponse:
+    """Read-only transcript of a single past conversation."""
+    return ctx.templates_front.TemplateResponse(
+        request=request,
+        name="user/conversation_view.html",
+        context={
+            "conversation_uuid": conversation_uuid,
+            "active_page": "conversations",
             "active_menu": None,
         },
     )

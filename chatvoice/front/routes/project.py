@@ -50,6 +50,24 @@ async def view_project_files_page(
     )
 
 
+@router.get("/{project_uuid}/conversations", response_class=HTMLResponse)
+async def show_project_conversations(
+    request: Request,
+    project_uuid: UUID,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    ctx: RuntimeContext = Depends(get_default_context),  # Single injection
+):
+    project = await crud_projects.get(db, uuid=project_uuid)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found.")
+
+    return ctx.templates_front.TemplateResponse(
+        request=request,
+        name="projects/conversations.html",
+        context={"request": request, "project": project},
+    )
+
+
 @router.get("/", response_class=HTMLResponse)
 async def projects_page(
     request: Request,

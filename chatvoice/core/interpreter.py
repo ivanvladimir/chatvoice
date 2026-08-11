@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Union
 
+from ..store.conversation_store import ConversationLogStore
 from ..store.sql_store import SqlAlchemyMemoryStore
 from .commands import (
     CommandError,  # Import from commands to avoid duplication
@@ -52,6 +53,8 @@ class Interpreter:
         slots: Optional[Dict[str, Any]] = None,
         llm_client: Any = None,
         memory_store: Optional[Any] = None,  # Injected for testability
+        conversation_log_id: Optional[int] = None,
+        conversation_store: Optional[Any] = None,  # Injected for testability
     ):
         """
         Initialize the Interpreter and the root Conversation.
@@ -63,6 +66,10 @@ class Interpreter:
             slots: Optional initial slots to inject.
             llm_client: The client used to communicate with the LLM.
             memory_store: Optional memory store instance. Defaults to SqlAlchemyMemoryStore.
+            conversation_log_id: DB id of the ConversationLog row for this run, if
+                any (see chatvoice.models.conversation). When set, cmd_say/cmd_listen
+                persist each turn via conversation_store as it happens.
+            conversation_store: Optional store instance. Defaults to ConversationLogStore.
         """
         # Ensure project_pathname is a string for os.path operations in Conversation
         self.project_pathname = str(project_pathname)
@@ -100,6 +107,8 @@ class Interpreter:
 
         # Use injected store or fallback to default
         self.memory_store = memory_store or SqlAlchemyMemoryStore()
+        self.conversation_log_id = conversation_log_id
+        self.conversation_store = conversation_store or ConversationLogStore()
 
         # Base context passed to all commands
         self.ctx: Dict[str, Any] = {
@@ -111,6 +120,8 @@ class Interpreter:
             "state": self.state,
             "project_name": self.name,
             "history": self.history,
+            "conversation_log_id": self.conversation_log_id,
+            "conversation_store": self.conversation_store,
         }
 
         self.command_registry = {

@@ -38,18 +38,19 @@
                 </div>
                 <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
                     <li><a href="/">Home</a></li>
-                    <li><a href="{{url_for('page', view="documentation")}}">Documentación</a></li>
                     <template x-if="isAuthenticated">
                         <li><a href="{{ url_for('profile_page') }}">Perfil</a></li>
+                        <li><a href="{{ url_for('conversations_page') }}">Mis conversaciones</a></li>
                     </template>
                     <!-- ─── EDITOR ONLY MENU ITEM ─── -->
                     <template x-if="role === 'editor'">
                         <li>
                           <a href="{{url_for('projects_page')}}" class="font-medium">
-                                Proyectos
+                                Mis proyectos
                             </a>
                         </li>
-                    </template>|
+                    </template>
+                    <li><a href="{{url_for('page', view="documentation")}}">Documentación</a></li>
                 </ul>
             </div>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="40" height="40">
@@ -62,8 +63,8 @@
         <div class="navbar-center hidden lg:flex">
             <ul class="menu menu-horizontal px-1">
                 <li><a href="/">Home</a></li>
-                    <li><a href="{{url_for('page', view="documentation")}}">Documentación</a></li>
-                <template x-if="role === 'editor'">
+                  <li><a href="{{url_for('page', view="documentation")}}">Documentación</a></li>
+                  <template x-if="role === 'editor'">
                       <li>
                           <a href="{{url_for('projects_page')}}" class="font-medium">
                               Proyectos
@@ -99,6 +100,7 @@
                             <span x-text="username"></span>
                         </li>
                         <li><a href="{{ url_for('profile_page') }}">Perfil</a></li>
+                        <li><a href="{{ url_for('conversations_page') }}">Mis conversaciones</a></li>
                         <li><hr class="my-1"></li>
                         <li>
                             <a href="#" class="text-error" @click.prevent="logout()">

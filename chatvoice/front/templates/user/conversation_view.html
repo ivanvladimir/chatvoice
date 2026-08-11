@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Conversación{% endblock %}
+
+{# ─── HTMX CONFIGURATION ─── #}
+{% block protected_htmx_config %}
+hx-post="{{ url_for('get_conversation_transcript_htmx', conversation_uuid=conversation_uuid) }}"
+hx-trigger="load-protected"
+hx-swap="innerHTML"
+hx-target="this"
+hx-indicator="#protected-loading"
+{% endblock %}
+
+{# ─── SKELETON FALLBACK (Shown while HTMX fetches) ─── #}
+{% block protected_content %}
+<div class="flex flex-col h-[600px] max-w-3xl mx-auto">
+    <div class="flex-1 overflow-y-auto p-4 space-y-4">
+        <div class="flex justify-start"><div class="skeleton w-64 h-20 rounded-2xl"></div></div>
+        <div class="flex justify-end"><div class="skeleton w-48 h-16 rounded-2xl"></div></div>
+        <div class="flex justify-start"><div class="skeleton w-56 h-16 rounded-2xl"></div></div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,113 @@
+{# ─── LOADING INDICATOR ─── #}
+<div class="relative">
+    <span id="protected-loading" class="loading loading-spinner loading-lg absolute top-24 left-1/2 -translate-x-1/2 hidden z-50 text-primary"></span>
+
+    <h1 class="text-2xl font-bold mb-6">{{ page_title }}</h1>
+
+    {% if conversations %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for conversation in conversations %}
+        <div class="card bg-base-200 hover:bg-base-300 transition-colors shadow-sm hover:shadow-md"
+             id="conversation-card-{{ conversation.id }}">
+            <div class="card-body p-4">
+                <div class="flex items-start justify-between gap-2">
+                    <span class="badge {{ 'badge-ghost' if conversation.ended_at else 'badge-success' }} badge-sm">
+                        {{ 'Finalizada' if conversation.ended_at else 'En curso' }}
+                    </span>
+
+                    {% if conversation.can_delete %}
+                    <button type="button"
+                            class="btn btn-ghost btn-xs btn-square text-error/40 hover:text-error"
+                            title="Eliminar conversación"
+                            onclick="if(confirm('¿Estás seguro de eliminar esta conversación?')) { htmx.ajax('DELETE', '{{ url_for('delete_conversation_htmx', conversation_uuid=conversation.uuid) }}', {target: '#protected-content', swap: 'innerHTML'}); }">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                    {% else %}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-base-content/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    {% endif %}
+                </div>
+
+                <a href="{{ url_for('conversation_view', conversation_uuid=conversation.uuid) }}" class="block hover:opacity-80 transition-opacity">
+                    <h3 class="card-title text-base truncate mt-2">{{ conversation.script_name }}</h3>
+
+                    {% if show_user %}
+                    <p class="text-sm text-base-content/60 truncate">@{{ conversation.user_username }}</p>
+                    {% endif %}
+
+                    <p class="text-xs text-base-content/40 mt-2">
+                        {{ conversation.started_at.strftime('%d/%m/%Y %H:%M') }}
+                    </p>
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {# ─── PAGINATION ─── #}
+    {% if total_pages > 1 %}
+    <div class="flex justify-center mt-8">
+        <div class="join">
+            {% if page > 1 %}
+            <button class="join-item btn btn-sm"
+                    hx-post="{{ url_for(list_endpoint, **list_endpoint_kwargs) }}"
+                    hx-vals='{"page": {{ page - 1 }}}'
+                    hx-target="#protected-content"
+                    hx-indicator="#protected-loading">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+            </button>
+            {% endif %}
+
+            {% for p in range(1, total_pages + 1) %}
+                {% if p == page %}
+                <button class="join-item btn btn-sm btn-primary">{{ p }}</button>
+                {% elif p <= 3 or p >= total_pages - 2 or (p >= page - 1 and p <= page + 1) %}
+                <button class="join-item btn btn-sm"
+                        hx-post="{{ url_for(list_endpoint, **list_endpoint_kwargs) }}"
+                        hx-vals='{"page": {{ p }}}'
+                        hx-target="#protected-content"
+                        hx-indicator="#protected-loading">
+                    {{ p }}
+                </button>
+                {% elif p == 4 or p == total_pages - 3 %}
+                <button class="join-item btn btn-sm btn-disabled">...</button>
+                {% endif %}
+            {% endfor %}
+
+            {% if page < total_pages %}
+            <button class="join-item btn btn-sm"
+                    hx-post="{{ url_for(list_endpoint, **list_endpoint_kwargs) }}"
+                    hx-vals='{"page": {{ page + 1 }}}'
+                    hx-target="#protected-content"
+                    hx-indicator="#protected-loading">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </button>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="text-center text-base-content/50 text-sm mt-4">
+        {{ total_count }} conversaci{{ 'ón' if total_count == 1 else 'ones' }}
+    </div>
+
+    {% else %}
+    {# ─── EMPTY STATE ─── #}
+    <div class="flex flex-col items-center justify-center py-16 px-4">
+        <div class="bg-base-200 rounded-full p-8 mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-base-content/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-base-content/70 mb-2">Sin conversaciones</h3>
+        <p class="text-base-content/40 text-center max-w-md">{{ empty_message }}</p>
+    </div>
+    {% endif %}
+</div>

@@ -79,6 +79,12 @@ class Project(Base):
         cascade="all, delete-orphan",
         default_factory=list,
     )
+    conversation_logs: Mapped[list["ConversationLog"]] = relationship(
+        "ConversationLog",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        default_factory=list,
+    )
 
     def __repr__(self) -> str:
         return (

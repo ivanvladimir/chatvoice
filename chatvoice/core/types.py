@@ -6,6 +6,7 @@ from pydantic import BaseModel
 class UserRole(str, Enum):
     user = "user"
     editor = "editor"
+    observer = "observer"
     admin = "admin"
 
 

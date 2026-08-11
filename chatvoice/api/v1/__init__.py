@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from .conversations import router as conversations_router
 from .health import router as health_router
 from .interface import router as interface_router
 from .login import router as login_router
@@ -22,6 +23,7 @@ router.include_router(ws_router)
 router.include_router(interface_router)
 router.include_router(project_router)
 router.include_router(profile_router)
+router.include_router(conversations_router)
 # router.include_router(logout_router)
 # router.include_router(oauth_router)
 # router.include_router(posts_router)

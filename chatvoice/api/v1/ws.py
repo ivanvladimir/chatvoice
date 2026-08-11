@@ -1,5 +1,6 @@
 import asyncio
 import json
+import uuid as uuid_pkg
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from typing import Annotated
@@ -16,11 +17,20 @@ from fastapi import (
     WebSocketDisconnect,
 )
 from fastapi.responses import JSONResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from ...core.db.database import async_get_db
 from ...core.dependencies.paths import RuntimeContext, get_project_context
 from ...core.interpreter import Interpreter
 from ...core.logger import get_logger
 from ...core.security import TokenType, create_ws_session_token, decode_ws_token
+from ...crud.conversations import crud_conversation_logs
+from ...crud.projects import crud_projects
+from ...crud.users import crud_users
+from ...schemas.conversation import (
+    ConversationLogCreateInternal,
+    ConversationLogListItem,
+)
 from ...sessions.session import ChatSession
 from ...transport.ws import WS
 from ..dependencies import get_current_user, get_session_transport, get_ws_session
@@ -38,6 +48,7 @@ async def establish_ws_session(
     response: Response,
     current_user: Annotated[dict, Depends(get_current_user)],
     ctx: Annotated[RuntimeContext, Depends(get_project_context)],
+    db: Annotated[AsyncSession, Depends(async_get_db)],
     username: str = None,
 ):
     # Validate script exists to fail fast
@@ -59,15 +70,42 @@ async def establish_ws_session(
     # 1. CLEANUP: Kill any previous sessions for this user + script
     request.app.state.transport.cleanup_user_script_sessions(user_id, script)
 
+    # 1b. Resolve the owning Project row (if any -- built-in scripts like
+    # hello_world have no Project row) and log this run to the DB.
+    project_id = None
+    if username:
+        owner = await crud_users.get(db, username=username, is_deleted=False)
+        if owner:
+            project = await crud_projects.get(
+                db, project_name=script, owner_id=owner["id"], is_deleted=False
+            )
+            if project:
+                project_id = project["id"]
+
+    session_id = str(uuid_pkg.uuid4())
+    conversation_log = await crud_conversation_logs.create(
+        db,
+        ConversationLogCreateInternal(
+            user_id=user_id,
+            project_id=project_id,
+            script_name=script,
+            session_id=session_id,
+        ),
+        schema_to_select=ConversationLogListItem,
+    )
+
     # 2. Create new session
     interpreter = Interpreter(
         script_path,
         user_id=user_id,
         settings={},
         llm_client=request.app.state.llm_client,
+        conversation_log_id=conversation_log["id"] if conversation_log else None,
     )
 
-    session = request.app.state.transport.create_session(user_id, interpreter)
+    session = request.app.state.transport.create_session(
+        user_id, interpreter, session_id=session_id
+    )
 
     # 3. Generate token & set cookie
     ws_token = create_ws_session_token(

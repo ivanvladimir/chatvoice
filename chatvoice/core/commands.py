@@ -408,9 +408,8 @@ def cmd_llm_extract(
         llm_client, prompt, structured=True, history=ctx.get("history")
     )
 
-
-    if 'status' in response:
-        response=response['status']
+    if "status" in response:
+        response = response["status"]
     else:
         yield from ()
         return {
@@ -423,15 +422,15 @@ def cmd_llm_extract(
 
     # CRITICAL: Use update_slots() so the evaluator rebuilds its internal
     # simpleeval context.
-    if not '_level' in response:
+    if not "_level" in response:
         for k, v in response.items():
-            evaluator.update_slots({"k": v})
-        variable=k
-        value=v
+            evaluator.update_slots({k: v})
+        variable = k
+        value = v
     else:
-       evaluator.update_branch_slots(response['_data'], response['_level']) 
-       variable=None
-       value=response['_data']
+        evaluator.update_branch_slots(response["_data"], response["_level"])
+        variable = None
+        value = response["_data"]
     return {
         "command": "llm",
         "variable": variable,
@@ -440,6 +439,20 @@ def cmd_llm_extract(
     }
 
     return {"command": "llm", "value": [response], "ok": True}
+
+
+def _record_turn(context: Dict[str, Any], role: str, text: str) -> None:
+    """
+    Append a turn to the in-memory session history (ctx['history'], read by
+    cmd_llm/cmd_llm_extract) and persist it via the conversation store.
+    record_turn() itself no-ops when there's no conversation_log_id (e.g. the
+    console transport, or a script with no resolvable Project row).
+    """
+    context.setdefault("history", []).append({"role": role, "text": text})
+
+    store = context.get("conversation_store")
+    if store is not None:
+        store.record_turn(context.get("conversation_log_id"), role, text)
 
 
 def cmd_say(
@@ -482,9 +495,7 @@ def cmd_say(
             texts = [key.format_map(evaluator.slots)]
 
     if texts:
-        context.setdefault("history", []).append(
-            {"role": "assistant", "text": "\n".join(str(t) for t in texts)}
-        )
+        _record_turn(context, "assistant", "\n".join(str(t) for t in texts))
 
     yield {"cmd": "say", "args": texts}
     return {"command": "say", "value": texts, "ok": True}
@@ -524,7 +535,7 @@ def cmd_listen(
     yield {"cmd": "listen"}
     user_input = callback()
     evaluator.slots[variable] = user_input or ""
-    context.setdefault("history", []).append({"role": "user", "text": user_input or ""})
+    _record_turn(context, "user", user_input or "")
     return {
         "command": "listen",
         "value": user_input or "",
