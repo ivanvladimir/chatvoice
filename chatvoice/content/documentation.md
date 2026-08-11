@@ -64,6 +64,16 @@ script:
   - say "¡Hola! ¿Cómo te llamas?"
   - listen nombre
   - say "Encantado de conocerte, {nombre}."
+
+# Opcional: se ejecuta UNA VEZ, en segundo plano, cuando la sesión termina
+# (el usuario cierra la conexión). No es parte del flujo normal del script;
+# ver la sección "Limpieza y análisis en segundo plano" más abajo.
+cleanup:
+  - llm_extract:
+      system: analizar_conversacion
+      user: "Analiza toda la conversación y genera un resumen breve"
+      output: resumen
+  - save_document "Resumen" "resumen" resumen
 ```
 
 ## 3. Sintaxis del Script
@@ -134,7 +144,37 @@ while _status == "continue" then solve main_loop
 > que aparece en la condición; si nunca cambia, el bucle nunca terminará (hasta el límite
 > de seguridad de iteraciones).
 
-## 5. Referencia de Comandos
+## 5. Limpieza y análisis en segundo plano (`cleanup`)
+
+La clave opcional `cleanup` en `main.yaml` define un script que se ejecuta **una sola vez, en
+segundo plano, cuando la sesión termina** (el usuario cierra la conexión, se desconecta, o el
+script principal termina). No es parte del flujo normal: nadie lo ve en tiempo real y no bloquea
+el cierre de la conversación (corre en su propio hilo, desacoplado de la sesión).
+
+La idea principal es usarlo para **analizar la conversación completa** con `llm`/`llm_extract`
+(tienen acceso a todo el historial de mensajes) y:
+* guardar el resultado como un **documento** adjunto a la conversación, con `save_document`;
+* y/o etiquetar la conversación completa según ese análisis, con `tag_conversation`.
+
+Ambos quedan visibles después en la ficha de la conversación.
+
+```yaml
+cleanup:
+  - llm_extract:
+      system: analizar_sentimiento
+      user: "Analiza el sentimiento general del usuario en esta conversación"
+      output: sentimiento
+  - save_document "Sentimiento" "sentimiento" sentimiento
+  - if sentimiento == "negativo" then tag_conversation revisar_urgente
+
+  - llm "Resume esta conversación en un párrafo" | save_document "Resumen" "resumen"
+```
+
+Dentro de `cleanup` puedes usar cualquier comando (`if`/`while`/`solve`/`exec`, etc.), pero no hay
+un usuario esperando: si el script llama a `listen`, no se bloquea -- simplemente recibe una
+cadena vacía inmediatamente y continúa.
+
+## 6. Referencia de Comandos
 
 ### `say <clave_plantilla | texto>`
 Muestra un mensaje al usuario. Si el argumento coincide con una clave en tus archivos de `templates`, usa esa plantilla (con soporte para casos aleatorios). Si no, lo interpreta como texto literal.
@@ -235,6 +275,36 @@ Guarda un par clave-valor de forma persistente en la base de datos (usando `SqlA
 remember preferencia_color "azul"
 ```
 
+### `save_document <título> <tipo> [variable] [etiqueta1 etiqueta2 ...]`
+Adjunta un **documento** (p. ej. un análisis generado por LLM) a la conversación actual, visible
+después en su ficha. Pensado sobre todo para usarse dentro de `cleanup`, después de `llm`/
+`llm_extract`. Acepta dos formas:
+
+**Forma posicional:**
+* Si das un tercer argumento, toma el contenido del slot con ese nombre. Cualquier token
+  adicional después de ese se guarda como etiqueta del documento.
+* Si omites el tercer argumento, toma el resultado del comando anterior en la cadena (`|`)
+  (en ese caso no puedes pasar etiquetas -- usa la forma de bloque).
+```text
+llm_extract:
+  system: analizar_sentimiento
+  user: "..."
+  output: sentimiento
+save_document "Sentimiento" "sentimiento" sentimiento positivo revisado
+
+# o encadenado (sin etiquetas):
+llm "Resume esta conversación" | save_document "Resumen" "resumen"
+```
+
+**Forma de bloque** (necesaria si quieres etiquetas junto con `|`, o prefieres ser explícito):
+```yaml
+- save_document:
+    title: "Sentimiento"
+    kind: "sentimiento"
+    variable: sentimiento
+    tags: [positivo, revisado]
+```
+
 ### `info <tipo1, tipo2, ...>`
 Comando de diagnóstico que yielda (envía) metadatos a la interfaz. Tipos válidos: `slots`, `name`, `strategies`, `status`.
 ```text
@@ -243,8 +313,16 @@ info name, status
 ```
 
 ### `tag <etiqueta1, etiqueta2, ...>`
-Añade etiquetas analíticas al flujo de la conversación (útil para dividir el log en secciones posteriormente).
+Añade etiquetas analíticas al flujo de la conversación (útil para dividir el log en secciones posteriormente). Estas etiquetas son parte del *stream* en tiempo real, no se guardan en la ficha de la conversación.
 ```text
 tag inicio_conversacion
 tag fase_auth, validacion_email
+```
+
+### `tag_conversation <etiqueta1> [etiqueta2, ...]`
+A diferencia de `tag`, esto añade etiquetas a la **conversación completa**, persistidas en su ficha (las mismas que se ven y editan como chips en las tarjetas/vista de conversación). Útil dentro de `cleanup` para etiquetar automáticamente según el resultado de un análisis.
+```text
+if sentimiento == "negativo" then tag_conversation revisar_urgente
+
+tag_conversation revisado auto
 ```

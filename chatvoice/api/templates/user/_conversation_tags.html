@@ -1,0 +1,44 @@
+{# ─── Conversation tags fragment: re-rendered wholesale on add/remove ─── #}
+<div class="flex flex-wrap items-center gap-1 mt-2" id="conversation-tags-{{ conversation.id }}">
+    {% for tag in conversation.tags %}
+    <span class="badge badge-outline badge-sm gap-1">
+        {{ tag }}
+        <button type="button"
+                class="hover:text-error"
+                title="Quitar etiqueta"
+                @click="htmx.ajax('DELETE', '{{ url_for('remove_conversation_tag_htmx', conversation_uuid=conversation.uuid, tag=tag) }}', {target: '#conversation-tags-{{ conversation.id }}', swap: 'outerHTML'})">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </span>
+    {% endfor %}
+
+    <span x-data="{ adding: false, value: '' }">
+        <button type="button"
+                x-show="!adding"
+                @click="adding = true; $nextTick(() => $refs.tagInput.focus())"
+                class="badge badge-ghost badge-sm">
+            + etiqueta
+        </button>
+        <form x-show="adding"
+              x-cloak
+              @submit.prevent="
+                  if (value.trim()) {
+                      htmx.ajax('POST', '{{ url_for('add_conversation_tag_htmx', conversation_uuid=conversation.uuid) }}', {
+                          target: '#conversation-tags-{{ conversation.id }}',
+                          swap: 'outerHTML',
+                          values: { tag: value.trim() }
+                      });
+                  }
+                  adding = false; value = '';
+              ">
+            <input x-ref="tagInput"
+                   x-model="value"
+                   @blur="adding = false; value = ''"
+                   type="text"
+                   placeholder="nueva etiqueta"
+                   class="input input-bordered input-xs w-28" />
+        </form>
+    </span>
+</div>

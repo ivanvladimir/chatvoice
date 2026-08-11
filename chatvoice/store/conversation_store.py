@@ -4,7 +4,11 @@ from typing import Optional
 from sqlalchemy import func, select, update
 
 from ..core.db.database_sync import get_db_ctx
-from ..models.conversation import ConversationLog, ConversationTurn
+from ..models.conversation import (
+    ConversationDocument,
+    ConversationLog,
+    ConversationTurn,
+)
 
 
 class ConversationLogStore:
@@ -49,4 +53,54 @@ class ConversationLogStore:
                 update(ConversationLog)
                 .where(ConversationLog.id == conversation_log_id)
                 .values(ended_at=datetime.now(UTC))
+            )
+
+    def add_conversation_tags(
+        self, conversation_log_id: Optional[int], tags: list[str]
+    ) -> None:
+        """Adds whole-conversation tags (deduped). No-ops if conversation_log_id
+        is None or tags is empty."""
+        if not conversation_log_id or not tags:
+            return
+
+        with get_db_ctx() as db:
+            current = db.execute(
+                select(ConversationLog.tags).where(
+                    ConversationLog.id == conversation_log_id
+                )
+            ).scalar()
+            current = list(current or [])
+            for tag in tags:
+                if tag not in current:
+                    current.append(tag)
+
+            db.execute(
+                update(ConversationLog)
+                .where(ConversationLog.id == conversation_log_id)
+                .values(tags=current)
+            )
+
+    def save_document(
+        self,
+        conversation_log_id: Optional[int],
+        title: str,
+        kind: str,
+        content: str,
+        tags: Optional[list[str]] = None,
+    ) -> None:
+        """Attaches a document (e.g. a cleanup-script analysis) to a
+        conversation. No-ops if conversation_log_id is None."""
+        if not conversation_log_id:
+            return
+
+        with get_db_ctx() as db:
+            db.add(
+                ConversationDocument(
+                    conversation_log_id=conversation_log_id,
+                    title=title,
+                    kind=kind,
+                    content=content,
+                    tags=tags or [],
+                    created_by_id=None,
+                )
             )

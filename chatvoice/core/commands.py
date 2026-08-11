@@ -1,3 +1,4 @@
+import json
 import logging
 import random
 import time
@@ -715,6 +716,163 @@ def cmd_remember(
 
     yield from ()
     return {"command": "remember", "value": value, "variable": variable, "ok": True}
+
+
+def cmd_save_document(
+    args: Union[List[str], Dict[str, Any]],
+    ctx: Dict[str, Any],
+    evaluator: ExpressionEvaluator,
+    callback: callable,
+) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
+    """
+    Attaches a document (e.g. an LLM-generated analysis) to the conversation.
+    Typically used in a `cleanup` script, after `llm`/`llm_extract` has
+    computed the content into a slot.
+
+    Accepts two forms:
+      - Positional (text-line) form:
+        `save_document <title> <kind> [variable] [tag1] [tag2] ...`
+        If `variable` is omitted, the content is taken from the previous
+        piped command's output, e.g. `llm "Resume esto" | save_document
+        "Resumen" resumen`. Extra tokens after `variable` are tags -- so
+        tags require an explicit `variable` (no piping into a tagged call).
+      - Structured (YAML block) form::
+
+            save_document:
+              title: <title>
+              kind: <kind>
+              variable: <variable_name>
+              tags: [tag1, tag2]   # optional
+
+        `variable` is required here (structured commands don't support `|`).
+
+    Args:
+        args: Command arguments; either a tuple of string tokens (positional
+            form) or a dict with `title`/`kind`/`variable`/`tags` keys
+        ctx: Execution context containing 'is_continuation', 'prev_status',
+            'conversation_log_id', 'conversation_store'
+        evaluator: Expression evaluator for variable resolution
+        callback: Callback function for user interaction
+
+    Returns:
+        Generator yielding command status dictionaries
+
+    Raises:
+        CommandError: If ConversationLogStore isn't configured in context
+    """
+    tags: List[str] = []
+
+    if isinstance(args, dict):
+        title = args.get("title")
+        kind = args.get("kind")
+        variable = args.get("variable")
+        tags = [str(t) for t in (args.get("tags") or [])]
+
+        if not title or not kind:
+            yield from ()
+            return {
+                "command": "save_document",
+                "ok": False,
+                "error": "Missing title/kind",
+            }
+        if not variable:
+            yield from ()
+            return {
+                "command": "save_document",
+                "ok": False,
+                "error": "Missing variable (structured form doesn't support piping)",
+            }
+
+        title, kind = str(title), str(kind)
+        content = evaluator.resolve_value(variable)
+    else:
+        if len(args) < 2:
+            yield from ()
+            return {
+                "command": "save_document",
+                "ok": False,
+                "error": "Missing title and/or kind",
+            }
+
+        title = str(args[0])
+        kind = str(args[1])
+
+        if len(args) >= 3:
+            content = evaluator.resolve_value(args[2])
+            tags = [str(t) for t in args[3:]]
+        elif ctx.get("is_continuation"):
+            content = ctx.get("prev_status", {}).get("value")
+            # `llm`/`llm_extract` wrap their return value as [response]; unwrap
+            # so the document content isn't a stringified single-item list.
+            if isinstance(content, list) and len(content) == 1:
+                content = content[0]
+        else:
+            content = None
+
+    if content is None:
+        yield from ()
+        return {
+            "command": "save_document",
+            "ok": False,
+            "error": "Missing content (pass a variable, or pipe a previous command's output)",
+        }
+
+    content_str = (
+        content if isinstance(content, str) else json.dumps(content, ensure_ascii=False)
+    )
+
+    conversation_store = ctx.get("conversation_store")
+    if not conversation_store:
+        raise CommandError("ConversationLogStore is not configured in context.")
+
+    conversation_store.save_document(
+        ctx.get("conversation_log_id"),
+        title=title,
+        kind=kind,
+        content=content_str,
+        tags=tags,
+    )
+
+    yield from ()
+    return {"command": "save_document", "value": content_str, "ok": True}
+
+
+def cmd_tag_conversation(
+    args: List[str],
+    ctx: Dict[str, Any],
+    evaluator: ExpressionEvaluator,
+    callback: callable,
+) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
+    """
+    Adds one or more whole-conversation tags, persisted directly on the
+    ConversationLog row. Distinct from the `tag` command, which tags
+    turns/segments *within* a running conversation and isn't persisted.
+
+    Args:
+        args: [tag1, tag2, ...]
+        ctx: Execution context containing 'conversation_log_id', 'conversation_store'
+        evaluator: Expression evaluator for variable resolution
+        callback: Callback function for user interaction
+
+    Returns:
+        Generator yielding command status dictionaries
+
+    Raises:
+        CommandError: If ConversationLogStore isn't configured in context
+    """
+    if not args:
+        yield from ()
+        return {"command": "tag_conversation", "ok": False, "error": "Missing tag(s)"}
+
+    conversation_store = ctx.get("conversation_store")
+    if not conversation_store:
+        raise CommandError("ConversationLogStore is not configured in context.")
+
+    tags = [str(t) for t in args]
+    conversation_store.add_conversation_tags(ctx.get("conversation_log_id"), tags)
+
+    yield from ()
+    return {"command": "tag_conversation", "value": tags, "ok": True}
 
 
 def cmd_info(

@@ -13,11 +13,13 @@ from .commands import (
     cmd_llm_extract,
     cmd_remember,
     cmd_return,
+    cmd_save_document,
     cmd_say,
     cmd_set,
     cmd_sleep,
     cmd_solve,
     cmd_tag,
+    cmd_tag_conversation,
 )
 from .conversation import Conversation
 from .expresion_evaluator import ExpressionEvaluator
@@ -137,6 +139,8 @@ class Interpreter:
             "remember": cmd_remember,
             "info": cmd_info,
             "sleep": cmd_sleep,
+            "save_document": cmd_save_document,
+            "tag_conversation": cmd_tag_conversation,
         }
 
     def run(
@@ -203,6 +207,48 @@ class Interpreter:
 
         yield from ()  # Maintain generator protocol at the end of execution
         log.info(f"Finishing execution of conversation {self.name}")
+
+    def run_cleanup(self) -> None:
+        """
+        Runs the conversation's `cleanup` script section, if any, as a
+        one-shot pass over the finished conversation (e.g. an LLM analysis
+        saved via `save_document`). Meant to be called from its own
+        background thread once the session has ended -- see
+        ChatSession._run -- so a slow LLM call doesn't hold up shutdown.
+
+        No user is present: `listen` returns an empty string immediately
+        instead of blocking forever. Slots/history are left exactly as the
+        main script left them (full conversation context for `llm`/
+        `llm_extract` prompts); nothing here is persisted back to the
+        session's resumable state.
+        """
+        cleanup_commands = list(self.conversation.cleanup)
+        if not cleanup_commands:
+            return
+
+        log.info(f"Starting cleanup script for conversation {self.name}")
+        self.state = ExecutionState(
+            conversation=self.conversation, commands=cleanup_commands
+        )
+        self.ctx["state"] = self.state
+        self.status = {}
+        self.exit = False
+
+        def _no_listen() -> str:
+            log.warning(
+                f"'listen' called from cleanup script for conversation "
+                f"{self.name}; no user is present, returning empty input."
+            )
+            return ""
+
+        try:
+            for _ in self.run(_no_listen):
+                pass  # Cleanup scripts aren't UI-facing; drain and discard.
+        except InterpreterStop:
+            pass
+        except Exception:
+            log.exception(f"Error running cleanup script for conversation {self.name}")
+        log.info(f"Finished cleanup script for conversation {self.name}")
 
     def _run_chain(
         self, chain: Any, callback: callable

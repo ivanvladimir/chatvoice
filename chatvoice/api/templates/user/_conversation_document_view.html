@@ -1,0 +1,16 @@
+{# ─── Full document content, loaded into the view modal ─── #}
+<div class="space-y-3">
+    <div class="flex items-center justify-between gap-2">
+        <span class="badge badge-outline">{{ doc.kind }}</span>
+        <span class="text-xs text-base-content/40">{{ doc.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+    </div>
+    <h3 class="font-bold text-lg">{{ doc.title }}</h3>
+    {% if doc.tags %}
+    <div class="flex flex-wrap gap-1">
+        {% for t in doc.tags %}
+        <span class="badge badge-ghost badge-sm">{{ t }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <div class="prose prose-sm max-w-none">{{ html | safe }}</div>
+</div>

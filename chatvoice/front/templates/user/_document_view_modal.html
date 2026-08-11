@@ -1,0 +1,46 @@
+{# ─── View Document Modal - lives outside the protected HTMX zone so it persists across list reloads ─── #}
+<div x-data="documentViewModal()">
+    <dialog x-ref="modal"
+            class="modal"
+            :class="{ 'modal-open': isOpen }"
+            @click.self="close()">
+        <div class="modal-box max-w-2xl">
+            <div id="document-view-body" class="min-h-[6rem]">
+                <div class="flex justify-center py-8">
+                    <span class="loading loading-spinner loading-md text-primary"></span>
+                </div>
+            </div>
+            <div class="modal-action">
+                <button type="button" class="btn" @click="close()">Cerrar</button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button @click="close()">close</button>
+        </form>
+    </dialog>
+</div>
+
+<script>
+function documentViewModal() {
+    return {
+        isOpen: false,
+
+        init() {
+            document.addEventListener('openDocumentViewModal', (e) => this.open(e.detail));
+        },
+
+        open(detail) {
+            if (!detail || !detail.url) return;
+            this.isOpen = true;
+            htmx.ajax('GET', detail.url, {
+                target: '#document-view-body',
+                swap: 'innerHTML'
+            });
+        },
+
+        close() {
+            this.isOpen = false;
+        }
+    }
+}
+</script>

@@ -1,0 +1,92 @@
+{# ─── Create Document Modal - lives outside the protected HTMX zone so it persists across list reloads ─── #}
+<div x-data="documentModal()">
+    <dialog x-ref="modal"
+            class="modal"
+            :class="{ 'modal-open': isOpen }"
+            @click.self="close()">
+        <div class="modal-box max-w-lg">
+            <h3 class="font-bold text-lg flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Nuevo documento
+            </h3>
+            <p class="py-2 text-base-content/60">Adjunta un análisis a esta conversación</p>
+
+            <form class="space-y-3"
+                  hx-post="{{ url_for('create_conversation_document_htmx', conversation_uuid='00000000-0000-0000-0000-000000000000') }}"
+                  hx-target="#document-create-result"
+                  hx-swap="innerHTML"
+                  @submit.prevent="handleSubmit($event)">
+
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Título</span></label>
+                    <input type="text" name="title" required class="input input-bordered input-sm w-full" />
+                </div>
+
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Tipo</span></label>
+                    <input type="text" name="kind" required placeholder="p. ej. sentimiento, resumen"
+                           class="input input-bordered input-sm w-full" />
+                </div>
+
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Contenido</span></label>
+                    <textarea name="content" required rows="5" class="textarea textarea-bordered w-full"></textarea>
+                </div>
+
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Etiquetas (separadas por coma)</span></label>
+                    <input type="text" name="tags" class="input input-bordered input-sm w-full" />
+                </div>
+
+                <div id="document-create-result"></div>
+
+                <div class="modal-action">
+                    <button type="button" class="btn" @click="close()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+            <button @click="close()">close</button>
+        </form>
+    </dialog>
+</div>
+
+<script>
+function documentModal() {
+    const placeholderUuid = '00000000-0000-0000-0000-000000000000';
+    return {
+        isOpen: false,
+        conversationUuid: null,
+
+        init() {
+            document.addEventListener('openDocumentModal', (e) => this.open(e.detail));
+            document.addEventListener('documentCreated', () => this.close());
+        },
+
+        open(detail) {
+            if (!detail || !detail.uuid) return;
+            this.conversationUuid = detail.uuid;
+            this.isOpen = true;
+        },
+
+        close() {
+            this.isOpen = false;
+            this.conversationUuid = null;
+            this.$refs.modal.querySelector('form').reset();
+        },
+
+        handleSubmit(event) {
+            const form = event.target;
+            const url = form.getAttribute('hx-post').replace(placeholderUuid, this.conversationUuid);
+            htmx.ajax('POST', url, {
+                source: form,
+                target: '#document-create-result',
+                swap: 'innerHTML'
+            });
+        }
+    }
+}
+</script>

@@ -23,6 +23,7 @@ class Conversation:
         self.project_pathname = project_pathname
         self.stacks_: list[list] = []
         self.commands: list = []
+        self.cleanup: list = []
         self.strategies: dict = {}
         self.templates: dict = {}
         self.prompts: dict = {}
@@ -61,6 +62,10 @@ class Conversation:
         self.load_settings(settings)
 
         self.commands = list(definition.get("script", {}))
+        # Runs once, in the background, after the session ends (see
+        # Interpreter.run_cleanup / ChatSession._run) -- not part of the
+        # normal script flow.
+        self.cleanup = list(definition.get("cleanup", {}))
         self.load_strategies(definition.get("strategies", {}))
         self.load_templates(definition.get("templates", {}))
         self.load_prompts(definition.get("prompts", {}))

@@ -1,0 +1,31 @@
+{# ─── Single document list item (used both in the card and OOB-inserted on create) ─── #}
+<li class="flex items-center justify-between gap-2 text-xs bg-base-100 rounded px-2 py-1"
+    id="conversation-document-{{ doc.id }}"
+    {% if oob_target %}hx-swap-oob="beforeend:{{ oob_target }}"{% endif %}>
+    <button type="button"
+            class="min-w-0 flex items-center gap-1.5 hover:opacity-70 transition-opacity text-left"
+            @click="document.dispatchEvent(new CustomEvent('openDocumentViewModal', {
+                detail: { url: '{{ url_for('get_conversation_document_htmx', conversation_uuid=conversation.uuid, document_id=doc.id) }}' }
+            }))">
+        <span class="badge badge-ghost badge-xs shrink-0">{{ doc.kind }}</span>
+        <span class="truncate" title="{{ doc.title }}">{{ doc.title }}</span>
+    </button>
+    <button type="button"
+            class="text-error/40 hover:text-error shrink-0"
+            title="Eliminar documento"
+            @click="document.dispatchEvent(new CustomEvent('openConfirmModal', {
+                detail: {
+                    title: 'Eliminar documento',
+                    message: '¿Estás seguro de eliminar este documento?',
+                    confirmLabel: 'Eliminar',
+                    method: 'DELETE',
+                    url: '{{ url_for('delete_conversation_document_htmx', conversation_uuid=conversation.uuid, document_id=doc.id) }}',
+                    target: '#conversation-document-{{ doc.id }}',
+                    swap: 'delete'
+                }
+            }))">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+    </button>
+</li>

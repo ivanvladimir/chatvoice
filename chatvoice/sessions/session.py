@@ -110,3 +110,13 @@ class ChatSession:
             interpreter.conversation_store.close(interpreter.conversation_log_id)
             # Signal to WebSocket handler that we're done
             self._outbox.put(None)
+
+            # Run the conversation's `cleanup` script (if any) in its own
+            # background thread, decoupled from this session's lifecycle --
+            # a slow LLM analysis shouldn't delay the WS handler noticing
+            # we're done, and it must keep running even after this thread exits.
+            threading.Thread(
+                target=interpreter.run_cleanup,
+                daemon=True,
+                name=f"cleanup-{self.session_id[:8]}",
+            ).start()

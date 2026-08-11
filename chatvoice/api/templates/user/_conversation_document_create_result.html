@@ -1,0 +1,8 @@
+{# ─── This fragment triggers the modal close via HX-Trigger header ─── #}
+<div class="hidden" id="document-create-trigger"></div>
+
+{% set oob_target = "#conversation-documents-list-" ~ conversation.id %}
+{% include "user/_conversation_document_item.html" %}
+
+{# Remove the "sin documentos" placeholder, if this was the first document. #}
+<div id="conversation-documents-empty-{{ conversation.id }}" hx-swap-oob="delete"></div>
