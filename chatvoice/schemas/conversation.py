@@ -48,11 +48,12 @@ class ConversationLogCreateInternal(BaseModel):
 
 
 class ConversationLogUpdate(BaseModel):
-    """Used to close out a conversation once the session ends."""
+    """Used to close out a conversation once the session ends, or to edit its tags."""
 
     model_config = ConfigDict(extra="forbid")
 
     ended_at: datetime | None = Field(default=None)
+    tags: list[str] | None = Field(default=None)
 
 
 class ConversationLogUpdateInternal(ConversationLogUpdate):
@@ -73,6 +74,7 @@ class ConversationLogListItem(BaseModel):
     script_name: str
     started_at: datetime
     ended_at: datetime | None
+    tags: list[str] = Field(default_factory=list)
     user: UserBrief
 
 
@@ -86,5 +88,54 @@ class ConversationLogRead(BaseModel):
     script_name: str
     started_at: datetime
     ended_at: datetime | None
+    tags: list[str] = Field(default_factory=list)
     user: UserBrief
     turns: list[ConversationTurnRead] = Field(default_factory=list)
+
+
+class ConversationDocumentRead(BaseModel):
+    """A per-conversation analysis artifact."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    conversation_log_id: int
+    title: str
+    kind: str
+    content: str
+    tags: list[str] = Field(default_factory=list)
+    created_by_id: int | None
+    created_at: datetime
+
+
+class ConversationDocumentCreate(BaseModel):
+    """User-facing input for manually attaching a document to a conversation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = Field(..., min_length=1, max_length=200)
+    kind: str = Field(..., min_length=1, max_length=100)
+    content: str = Field(..., min_length=1)
+    tags: list[str] = Field(default_factory=list)
+
+
+class ConversationDocumentCreateInternal(ConversationDocumentCreate):
+    conversation_log_id: int = Field(..., gt=0)
+    created_by_id: int | None = Field(default=None)
+
+
+class ConversationDocumentUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str | None = Field(default=None)
+    kind: str | None = Field(default=None)
+    content: str | None = Field(default=None)
+    tags: list[str] | None = Field(default=None)
+
+
+class ConversationDocumentUpdateInternal(ConversationDocumentUpdate):
+    pass
+
+
+class ConversationDocumentDelete(BaseModel):
+    model_config = ConfigDict(extra="forbid")

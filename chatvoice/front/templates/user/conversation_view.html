@@ -11,6 +11,11 @@ hx-target="this"
 hx-indicator="#protected-loading"
 {% endblock %}
 
+{% block extra_content %}
+{% include "user/_document_create_modal.html" %}
+{% include "user/_document_view_modal.html" %}
+{% endblock %}
+
 {# ─── SKELETON FALLBACK (Shown while HTMX fetches) ─── #}
 {% block protected_content %}
 <div class="flex flex-col h-[600px] max-w-3xl mx-auto">

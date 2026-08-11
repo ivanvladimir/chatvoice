@@ -1,6 +1,6 @@
 {# ─── THIS IS A PARTIAL, NO EXTENDS BASE.HTML ─── #}
 {# Read-only transcript: mirrors chatbot_interface.html's visual language, no WS/input. #}
-<div class="max-w-3xl mx-auto">
+<div class="max-w-5xl mx-auto">
     <div class="flex items-center justify-between px-4 py-3 border-b border-base-300 bg-base-200/50 rounded-t-2xl">
         <div class="min-w-0">
             <h2 class="font-semibold text-sm truncate">{{ conversation.script_name }}</h2>
@@ -15,39 +15,70 @@
         </span>
     </div>
 
-    <div class="p-4 space-y-4 bg-base-100 max-h-[65vh] overflow-y-auto">
-        {% if not turns %}
-        <p class="text-center text-base-content/40 py-8">Esta conversación no tiene mensajes.</p>
-        {% endif %}
+    {# ─── TAGS ─── #}
+    <div class="px-4 py-2 bg-base-100 border-b border-base-300">
+        {% include "user/_conversation_tags.html" %}
+    </div>
 
-        {% for turn in turns %}
-            {% if turn.role == 'user' %}
-            <div class="chat chat-end">
-                <div class="chat-header opacity-50 text-xs mb-1">
-                    <time class="text-xs opacity-50">{{ turn.created_at.strftime('%H:%M') }}</time>
-                    {% if conversation_user %}{{ conversation_user.name }}{% endif %}
-                </div>
-                <div class="chat-bubble chat-bubble-primary">
-                    <p class="whitespace-pre-wrap break-words">{{ turn.text }}</p>
-                </div>
-            </div>
-            {% else %}
-            <div class="chat chat-start">
-                <div class="chat-image avatar placeholder">
-                    <div class="bg-neutral text-neutral-content w-8 rounded-full">
-                        <span class="text-xs font-bold">S</span>
+    <div class="flex flex-col lg:flex-row bg-base-100">
+        {# ─── CHAT ─── #}
+        <div class="flex-1 min-w-0 p-4 space-y-4 max-h-[65vh] overflow-y-auto">
+            {% if not turns %}
+            <p class="text-center text-base-content/40 py-8">Esta conversación no tiene mensajes.</p>
+            {% endif %}
+
+            {% for turn in turns %}
+                {% if turn.role == 'user' %}
+                <div class="chat chat-end">
+                    <div class="chat-header opacity-50 text-xs mb-1">
+                        <time class="text-xs opacity-50">{{ turn.created_at.strftime('%H:%M') }}</time>
+                        {% if conversation_user %}{{ conversation_user.name }}{% endif %}
+                    </div>
+                    <div class="chat-bubble chat-bubble-primary">
+                        <p class="whitespace-pre-wrap break-words">{{ turn.text }}</p>
                     </div>
                 </div>
-                <div class="chat-header opacity-50 text-xs mb-1">
-                    Sistema
-                    <time class="text-xs opacity-50">{{ turn.created_at.strftime('%H:%M') }}</time>
+                {% else %}
+                <div class="chat chat-start">
+                    <div class="chat-image avatar placeholder">
+                        <div class="bg-neutral text-neutral-content w-8 rounded-full">
+                            <span class="text-xs font-bold">S</span>
+                        </div>
+                    </div>
+                    <div class="chat-header opacity-50 text-xs mb-1">
+                        Sistema
+                        <time class="text-xs opacity-50">{{ turn.created_at.strftime('%H:%M') }}</time>
+                    </div>
+                    <div class="chat-bubble">
+                        <div class="whitespace-pre-wrap break-words">{{ turn.html | safe }}</div>
+                    </div>
                 </div>
-                <div class="chat-bubble">
-                    <div class="whitespace-pre-wrap break-words">{{ turn.html | safe }}</div>
-                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        {# ─── DOCUMENTS ─── #}
+        <div class="lg:w-64 shrink-0 border-t lg:border-t-0 lg:border-l border-base-300 p-4">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-base-content/60">Documentos</span>
+                <button type="button"
+                        class="btn btn-ghost btn-xs"
+                        @click="document.dispatchEvent(new CustomEvent('openDocumentModal', {
+                            detail: { uuid: '{{ conversation.uuid }}' }
+                        }))">
+                    + Añadir
+                </button>
             </div>
-            {% endif %}
-        {% endfor %}
+            <ul class="space-y-1" id="conversation-documents-list-{{ conversation.id }}">
+                {% for doc in conversation.documents %}
+                {% include "user/_conversation_document_item.html" %}
+                {% else %}
+                <li class="text-xs text-base-content/30 italic" id="conversation-documents-empty-{{ conversation.id }}">
+                    Sin documentos
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
     </div>
 
     <div class="flex justify-center py-4 border-t border-base-300 bg-base-200/50 rounded-b-2xl">

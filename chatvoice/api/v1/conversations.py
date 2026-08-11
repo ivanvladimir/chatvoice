@@ -9,17 +9,86 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.db.database import async_get_db
 from ...core.dependencies.paths import RuntimeContext, get_default_context
-from ...crud.conversations import crud_conversation_logs, crud_conversation_turns
+from ...crud.conversations import (
+    crud_conversation_documents,
+    crud_conversation_logs,
+    crud_conversation_turns,
+)
 from ...crud.projects import crud_projects
 from ...crud.users import crud_users
-from ...models.conversation import ConversationLog, ConversationTurn
+from ...models.conversation import (
+    ConversationDocument,
+    ConversationLog,
+    ConversationTurn,
+)
 from ...models.project import ProjectMember
 from ...models.user import User
+from ...schemas.conversation import (
+    ConversationDocumentCreateInternal,
+    ConversationDocumentRead,
+    ConversationLogUpdateInternal,
+)
 from ...schemas.user import UserBrief
 from ...utils.markdown import render_markdown
 from ..dependencies import get_current_editor_or_observer, get_current_user
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
+
+
+async def _check_conversation_access(
+    db: AsyncSession, conversation: dict, current_user: dict
+) -> None:
+    """
+    Raises 403/404 unless current_user had the conversation, or is an
+    editor/observer with access to its project. Used to gate viewing the
+    transcript and annotating a conversation (tags, documents).
+    """
+    if conversation["user_id"] == current_user["id"]:
+        return
+
+    if current_user["role"] not in ("editor", "observer"):
+        raise HTTPException(status_code=403, detail="Not your conversation")
+
+    if not conversation["project_id"]:
+        raise HTTPException(status_code=403, detail="Not your conversation")
+
+    project = await crud_projects.get(db, id=conversation["project_id"])
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    await _check_project_access(db, project, current_user)
+
+
+async def _attach_documents(db: AsyncSession, conversations: list[dict]) -> None:
+    """Attaches a `documents` list (as plain dicts) to each conversation dict, in place."""
+    ids = [c["id"] for c in conversations]
+    if not ids:
+        for conversation in conversations:
+            conversation["documents"] = []
+        return
+
+    result = await db.execute(
+        select(ConversationDocument)
+        .where(ConversationDocument.conversation_log_id.in_(ids))
+        .order_by(ConversationDocument.created_at)
+    )
+    documents_by_conversation: dict[int, list[dict]] = {}
+    for doc in result.scalars().all():
+        documents_by_conversation.setdefault(doc.conversation_log_id, []).append(
+            {
+                "id": doc.id,
+                "title": doc.title,
+                "kind": doc.kind,
+                "content": doc.content,
+                "tags": doc.tags,
+                "created_at": doc.created_at,
+            }
+        )
+
+    for conversation in conversations:
+        conversation["documents"] = documents_by_conversation.get(
+            conversation["id"], []
+        )
 
 
 @router.post("/mine", response_class=HTMLResponse)
@@ -45,6 +114,7 @@ async def list_my_conversations_htmx(
     for conversation in conversations:
         # Every row here already belongs to current_user (filtered above).
         conversation["can_delete"] = True
+    await _attach_documents(db, conversations)
     total_count = result.get("total_count", 0)
     total_pages = math.ceil(total_count / items_per_page) if total_count > 0 else 1
 
@@ -128,6 +198,7 @@ async def list_project_conversations_htmx(
         conversation["can_delete"] = (
             is_project_owner or conversation.get("user_id") == current_user["id"]
         )
+    await _attach_documents(db, conversations)
     total_count = result.get("total_count", 0)
     total_pages = math.ceil(total_count / items_per_page) if total_count > 0 else 1
 
@@ -167,19 +238,7 @@ async def get_conversation_transcript_htmx(
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
 
-    is_owner = conversation["user_id"] == current_user["id"]
-    if not is_owner:
-        if current_user["role"] not in ("editor", "observer"):
-            raise HTTPException(status_code=403, detail="Not your conversation")
-
-        if not conversation["project_id"]:
-            raise HTTPException(status_code=403, detail="Not your conversation")
-
-        project = await crud_projects.get(db, id=conversation["project_id"])
-        if not project:
-            raise HTTPException(status_code=404, detail="Project not found")
-
-        await _check_project_access(db, project, current_user)
+    await _check_conversation_access(db, conversation, current_user)
 
     turns_result = await crud_conversation_turns.get_multi(
         db,
@@ -203,6 +262,7 @@ async def get_conversation_transcript_htmx(
     ]
 
     conversation_user = await crud_users.get(db, id=conversation["user_id"])
+    await _attach_documents(db, [conversation])
 
     return ctx.templates_api.TemplateResponse(
         request=request,
@@ -251,6 +311,11 @@ async def delete_conversation_htmx(
         )
     )
     await db.execute(
+        delete(ConversationDocument).where(
+            ConversationDocument.conversation_log_id == conversation["id"]
+        )
+    )
+    await db.execute(
         delete(ConversationLog).where(ConversationLog.id == conversation["id"])
     )
     await db.commit()
@@ -260,3 +325,179 @@ async def delete_conversation_htmx(
     response = Response(status_code=200)
     response.headers["HX-Trigger"] = "conversationDeleted"
     return response
+
+
+@router.post("/{conversation_uuid}/tags", response_class=HTMLResponse)
+async def add_conversation_tag_htmx(
+    conversation_uuid: UUID,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    ctx: RuntimeContext = Depends(get_default_context),
+    current_user: dict = Depends(get_current_user),
+    tag: Annotated[str, Form()] = "",
+):
+    """HTMX endpoint: adds a whole-conversation tag, returns the updated tags fragment."""
+    conversation = await crud_conversation_logs.get(db, uuid=conversation_uuid)
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    await _check_conversation_access(db, conversation, current_user)
+
+    tag = tag.strip()
+    tags = list(conversation["tags"])
+    if tag and tag not in tags:
+        tags.append(tag)
+        await crud_conversation_logs.update(
+            db, object=ConversationLogUpdateInternal(tags=tags), uuid=conversation_uuid
+        )
+        conversation["tags"] = tags
+
+    return ctx.templates_api.TemplateResponse(
+        request=request,
+        name="user/_conversation_tags.html",
+        context={"request": request, "conversation": conversation},
+    )
+
+
+@router.delete("/{conversation_uuid}/tags/{tag}", response_class=HTMLResponse)
+async def remove_conversation_tag_htmx(
+    conversation_uuid: UUID,
+    tag: str,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    ctx: RuntimeContext = Depends(get_default_context),
+    current_user: dict = Depends(get_current_user),
+):
+    """HTMX endpoint: removes a whole-conversation tag, returns the updated tags fragment."""
+    conversation = await crud_conversation_logs.get(db, uuid=conversation_uuid)
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    await _check_conversation_access(db, conversation, current_user)
+
+    tags = [t for t in conversation["tags"] if t != tag]
+    if tags != conversation["tags"]:
+        await crud_conversation_logs.update(
+            db, object=ConversationLogUpdateInternal(tags=tags), uuid=conversation_uuid
+        )
+        conversation["tags"] = tags
+
+    return ctx.templates_api.TemplateResponse(
+        request=request,
+        name="user/_conversation_tags.html",
+        context={"request": request, "conversation": conversation},
+    )
+
+
+@router.post("/{conversation_uuid}/documents", response_class=HTMLResponse)
+async def create_conversation_document_htmx(
+    conversation_uuid: UUID,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    ctx: RuntimeContext = Depends(get_default_context),
+    current_user: dict = Depends(get_current_user),
+    title: Annotated[str, Form()] = "",
+    kind: Annotated[str, Form()] = "",
+    content: Annotated[str, Form()] = "",
+    tags: Annotated[str, Form()] = "",
+):
+    """HTMX endpoint: attaches a document (analysis) to a conversation."""
+    conversation = await crud_conversation_logs.get(db, uuid=conversation_uuid)
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    await _check_conversation_access(db, conversation, current_user)
+
+    title = title.strip()
+    kind = kind.strip()
+    content = content.strip()
+    tag_list = [t.strip() for t in tags.split(",") if t.strip()]
+
+    if not title or not kind or not content:
+        raise HTTPException(
+            status_code=422, detail="title, kind and content are required"
+        )
+
+    new_document = await crud_conversation_documents.create(
+        db,
+        ConversationDocumentCreateInternal(
+            conversation_log_id=conversation["id"],
+            title=title,
+            kind=kind,
+            content=content,
+            tags=tag_list,
+            created_by_id=current_user["id"],
+        ),
+        schema_to_select=ConversationDocumentRead,
+    )
+
+    response = ctx.templates_api.TemplateResponse(
+        request=request,
+        name="user/_conversation_document_create_result.html",
+        context={
+            "request": request,
+            "conversation": conversation,
+            "doc": new_document,
+        },
+    )
+    response.headers["HX-Trigger"] = "documentCreated"
+    return response
+
+
+@router.get("/{conversation_uuid}/documents/{document_id}", response_class=HTMLResponse)
+async def get_conversation_document_htmx(
+    conversation_uuid: UUID,
+    document_id: int,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    ctx: RuntimeContext = Depends(get_default_context),
+    current_user: dict = Depends(get_current_user),
+):
+    """HTMX endpoint: renders a single document's full content for the view modal."""
+    conversation = await crud_conversation_logs.get(db, uuid=conversation_uuid)
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    await _check_conversation_access(db, conversation, current_user)
+
+    document = await crud_conversation_documents.get(
+        db, id=document_id, conversation_log_id=conversation["id"]
+    )
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    _, html = render_markdown(document["content"])
+
+    return ctx.templates_api.TemplateResponse(
+        request=request,
+        name="user/_conversation_document_view.html",
+        context={"request": request, "doc": document, "html": html},
+    )
+
+
+@router.delete("/{conversation_uuid}/documents/{document_id}", response_class=Response)
+async def delete_conversation_document_htmx(
+    conversation_uuid: UUID,
+    document_id: int,
+    request: Request,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    current_user: dict = Depends(get_current_user),
+):
+    """HTMX endpoint: deletes a document attached to a conversation."""
+    conversation = await crud_conversation_logs.get(db, uuid=conversation_uuid)
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    await _check_conversation_access(db, conversation, current_user)
+
+    document = await crud_conversation_documents.get(
+        db, id=document_id, conversation_log_id=conversation["id"]
+    )
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    await crud_conversation_documents.delete(db, id=document_id)
+
+    # Not 204: htmx never swaps content on a 204 response, even with
+    # swap:'delete', so the row removal on the client would silently no-op.
+    return Response(status_code=200)

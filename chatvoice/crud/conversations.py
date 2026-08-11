@@ -1,7 +1,16 @@
 from fastcrud import FastCRUD
 
-from ..models.conversation import ConversationLog, ConversationTurn
+from ..models.conversation import (
+    ConversationDocument,
+    ConversationLog,
+    ConversationTurn,
+)
 from ..schemas.conversation import (
+    ConversationDocumentCreateInternal,
+    ConversationDocumentDelete,
+    ConversationDocumentRead,
+    ConversationDocumentUpdate,
+    ConversationDocumentUpdateInternal,
     ConversationLogCreateInternal,
     ConversationLogDelete,
     ConversationLogListItem,
@@ -35,3 +44,13 @@ CRUDConversationTurn = FastCRUD[
     ConversationTurnRead,
 ]
 crud_conversation_turns = CRUDConversationTurn(ConversationTurn)
+
+CRUDConversationDocument = FastCRUD[
+    ConversationDocument,
+    ConversationDocumentCreateInternal,
+    ConversationDocumentUpdate,
+    ConversationDocumentUpdateInternal,
+    ConversationDocumentDelete,
+    ConversationDocumentRead,
+]
+crud_conversation_documents = CRUDConversationDocument(ConversationDocument)

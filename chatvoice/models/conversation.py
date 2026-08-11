@@ -1,7 +1,7 @@
 import uuid as uuid_pkg
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, func, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid6 import uuid7
@@ -42,6 +42,11 @@ class ConversationLog(Base):
     ended_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), default=None, kw_only=True
     )
+    # Whole-conversation labels (distinct from the DSL `tag` command, which
+    # tags turns/segments *within* a running conversation).
+    tags: Mapped[list[str]] = mapped_column(
+        JSON, default_factory=list, server_default=text("'[]'"), kw_only=True
+    )
 
     user: Mapped["User"] = relationship(
         "User", back_populates="conversation_logs", init=False
@@ -54,6 +59,13 @@ class ConversationLog(Base):
         back_populates="conversation",
         cascade="all, delete-orphan",
         order_by="ConversationTurn.sequence",
+        default_factory=list,
+    )
+    documents: Mapped[list["ConversationDocument"]] = relationship(
+        "ConversationDocument",
+        back_populates="conversation",
+        cascade="all, delete-orphan",
+        order_by="ConversationDocument.created_at",
         default_factory=list,
     )
 
@@ -92,3 +104,40 @@ class ConversationTurn(Base):
 
     def __repr__(self) -> str:
         return f"<ConversationTurn id={self.id!r} role={self.role!r} sequence={self.sequence!r}>"
+
+
+class ConversationDocument(Base):
+    """A per-conversation analysis artifact (e.g. sentiment, summary, quality)."""
+
+    __tablename__ = "conversation_document"
+
+    id: Mapped[int] = mapped_column(autoincrement=True, primary_key=True, init=False)
+
+    conversation_log_id: Mapped[int] = mapped_column(
+        ForeignKey("conversation_log.id", ondelete="CASCADE"),
+        index=True,
+        kw_only=True,
+    )
+    title: Mapped[str] = mapped_column(String(200), kw_only=True)
+    # Free-text label (e.g. "sentimiento", "resumen") -- not an enum, so new
+    # kinds of analysis can be added without a migration.
+    kind: Mapped[str] = mapped_column(String(100), kw_only=True)
+    content: Mapped[str] = mapped_column(Text, kw_only=True)
+    tags: Mapped[list[str]] = mapped_column(JSON, default_factory=list, kw_only=True)
+
+    created_by_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        index=True,
+        default=None,
+        kw_only=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), init=False
+    )
+
+    conversation: Mapped["ConversationLog"] = relationship(
+        "ConversationLog", back_populates="documents", init=False
+    )
+
+    def __repr__(self) -> str:
+        return f"<ConversationDocument id={self.id!r} title={self.title!r} kind={self.kind!r}>"
