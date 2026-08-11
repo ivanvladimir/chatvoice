@@ -1,2 +1,16 @@
 {# ─── This fragment triggers the modal close via HX-Trigger header ─── #}
 <div class="hidden" id="create-success-trigger"></div>
+
+{% if project %}
+{# Common case: the grid is already showing -- insert the new card at the top. #}
+{% set oob_insert = true %}
+{% include "projects/project_card.html" %}
+
+{# Fallback: the list was empty (empty-state visible, no #projects-grid yet) --
+   replace the empty-state block with a fresh grid containing the new card. #}
+{% set oob_insert = false %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="projects-grid"
+     hx-swap-oob="outerHTML:#projects-empty-state">
+    {% include "projects/project_card.html" %}
+</div>
+{% endif %}

@@ -255,6 +255,8 @@ async def delete_conversation_htmx(
     )
     await db.commit()
 
-    response = Response(status_code=204)
+    # Not 204: htmx never swaps content on a 204 response, even with
+    # swap:'delete', so the card removal on the client would silently no-op.
+    response = Response(status_code=200)
     response.headers["HX-Trigger"] = "conversationDeleted"
     return response

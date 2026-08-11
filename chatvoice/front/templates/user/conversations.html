@@ -5,7 +5,7 @@
 {# ─── HTMX CONFIGURATION ─── #}
 {% block protected_htmx_config %}
 hx-post="{{ url_for('list_my_conversations_htmx') }}"
-hx-trigger="load-protected, conversationDeleted"
+hx-trigger="load-protected"
 hx-swap="innerHTML"
 hx-target="this"
 hx-indicator="#protected-loading"

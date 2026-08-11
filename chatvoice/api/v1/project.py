@@ -584,10 +584,19 @@ async def import_project_htmx(
             git_url,
         )
 
+        created_project = await crud_projects.get(
+            db, uuid=new_project["uuid"], owner_id=current_user["id"], is_deleted=False
+        )
+
         response = ctx.templates_api.TemplateResponse(
             request=request,
             name="projects/create_success.html",
-            context={"request": request, "project_name": name},
+            context={
+                "request": request,
+                "project_name": name,
+                "project": created_project,
+                "username": current_user["username"],
+            },
         )
         response.headers["HX-Trigger"] = "projectCreated"
         return response
@@ -801,14 +810,25 @@ async def create_project_htmx(
         )
         project_data = project_in.model_dump()
         project_data["owner_id"] = current_user["id"]
-        project_data = ProjectCreateInternal(**project_data)
+        project_obj = ProjectCreateInternal(**project_data)
 
-        await crud_projects.create(db, project_data)
+        new_project = await crud_projects.create(
+            db, project_obj, schema_to_select=ProjectListItem
+        )
+
+        created_project = await crud_projects.get(
+            db, uuid=new_project["uuid"], owner_id=current_user["id"], is_deleted=False
+        )
 
         response = ctx.templates_api.TemplateResponse(
             request=request,
             name="projects/create_success.html",
-            context={"request": request, "project_name": name},
+            context={
+                "request": request,
+                "project_name": name,
+                "project": created_project,
+                "username": current_user["username"],
+            },
         )
         response.headers["HX-Trigger"] = "projectCreated"
         return response
@@ -850,7 +870,9 @@ async def delete_project_htmx(
         uuid=project_uuid,
     )
 
-    response = Response(status_code=204)
+    # Not 204: htmx never swaps content on a 204 response, even with
+    # swap:'delete', so the card removal on the client would silently no-op.
+    response = Response(status_code=200)
     response.headers["HX-Trigger"] = "projectDeleted"
     return response
 

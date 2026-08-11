@@ -1,6 +1,7 @@
 {# ─── PROJECT CARD ─── #}
 <div class="card bg-base-200 hover:bg-base-300 transition-colors shadow-sm hover:shadow-md cursor-pointer"
      id="project-card-{{ project.id }}"
+     {% if oob_insert %}hx-swap-oob="afterbegin:#projects-grid"{% endif %}
      {% if project.import_status == 'importing' %}
      hx-get="{{ url_for('get_project_card_htmx', project_uuid=project.uuid) }}"
      hx-trigger="every 3s"
@@ -76,9 +77,19 @@
                     </li>
                     <li><hr class="my-1"></li>
                     <li>
-                        <a href="#" 
+                        <a href="#"
                            class="text-error"
-                           onclick="event.preventDefault(); if(confirm('¿Estás seguro de eliminar este proyecto?')) { htmx.ajax('DELETE', '{{ url_for("delete_project_htmx", project_uuid=project.uuid) }}', {target: '#protected-content', swap: 'innerHTML'}); }">
+                           @click.prevent="document.dispatchEvent(new CustomEvent('openConfirmModal', {
+                               detail: {
+                                   title: 'Eliminar proyecto',
+                                   message: '¿Estás seguro de eliminar este proyecto?',
+                                   confirmLabel: 'Eliminar',
+                                   method: 'DELETE',
+                                   url: '{{ url_for('delete_project_htmx', project_uuid=project.uuid) }}',
+                                   target: '#project-card-{{ project.id }}',
+                                   swap: 'delete'
+                               }
+                           }))">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>

@@ -4,7 +4,7 @@
 
 {% block protected_htmx_config %}
 hx-post="{{ url_for('projects_list_htmx') }}"
-hx-trigger="load-protected, projectCreated, projectDeleted, projectUpdated"
+hx-trigger="load-protected, projectUpdated"
 hx-include="#search-form"
 hx-swap="innerHTML"
 hx-target="this"

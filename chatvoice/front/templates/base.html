@@ -245,6 +245,31 @@
         </div>
     </dialog>
 
+    <!-- Generic Confirm Modal (replaces native window.confirm()) -->
+    <div x-data="confirmModal()">
+        <dialog x-ref="modal"
+                class="modal"
+                :class="{ 'modal-open': isOpen }"
+                @click.self="close()">
+            <div class="modal-box max-w-sm">
+                <h3 class="font-bold text-lg flex items-center gap-2 text-error">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <span x-text="title"></span>
+                </h3>
+                <p class="py-4 text-base-content/80" x-text="message"></p>
+                <div class="modal-action">
+                    <button class="btn" @click="close()">Cancelar</button>
+                    <button class="btn btn-error" @click="confirmAction()" x-text="confirmLabel"></button>
+                </div>
+            </div>
+            <form method="dialog" class="modal-backdrop">
+                <button @click="close()">close</button>
+            </form>
+        </dialog>
+    </div>
+
     <!-- Toast Container -->
     <div id="toast-container" class="toast toast-top toast-end z-50">
         <template x-for="toast in toasts" :key="toast.id">
@@ -517,6 +542,48 @@
                             this.toasts = this.toasts.filter(t => t.id !== id);
                         }, 300);
                     }, 3000);
+                }
+            }
+        }
+    </script>
+
+    <!-- Alpine.js Generic Confirm Modal -->
+    <script>
+        function confirmModal() {
+            return {
+                isOpen: false,
+                title: 'Confirmar',
+                message: '¿Estás seguro?',
+                confirmLabel: 'Eliminar',
+                pending: null, // { method, url, target, swap }
+
+                init() {
+                    // detail: { title?, message?, confirmLabel?, method, url, target, swap? }
+                    document.addEventListener('openConfirmModal', (e) => this.open(e.detail));
+                },
+
+                open(detail) {
+                    if (!detail || !detail.url) return;
+                    this.title = detail.title || 'Confirmar';
+                    this.message = detail.message || '¿Estás seguro?';
+                    this.confirmLabel = detail.confirmLabel || 'Eliminar';
+                    this.pending = detail;
+                    this.isOpen = true;
+                },
+
+                close() {
+                    this.isOpen = false;
+                    this.pending = null;
+                },
+
+                confirmAction() {
+                    if (this.pending) {
+                        htmx.ajax(this.pending.method, this.pending.url, {
+                            target: this.pending.target,
+                            swap: this.pending.swap || 'outerHTML',
+                        });
+                    }
+                    this.close();
                 }
             }
         }
