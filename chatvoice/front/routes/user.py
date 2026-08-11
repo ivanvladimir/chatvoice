@@ -78,7 +78,7 @@ async def chat(
             if username
             else request.url_for("websocket_endpoint_", script=script),
             # Configure these from your database or settings
-            "chat_room_name": "Customer Support",  # Custom room name
+            "chat_room_name": "Consulta",  # Custom room name
             "show_debug": True,  # Disable debug button
             "show_export": False,  # Disable download button
             "enable_user_typing": True,  # Enable typing animation

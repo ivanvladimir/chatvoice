@@ -35,6 +35,19 @@ class ExpressionEvaluator:
         self.slots.update(new_slots)
         self._build_context()  # Ensure simpleeval sees the new variables
 
+    def update_branch_slots(self, source, path):
+        keys = path.split()
+
+        # Navigate to the branch in target (creating levels if needed)
+        tgt_ref = self.slots
+        for key in keys:
+            tgt_ref = tgt_ref.setdefault(key, {})
+
+        # Update every key in that branch using the matching key in source
+        for key,value in source.items():
+            tgt_ref[key] = value
+
+
     def eval_expression(self, expr: str) -> Any:
         """
         Safely evaluates a string expression (e.g., "_settings.get('x') + 1").

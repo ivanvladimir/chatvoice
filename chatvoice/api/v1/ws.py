@@ -54,6 +54,8 @@ async def establish_ws_session(
 
     user_id = current_user["id"]
 
+    # TODO: Recover settings from environment
+
     # 1. CLEANUP: Kill any previous sessions for this user + script
     request.app.state.transport.cleanup_user_script_sessions(user_id, script)
 
@@ -61,7 +63,7 @@ async def establish_ws_session(
     interpreter = Interpreter(
         script_path,
         user_id=user_id,
-        settings={"_name_system": "hola"},
+        settings={},
         llm_client=request.app.state.llm_client,
     )
 

@@ -9,6 +9,7 @@ from .commands import (
     cmd_info,
     cmd_listen,
     cmd_llm,
+    cmd_llm_extract,
     cmd_remember,
     cmd_return,
     cmd_say,
@@ -23,6 +24,11 @@ from .logger import get_logger
 from .parser import Command, parse_line, parse_structured_command
 
 log = get_logger(__name__)
+
+# Safety cap on `while <condition> then <command>` guards: if the condition
+# never turns false (a script bug, e.g. forgetting to update the tested
+# slot), this stops the loop instead of hanging the session thread forever.
+MAX_WHILE_ITERATIONS = 1000
 
 
 class InterpreterStop(Exception):
@@ -69,6 +75,12 @@ class Interpreter:
         self.status: Dict[str, Any] = {}
         self.llm_client = llm_client
 
+        # Per-session conversation history: {"role": "user"|"assistant", "text": str}
+        # entries appended by cmd_say/cmd_listen. Kept as a single list instance
+        # (mutated in place, never reassigned) so the reference shared into
+        # self.ctx below and restored from persisted state in run() stays valid.
+        self.history: List[Dict[str, str]] = []
+
         # Initialize Conversation (convert path back to string to satisfy Conversation type hints)
         self.conversation = Conversation(
             self.project_pathname, user_id, settings=settings or {}, slots=slots or {}
@@ -98,6 +110,7 @@ class Interpreter:
             "memory_store": self.memory_store,
             "state": self.state,
             "project_name": self.name,
+            "history": self.history,
         }
 
         self.command_registry = {
@@ -108,6 +121,7 @@ class Interpreter:
             "tag": cmd_tag,
             "return": cmd_return,
             "llm": cmd_llm,
+            "llm_extract": cmd_llm_extract,
             "exec": cmd_exec,
             "remember": cmd_remember,
             "info": cmd_info,
@@ -135,6 +149,8 @@ class Interpreter:
 
         if state:
             self.conversation.slots.update(state.get("slots", {}))
+            # In-place: preserves the list object shared into self.ctx["history"].
+            self.history[:] = state.get("history", [])
 
         self.status = {}
 
@@ -206,32 +222,64 @@ class Interpreter:
                     _command=c._command,
                     args=[c.name[1:]] + list(c.args),
                     condition=c.condition,
+                    condition_type=c.condition_type,
                 )
 
-            # Evaluate conditional execution (e.g., `say hello ? {slot == true}`)
+            if c.condition_type == "while":
+                # Re-check the condition and re-run the guarded command until
+                # it's false, e.g. `while attempts < 3 then listen entrada`.
+                # condition is always set alongside condition_type by the parser.
+                assert c.condition is not None
+                ran_once = False
+                iterations = 0
+                while not self.exit and self.evaluator.evaluate_condition(c.condition):
+                    iterations += 1
+                    if iterations > MAX_WHILE_ITERATIONS:
+                        log.warning(
+                            f"while guard on '{c.name}' exceeded "
+                            f"{MAX_WHILE_ITERATIONS} iterations (condition: "
+                            f"{c.condition}); stopping to avoid an infinite loop."
+                        )
+                        break
+
+                    self.status = yield from self._dispatch(
+                        c, is_continuation, callback
+                    )
+                    ran_once = True
+
+                if ran_once:
+                    is_continuation = True
+                continue
+
+            # Evaluate conditional execution (e.g., `if slot == true then say hello`)
             if c.condition is not None and not self.evaluator.evaluate_condition(
                 c.condition
             ):
                 yield from ()
                 continue
 
-            handler = self.command_registry.get(c.name)
-
-            if not handler:
-                raise InterpreterStop(ValueError(f"Unknown command: {c.name}"))
-
-            # Build the specific context payload for this exact command execution
-            cmd_ctx = {
-                **self.ctx,  # Base context (templates, state, etc.)
-                "is_continuation": is_continuation,
-                "prev_status": self.status,
-                "memory_store": self.memory_store,
-            }
-
-            # Execute the command handler and capture its final return status
-            self.status = yield from handler(c.args, cmd_ctx, self.evaluator, callback)
+            self.status = yield from self._dispatch(c, is_continuation, callback)
 
             # The next command in the chain will pipe this command's output as an argument
             is_continuation = True
 
         yield from ()  # Maintain generator protocol
+
+    def _dispatch(
+        self, c: Command, is_continuation: bool, callback: callable
+    ) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
+        """Look up and run a single command's handler, returning its status dict."""
+        handler = self.command_registry.get(c.name)
+
+        if not handler:
+            raise InterpreterStop(ValueError(f"Unknown command: {c.name}"))
+
+        # Build the specific context payload for this exact command execution
+        cmd_ctx = {
+            **self.ctx,  # Base context (templates, state, etc.)
+            "is_continuation": is_continuation,
+            "prev_status": self.status,
+            "memory_store": self.memory_store,
+        }
+
+        return (yield from handler(c.args, cmd_ctx, self.evaluator, callback))

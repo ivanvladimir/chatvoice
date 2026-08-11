@@ -3,6 +3,7 @@ import random
 import time
 from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
+from pydantic import BaseModel, Field
 from simpleeval import InvalidExpression, NameNotDefined, simple_eval
 
 from ..utils.llm import llm_client_response
@@ -181,9 +182,7 @@ def cmd_return(
 
 
 def _resolve_prompt_text(
-    text: str, 
-    prompts: Dict[str, Any], 
-    evaluator: ExpressionEvaluator
+    text: str, prompts: Dict[str, Any], evaluator: ExpressionEvaluator
 ) -> str:
     """
     Resolve a prompt key or raw text into its final formatted string.
@@ -305,7 +304,7 @@ def cmd_llm(
             "error": "LLM Client not found in context",
         }
 
-    response = llm_client_response(llm_client, prompt)
+    response = llm_client_response(llm_client, prompt, history=ctx.get("history"))
 
     yield {"cmd": "llm", "args": [response]}
 
@@ -319,6 +318,126 @@ def cmd_llm(
             "value": [response],
             "ok": True,
         }
+
+    return {"command": "llm", "value": [response], "ok": True}
+
+
+def cmd_llm_extract(
+    args: Union[List[str], Dict[str, Any]],
+    ctx: Dict[str, Any],
+    evaluator: ExpressionEvaluator,
+    callback: callable,
+) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
+    """
+    Resolves a prompt that returns a structure, sends it to the LLM client, and optionally saves the response to a slot.
+
+    Accepts two forms:
+      - Positional (text-line) form:
+        `llm_structure <prompt_key_or_text> [variable_name]`
+      - Structured (YAML block) form::
+
+            llm_structure:
+              system: <prompt_key_or_text>
+              user: <prompt_key_or_text>
+              output: <variable_name>
+
+        `system` and `user` are each resolved exactly like the positional
+        key -- looked up in the conversation's prompts first, falling back
+        to formatting the raw text against the current slots -- and sent to
+        the LLM client as an ordered `[system, user]` pair.
+
+    Args:
+        args: Command arguments; either a tuple of string tokens (positional
+            form) or a dict with `system`/`user`/`output` keys (structured form)
+        ctx: Execution context containing 'prompts', 'llm_client'
+        evaluator: Expression evaluator for variable resolution
+        callback: Callback function for user interaction
+
+    Returns:
+        Generator yielding command status dictionaries
+    """
+    prompts = ctx.get("prompts", {})
+
+    if isinstance(args, dict):
+        system_text = args.get("system")
+        user_text = args.get("user")
+        variable = args.get("output")
+
+        if not system_text and not user_text:
+            yield from ()
+            return {
+                "command": "llm",
+                "ok": False,
+                "error": "Missing system/user prompt",
+            }
+
+        prompt: Any = [
+            _resolve_prompt_text(system_text, prompts, evaluator)
+            if system_text
+            else None,
+            _resolve_prompt_text(user_text, prompts, evaluator) if user_text else None,
+        ]
+    else:
+        # Validate arguments
+        if not args:
+            yield from ()
+            return {
+                "command": "llm",
+                "ok": False,
+                "error": "Missing prompt key or text",
+            }
+
+        if len(args) > 1:
+            log.warning(
+                f"cmd_llm_extract expects 1 argument, but received {len(args)}. Extra arguments will be ignored."
+            )
+
+        prompt = _resolve_prompt_text(args[0], prompts, evaluator)
+
+    # Call the LLM (Extract client from context)
+    llm_client = ctx.get("llm_client")
+    if not llm_client:
+        yield from ()
+        return {
+            "command": "llm",
+            "ok": False,
+            "error": "LLM Client not found in context",
+        }
+
+    response = llm_client_response(
+        llm_client, prompt, structured=True, history=ctx.get("history")
+    )
+
+
+    if 'status' in response:
+        response=response['status']
+    else:
+        yield from ()
+        return {
+            "command": "llm",
+            "ok": False,
+            "error": "Not response was extracted",
+        }
+
+    yield {"cmd": "llm", "args": [response]}
+
+    # CRITICAL: Use update_slots() so the evaluator rebuilds its internal
+    # simpleeval context.
+    if not '_level' in response:
+        for k, v in response.items():
+            evaluator.update_slots({"k": v})
+        variable=k
+        value=v
+    else:
+       evaluator.update_branch_slots(response['_data'], response['_level']) 
+       variable=None
+       value=response['_data']
+    return {
+        "command": "llm",
+        "variable": variable,
+        "value": [value],
+        "ok": True,
+    }
 
     return {"command": "llm", "value": [response], "ok": True}
 
@@ -362,6 +481,11 @@ def cmd_say(
         else:
             texts = [key.format_map(evaluator.slots)]
 
+    if texts:
+        context.setdefault("history", []).append(
+            {"role": "assistant", "text": "\n".join(str(t) for t in texts)}
+        )
+
     yield {"cmd": "say", "args": texts}
     return {"command": "say", "value": texts, "ok": True}
 
@@ -400,6 +524,7 @@ def cmd_listen(
     yield {"cmd": "listen"}
     user_input = callback()
     evaluator.slots[variable] = user_input or ""
+    context.setdefault("history", []).append({"role": "user", "text": user_input or ""})
     return {
         "command": "listen",
         "value": user_input or "",

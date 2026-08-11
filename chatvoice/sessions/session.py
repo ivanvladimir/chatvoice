@@ -100,9 +100,12 @@ class ChatSession:
             self._send_to_user({"cmd": "error", "args": [str(e)]})
         finally:
             # Persist final state
-            final_state = {"slots": dict(interpreter.conversation.slots)}
+            final_state = {
+                "slots": dict(interpreter.conversation.slots),
+                "history": list(interpreter.history),
+            }
             self.store.set(
-                self.user_id, self.interpreter_name, self.session_id, final_state
+                self.user_id, final_state, self.interpreter_name, self.session_id
             )
             # Signal to WebSocket handler that we're done
             self._outbox.put(None)
