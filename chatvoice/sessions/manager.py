@@ -30,6 +30,53 @@ class SessionManager:
         session.start()
         return session
 
+    def create_replacing(
+        self,
+        user_id: str | int,
+        script_name: str,
+        conversation: Callable,
+        session_id: Optional[str] = None,
+        wait: float = 2.0,
+    ) -> ChatSession:
+        """
+        Atomically replace any existing session(s) for this (user_id,
+        script_name) with a new one.
+
+        Unlike calling remove_by_user_and_script() followed by create()
+        separately, the "find stale sessions for this user+script" and
+        "register the new one" steps happen under a single lock acquisition.
+        That matters because the caller (establish_ws_session) does several
+        `await`s (DB lookups) between wanting to clean up and actually being
+        ready to register the new session -- a second, near-simultaneous
+        call for the same user+script (e.g. a double form submit, a client
+        retry) can otherwise interleave in that gap: both calls see "nothing
+        to clean up yet" before either has registered its own session, and
+        both survive as orphaned, un-cleaned-up interpreters.
+        """
+        session_id = session_id or str(uuid.uuid4())
+        session = ChatSession(user_id, session_id, conversation, self.store)
+
+        with self._lock:
+            stale_ids = [
+                sid
+                for sid, s in self._sessions.items()
+                if s.user_id == user_id and s.interpreter_name == script_name
+            ]
+            stale_sessions = [self._sessions.pop(sid) for sid in stale_ids]
+            self._sessions[session_id] = session
+
+        if stale_sessions:
+            log.warning(
+                f"Replacing {len(stale_sessions)} stale session(s) for user "
+                f"{user_id} on script '{script_name}'"
+            )
+        for stale_session in stale_sessions:
+            stale_session.stop()
+            stale_session.wait(timeout=wait)
+
+        session.start()
+        return session
+
     def get(self, session_id: str) -> Optional[ChatSession]:
         with self._lock:
             return self._sessions.get(session_id)
@@ -73,30 +120,3 @@ class SessionManager:
                 }
                 for s in self._sessions.values()
             ]
-
-    def remove_by_user_and_script(
-        self, user_id: str | int, script_name: str, wait: float = 2.0
-    ) -> int:
-        """
-        Find and remove all active sessions for a specific user and script.
-        Returns the number of sessions removed.
-        """
-        with self._lock:
-            # Find matching session IDs
-            to_remove = [
-                sid
-                for sid, s in self._sessions.items()
-                if s.user_id == user_id and s.interpreter_name == script_name
-            ]
-
-            # Pop them from the dict
-            sessions = [self._sessions.pop(sid) for sid in to_remove]
-
-        # Stop threads OUTSIDE the lock so we don't block other operations
-        count = 0
-        for session in sessions:
-            session.stop()
-            session.wait(timeout=wait)
-            count += 1
-
-        return count

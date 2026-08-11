@@ -252,10 +252,17 @@ class Interpreter:
                             f"{c.condition}); stopping to avoid an infinite loop."
                         )
                         break
-
+                    stack_depth = len(self.state.stack)
                     self.status = yield from self._dispatch(
                         c, is_continuation, callback
                     )
+                    # `solve` only *schedules* a strategy/sub-conversation by
+                    # pushing a stack frame and swapping in state.commands --
+                    # it doesn't run it. Drive it to completion now, or the
+                    # next condition check re-dispatches `solve` again before
+                    # the guarded strategy's own commands ever run.
+                    if len(self.state.stack) > stack_depth:
+                        yield from self._drain(stack_depth, callback)
                     ran_once = True
 
                 if ran_once:
@@ -275,6 +282,47 @@ class Interpreter:
             is_continuation = True
 
         yield from ()  # Maintain generator protocol
+
+    def _drain(
+        self, target_depth: int, callback: callable
+    ) -> Generator[Dict[str, Any], Any, None]:
+        """
+        Runs state.commands (following any solve/return jumps) until the
+        stack unwinds back down to target_depth, then stops -- without
+        falling through to whatever comes after in the resumed queue.
+
+        Used by the `while` guard to fully execute a strategy/sub-conversation
+        scheduled by `solve` before re-checking the loop condition, since
+        `solve` itself only mutates state.commands/state.stack and returns.
+        """
+        while not self.exit:
+            if self.state.commands:
+                line = self.state.commands.pop(0)
+                chain = (
+                    parse_structured_command(line)
+                    if isinstance(line, dict)
+                    else parse_line(line)
+                )
+                yield from self._run_chain(chain, callback)
+
+            if not self.state.commands:
+                if len(self.state.stack) <= target_depth:
+                    return
+                obj = self.state.stack.pop()
+
+                if len(obj) == 1:  # Returning from a Strategy
+                    self.state.commands = obj[0]
+                    log.info("Resuming after strategy")
+                else:  # Returning from a Sub-conversation
+                    old_conversation, commands = obj
+                    old_conversation.slots.update(self.state.conversation.return_)
+                    self.state.conversation = old_conversation
+                    self.state.commands = commands
+                    log.info("Resuming execution of parent conversation")
+                    self.evaluator.update_slots(self.state.conversation.slots)
+
+                if len(self.state.stack) <= target_depth:
+                    return
 
     def _dispatch(
         self, c: Command, is_continuation: bool, callback: callable

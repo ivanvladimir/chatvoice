@@ -99,7 +99,6 @@ def llm_client_response(
             print(e)
             interaction = None
         if interaction:
-            print(">>>>",interaction.output_text)
             if structured:
                 response = StructureResponse.model_validate_json(
                     interaction.output_text

@@ -18,7 +18,7 @@ hx-indicator="#protected-loading"
 
 {% block extra_content %}
 {# Create Project Modal - Outside protected zone so it persists #}
-<div x-data="projectModal()" x-init="init()">
+<div x-data="projectModal()">
     
     <!-- Modal -->
     <dialog x-ref="modal" 
@@ -45,7 +45,7 @@ hx-indicator="#protected-loading"
     </dialog>
 </div>
 
-<div x-data="importModal()" x-init="init()">
+<div x-data="importModal()">
 
     <!-- Modal -->
     <dialog x-ref="modal"
@@ -72,7 +72,7 @@ hx-indicator="#protected-loading"
     </dialog>
 </div>
 
-<div x-data="memberModal()" x-init="init()">
+<div x-data="memberModal()">
     <dialog x-ref="modal" 
             class="modal" 
             :class="{ 'modal-open': isOpen }"

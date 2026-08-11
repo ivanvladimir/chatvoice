@@ -121,7 +121,18 @@ if intentos > 3 or nombre == "Desconocido" then say "Fin del programa."
 
 # While (Cuidado con los bucles infinitos)
 while intentos < 3 then listen entrada
+
+# While con solve: cada vez que la condición sea verdadera, la estrategia
+# completa se ejecuta de principio a fin (incluyendo sus propios if/while)
+# antes de volver a evaluar la condición.
+while _status == "continue" then solve main_loop
 ```
+
+> **Importante:** el comando guardado por `while` se ejecuta **por completo** en cada
+> vuelta antes de revisar la condición otra vez. Si usas `while ... then solve estrategia`,
+> asegúrate de que esa estrategia modifique (con `set`, `llm_extract`, etc.) la variable
+> que aparece en la condición; si nunca cambia, el bucle nunca terminará (hasta el límite
+> de seguridad de iteraciones).
 
 ## 5. Referencia de Comandos
 
@@ -139,11 +150,15 @@ listen email_usuario
 ```
 
 ### `set <variable> [valor1 valor2 ...]`
-Asigna un valor a una variable. Si le pasas múltiples valores, los guardará como una lista. Si se usa encadenado con `|`, captura el resultado del comando anterior.
+Asigna un valor a una variable. Si pasas **un solo valor**, se guarda tal cual (como texto o número, comparable directamente en un `if`/`while`). Si pasas **varios valores**, se guardan como una lista. Si se usa encadenado con `|`, captura el resultado del comando anterior.
 ```text
 set edad 25
-set colores rojo verde azul
+set _status "continue"          # _status queda como el texto "continue"
+set colores rojo verde azul     # colores queda como ["rojo", "verde", "azul"]
 listen texto | set texto_limpio  # texto_limpio obtiene lo que se escuchó
+
+# Útil para controlar un while:
+while _status == "continue" then solve main_loop
 ```
 
 ### `llm <clave_prompt | texto> [variable]`
@@ -153,6 +168,43 @@ Envía un prompt al Modelo de Lenguaje (LLM).
 ```text
 llm "Dime un chiste corto"
 llm prompt_resumen texto_usuario  # Guarda la respuesta en el slot 'prompt_resumen'
+```
+
+### `llm_extract <clave_prompt | texto> [variable]`
+Envía un prompt al LLM pidiéndole una respuesta **estructurada** (JSON) en lugar de texto libre, y guarda lo extraído en slots. Acepta dos formas:
+
+**Forma posicional** (una sola línea):
+```text
+llm_extract extract_info "{respuesta_usuario}" finished
+```
+
+**Forma de bloque** (recomendada cuando necesitas prompts de `system` y `user` por separado):
+```yaml
+- llm_extract:
+    system: extract_info
+    user: "{respuesta_usuario}"
+    output: finished
+```
+
+* `system` / `user` se resuelven igual que en `llm`: primero se busca la clave en `prompts`, si no existe se usa el texto tal cual (con `{slots}` interpolados).
+* `output` (o el segundo argumento en la forma posicional) nombra el slot donde se guarda el resultado:
+  * Si el LLM devuelve un único valor (p. ej. `{"finished": true}`), `output` queda como ese valor escalar (`finished == true`), listo para usarse en un `if`/`while`.
+  * Si el LLM devuelve varios campos, `output` queda como el objeto completo (un diccionario). Las condiciones (`if`/`while`) no soportan acceder a un campo interno con punto (`finished.campo`); en ese caso omite `output` para que cada campo se guarde como su propio slot.
+* Si **no** se indica `output`, cada campo que devuelva el LLM se guarda directamente como un slot con su propio nombre (útil para extraer varios datos sueltos a la vez).
+
+```text
+# Termina el bucle cuando el LLM decide que la conversación acabó
+- llm_extract:
+    system: extract_info
+    user: "Termina"
+    output: finished
+- if finished == true then set _status "stop"
+```
+
+### `sleep <segundos>`
+Pausa la ejecución del script (de forma síncrona) durante el número de segundos indicado.
+```text
+sleep 2
 ```
 
 ### `solve <nombre_estrategia | nombre_conversacion>`

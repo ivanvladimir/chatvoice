@@ -196,6 +196,7 @@ def _resolve_prompt_text(
         raw_prompt = prompts[text].strip()
         # Dynamically build an f-string and evaluate it safely using the evaluator
         fmt_str = f'f"""{raw_prompt}"""' if "\n" in raw_prompt else f'f"{raw_prompt}"'
+        fmt_str = fmt_str.format_map(evaluator.slots)
 
         try:
             return evaluator.eval_expression(fmt_str)
@@ -206,6 +207,7 @@ def _resolve_prompt_text(
         raw_prompt = evaluator.slots[text].strip()
         # Dynamically build an f-string and evaluate it safely using the evaluator
         fmt_str = f'f"""{raw_prompt}"""' if "\n" in raw_prompt else f'f"{raw_prompt}"'
+        fmt_str = fmt_str.format_map(evaluator.slots)
 
         try:
             return evaluator.eval_expression(fmt_str)
@@ -423,10 +425,18 @@ def cmd_llm_extract(
     # CRITICAL: Use update_slots() so the evaluator rebuilds its internal
     # simpleeval context.
     if not "_level" in response:
-        for k, v in response.items():
-            evaluator.update_slots({k: v})
-        variable = k
-        value = v
+        if variable:
+            # `output: <name>` was given: store the extraction under that
+            # slot name rather than scattering the LLM's own JSON keys.
+            # Unwrap a single-key dict so `while finished == true` works
+            # directly, instead of comparing against a nested dict.
+            value = next(iter(response.values())) if len(response) == 1 else response
+            evaluator.update_slots({variable: value})
+        else:
+            for k, v in response.items():
+                evaluator.update_slots({k: v})
+            variable = k
+            value = v
     else:
         evaluator.update_branch_slots(response["_data"], response["_level"])
         variable = None
@@ -578,9 +588,11 @@ def cmd_set(
                 "ok": False,
                 "error": "Missing value for variable",
             }
-        value = args[1:]
+        # A single value is stored as a scalar (so it compares correctly in
+        # `while`/`if` conditions); multiple values are stored as a list.
+        value = args[1] if len(args) == 2 else list(args[1:])
 
-    evaluator.slots[variable] = value
+    evaluator.update_slots({variable: value})
     yield from ()
     return {"command": "set", "value": value, "variable": variable, "ok": True}
 

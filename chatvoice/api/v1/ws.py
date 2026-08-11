@@ -67,10 +67,7 @@ async def establish_ws_session(
 
     # TODO: Recover settings from environment
 
-    # 1. CLEANUP: Kill any previous sessions for this user + script
-    request.app.state.transport.cleanup_user_script_sessions(user_id, script)
-
-    # 1b. Resolve the owning Project row (if any -- built-in scripts like
+    # 1. Resolve the owning Project row (if any -- built-in scripts like
     # hello_world have no Project row) and log this run to the DB.
     project_id = None
     if username:
@@ -103,8 +100,11 @@ async def establish_ws_session(
         conversation_log_id=conversation_log["id"] if conversation_log else None,
     )
 
-    session = request.app.state.transport.create_session(
-        user_id, interpreter, session_id=session_id
+    # Atomically replaces any existing session for this user+script -- see
+    # SessionManager.create_replacing for why this can't be a separate
+    # cleanup-then-create pair of calls.
+    session = request.app.state.transport.create_session_replacing(
+        user_id, script, interpreter, session_id=session_id
     )
 
     # 3. Generate token & set cookie

@@ -36,6 +36,25 @@ class WS:
         log.info(f"Created session {session.session_id} for user {user_id}")
         return session
 
+    def create_session_replacing(
+        self,
+        user_id: int | str,
+        script_name: str,
+        interpreter: "Interpreter",
+        session_id: Optional[str] = None,
+    ) -> ChatSession:
+        """
+        Create and start a new chat session, atomically replacing any existing
+        session(s) for this (user_id, script_name). See
+        SessionManager.create_replacing for why this must be atomic rather
+        than a separate cleanup-then-create call.
+        """
+        session = self.session_manager.create_replacing(
+            user_id, script_name, interpreter, session_id
+        )
+        log.info(f"Created session {session.session_id} for user {user_id}")
+        return session
+
     def get_session(self, session_id: str) -> Optional[ChatSession]:
         """Get a session by ID. Returns None if not found or dead."""
         if not session_id:
@@ -74,11 +93,3 @@ class WS:
     def active_count(self) -> int:
         """Return number of active sessions."""
         return self.session_manager.active_count()
-
-    def cleanup_user_script_sessions(self, user_id: str | int, script_name: str):
-        """Remove any existing sessions for this user+script combo."""
-        count = self.session_manager.remove_by_user_and_script(user_id, script_name)
-        if count > 0:
-            log.warning(
-                f"Cleaned up {count} stale session(s) for user {user_id} on script '{script_name}'"
-            )

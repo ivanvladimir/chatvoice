@@ -1,6 +1,5 @@
 {# partials/chat_session.html #}
-<div x-data="chatbotApp('{{ url_start }}', '{{ url_ws }}', window.chatbotConfig || {})" 
-     x-init="init()" 
+<div x-data="chatbotApp('{{ url_start }}', '{{ url_ws }}', window.chatbotConfig || {})"
      @click.stop class="w-full h-full">
     <div class="flex flex-col h-[calc(100vh-12rem)] max-w-3xl mx-auto w-full">
         
