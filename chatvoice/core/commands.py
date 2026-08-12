@@ -2,6 +2,7 @@ import json
 import logging
 import random
 import time
+import uuid
 from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 from pydantic import BaseModel, Field
@@ -835,6 +836,151 @@ def cmd_save_document(
 
     yield from ()
     return {"command": "save_document", "value": content_str, "ok": True}
+
+
+def cmd_list_documents(
+    args: List[str],
+    ctx: Dict[str, Any],
+    evaluator: ExpressionEvaluator,
+    callback: callable,
+) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
+    """
+    Lists documents attached via `save_document` across every one of this
+    user's runs of the current script (not just this session), newest-updated
+    first. Each entry has `uuid`, `title`, `created_at`, `updated_at` -- not
+    `content`, use `load_document` to fetch a specific document's content.
+
+    Args:
+        args: Command arguments, expected: [] or [variable_name]
+        ctx: Execution context containing 'state', 'project_name', 'conversation_store'
+        evaluator: Expression evaluator for variable resolution
+        callback: Callback function for user interaction
+
+    Returns:
+        Generator yielding command status dictionaries
+
+    Raises:
+        CommandError: If ConversationLogStore isn't configured in context
+    """
+    if len(args) > 1:
+        log.warning(
+            f"cmd_list_documents expects 0-1 arguments, but received {len(args)}. Extra arguments will be ignored."
+        )
+
+    variable = str(args[0]) if args else None
+
+    conversation_store = ctx.get("conversation_store")
+    if not conversation_store:
+        raise CommandError("ConversationLogStore is not configured in context.")
+
+    conversation = ctx["state"].conversation
+    documents = conversation_store.list_documents(
+        user_id=conversation.user_id, script_name=ctx.get("project_name", "")
+    )
+
+    # Listing is metadata-only (no content) -- already newest-updated first.
+    listing = [
+        {
+            "uuid": doc["uuid"],
+            "title": doc["title"],
+            "created_at": doc["created_at"],
+            "updated_at": doc["updated_at"],
+        }
+        for doc in documents
+    ]
+
+    if variable:
+        evaluator.update_slots({variable: listing})
+
+    yield from ()
+    return {
+        "command": "list_documents",
+        "variable": variable,
+        "value": listing,
+        "ok": True,
+    }
+
+
+def cmd_load_document(
+    args: List[str],
+    ctx: Dict[str, Any],
+    evaluator: ExpressionEvaluator,
+    callback: callable,
+) -> Generator[Dict[str, Any], Any, Dict[str, Any]]:
+    """
+    Loads a document previously attached via `save_document`. The lookup
+    strategy is auto-detected from the first argument: if it parses as a
+    uuid, the document with that exact uuid is loaded; otherwise it's
+    treated as a title, and the most recently updated document with that
+    title (across this user's runs of the current script) is loaded.
+
+    Args:
+        args: Command arguments, expected: [uuid_or_title] or
+            [uuid_or_title, variable_name]
+        ctx: Execution context containing 'state', 'project_name', 'conversation_store'
+        evaluator: Expression evaluator for variable resolution
+        callback: Callback function for user interaction
+
+    Returns:
+        Generator yielding command status dictionaries
+
+    Raises:
+        CommandError: If ConversationLogStore isn't configured in context
+    """
+    if not args:
+        yield from ()
+        return {
+            "command": "load_document",
+            "ok": False,
+            "error": "Missing document uuid or title",
+        }
+
+    if len(args) > 2:
+        log.warning(
+            f"cmd_load_document expects 1-2 arguments, but received {len(args)}. Extra arguments will be ignored."
+        )
+
+    identifier = str(args[0])
+    variable = str(args[1]) if len(args) >= 2 else None
+
+    conversation_store = ctx.get("conversation_store")
+    if not conversation_store:
+        raise CommandError("ConversationLogStore is not configured in context.")
+
+    conversation = ctx["state"].conversation
+    user_id = conversation.user_id
+    script_name = ctx.get("project_name", "")
+
+    try:
+        document_uuid: Optional[uuid.UUID] = uuid.UUID(identifier)
+    except ValueError:
+        document_uuid = None
+
+    if document_uuid is not None:
+        document = conversation_store.get_document_by_uuid(user_id, document_uuid)
+    else:
+        document = conversation_store.get_latest_document_by_title(
+            user_id, script_name, identifier
+        )
+
+    if document is None:
+        yield from ()
+        return {
+            "command": "load_document",
+            "ok": False,
+            "error": f"No document found for '{identifier}'",
+        }
+
+    if variable:
+        evaluator.update_slots({variable: document})
+
+    yield from ()
+    return {
+        "command": "load_document",
+        "variable": variable,
+        "value": document,
+        "ok": True,
+    }
 
 
 def cmd_tag_conversation(

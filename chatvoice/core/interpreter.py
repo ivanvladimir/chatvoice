@@ -8,9 +8,11 @@ from .commands import (
     ExecutionState,
     cmd_exec,
     cmd_info,
+    cmd_list_documents,
     cmd_listen,
     cmd_llm,
     cmd_llm_extract,
+    cmd_load_document,
     cmd_remember,
     cmd_return,
     cmd_save_document,
@@ -141,6 +143,8 @@ class Interpreter:
             "sleep": cmd_sleep,
             "save_document": cmd_save_document,
             "tag_conversation": cmd_tag_conversation,
+            "list_documents": cmd_list_documents,
+            "load_document": cmd_load_document,
         }
 
     def run(

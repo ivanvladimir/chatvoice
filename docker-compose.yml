@@ -1,0 +1,25 @@
+services:
+  chatvoice:
+    build: .
+    image: chatvoice:latest
+    ports:
+      - "9000:9000"
+    env_file:
+      # secrets (LLM_PROVIDER, *_API_KEY, ...) — see .env.example / core/config.py
+      - .env
+    environment:
+      # sql_app.db lives here instead of the repo root so it can sit on a named volume
+      SQLITE_URI: /app/data/sql_app.db
+      # ENVIRONMENT: production   # also requires SECRET_KEY to be set via .env
+    volumes:
+      # bot projects — bind-mounted so scripts can be edited without a rebuild
+      - ./conversations:/app/conversations
+      - ./config.toml:/app/config.toml:ro
+      # persisted state
+      - chatvoice-data:/app/data
+      - ./logs:/app/logs
+      - ./crudadmin_data:/app/crudadmin_data
+    restart: unless-stopped
+
+volumes:
+  chatvoice-data:

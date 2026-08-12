@@ -1,0 +1,24 @@
+.git/
+.gitmodules
+.venv/
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+graphify-out/
+.claude/
+
+# secrets / local-only config — pass these in at runtime instead
+.env
+.env.*
+
+# runtime state — these should be volumes, not baked into the image
+logs/
+crudadmin_data/
+*.db
+*.db-journal
+
+# stale build artifact (see CLAUDE.md) / unrelated scratch dir
+src/
+apis/

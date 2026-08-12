@@ -1,3 +1,4 @@
+import uuid as uuid_pkg
 from datetime import UTC, datetime
 from typing import Optional
 
@@ -9,6 +10,20 @@ from ..models.conversation import (
     ConversationLog,
     ConversationTurn,
 )
+
+
+def _document_to_dict(doc: ConversationDocument) -> dict:
+    """Must be called while `doc` is still attached to its session -- callers
+    build this inside the `with get_db_ctx()` block that loaded it."""
+    return {
+        "uuid": str(doc.uuid),
+        "title": doc.title,
+        "kind": doc.kind,
+        "content": doc.content,
+        "tags": list(doc.tags),
+        "created_at": doc.created_at.isoformat(),
+        "updated_at": doc.updated_at.isoformat(),
+    }
 
 
 class ConversationLogStore:
@@ -104,3 +119,66 @@ class ConversationLogStore:
                     created_by_id=None,
                 )
             )
+
+    def list_documents(self, user_id: int, script_name: str) -> list[dict]:
+        """All documents attached across every ConversationLog run of
+        `script_name` by `user_id`, newest-updated first."""
+        with get_db_ctx() as db:
+            rows = (
+                db.execute(
+                    select(ConversationDocument)
+                    .join(ConversationLog)
+                    .where(
+                        ConversationLog.user_id == user_id,
+                        ConversationLog.script_name == script_name,
+                    )
+                    # id as a tiebreaker: SQLite's CURRENT_TIMESTAMP only has
+                    # second resolution, so two saves in the same second tie
+                    # on updated_at and would otherwise sort arbitrarily.
+                    .order_by(
+                        ConversationDocument.updated_at.desc(),
+                        ConversationDocument.id.desc(),
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            return [_document_to_dict(doc) for doc in rows]
+
+    def get_document_by_uuid(
+        self, user_id: int, document_uuid: uuid_pkg.UUID
+    ) -> Optional[dict]:
+        """Fetch a single document by its uuid, scoped to `user_id` so a
+        script can't load another user's document by guessing an id."""
+        with get_db_ctx() as db:
+            doc = db.execute(
+                select(ConversationDocument)
+                .join(ConversationLog)
+                .where(
+                    ConversationDocument.uuid == document_uuid,
+                    ConversationLog.user_id == user_id,
+                )
+            ).scalar_one_or_none()
+            return _document_to_dict(doc) if doc else None
+
+    def get_latest_document_by_title(
+        self, user_id: int, script_name: str, title: str
+    ) -> Optional[dict]:
+        """Most recently updated document with this exact title, among all
+        ConversationLog runs of `script_name` by `user_id`."""
+        with get_db_ctx() as db:
+            doc = db.execute(
+                select(ConversationDocument)
+                .join(ConversationLog)
+                .where(
+                    ConversationLog.user_id == user_id,
+                    ConversationLog.script_name == script_name,
+                    ConversationDocument.title == title,
+                )
+                .order_by(
+                    ConversationDocument.updated_at.desc(),
+                    ConversationDocument.id.desc(),
+                )
+                .limit(1)
+            ).scalar_one_or_none()
+            return _document_to_dict(doc) if doc else None

@@ -99,6 +99,7 @@ class ConversationDocumentRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    uuid: UUID
     conversation_log_id: int
     title: str
     kind: str
@@ -106,6 +107,7 @@ class ConversationDocumentRead(BaseModel):
     tags: list[str] = Field(default_factory=list)
     created_by_id: int | None
     created_at: datetime
+    updated_at: datetime
 
 
 class ConversationDocumentCreate(BaseModel):

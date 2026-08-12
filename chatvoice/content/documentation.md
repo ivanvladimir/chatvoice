@@ -305,6 +305,22 @@ llm "Resume esta conversación" | save_document "Resumen" "resumen"
     tags: [positivo, revisado]
 ```
 
+### `list_documents [variable]`
+Lista los documentos adjuntados con `save_document` a lo largo de **todas** las ejecuciones de este script por el usuario actual (no solo la sesión en curso), ordenados del más reciente al más antiguo por fecha de actualización. Cada entrada trae `uuid`, `title`, `created_at` y `updated_at` (sin `content`; usa `load_document` para obtener el contenido de uno en concreto).
+```text
+list_documents documentos
+```
+
+### `load_document <uuid_o_título> [variable]`
+Carga un documento adjuntado previamente con `save_document`. La estrategia de búsqueda se detecta automáticamente a partir del primer argumento: si es un `uuid` válido, busca ese documento exacto; si no, lo trata como un título y carga la versión más reciente con ese título (entre todas las ejecuciones de este script por el usuario actual).
+```text
+load_document "Resumen" resumen_anterior
+say "{resumen_anterior[content]}"
+
+# o por uuid exacto
+load_document "019ff7fe-f296-7967-9bc8-09c5b35d9001" documento
+```
+
 ### `info <tipo1, tipo2, ...>`
 Comando de diagnóstico que yielda (envía) metadatos a la interfaz. Tipos válidos: `slots`, `name`, `strategies`, `status`.
 ```text

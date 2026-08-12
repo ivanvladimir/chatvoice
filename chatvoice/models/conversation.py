@@ -118,6 +118,9 @@ class ConversationDocument(Base):
         index=True,
         kw_only=True,
     )
+    uuid: Mapped[uuid_pkg.UUID] = mapped_column(
+        UUID(as_uuid=True), default_factory=uuid7, unique=True, kw_only=True
+    )
     title: Mapped[str] = mapped_column(String(200), kw_only=True)
     # Free-text label (e.g. "sentimiento", "resumen") -- not an enum, so new
     # kinds of analysis can be added without a migration.
@@ -133,6 +136,14 @@ class ConversationDocument(Base):
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), init=False
+    )
+    # Bumped on every save_document call for the same conversation/title
+    # (`load_document`'s by-name lookup picks the most recent by this column).
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        init=False,
     )
 
     conversation: Mapped["ConversationLog"] = relationship(
