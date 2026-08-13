@@ -6,8 +6,8 @@
             <h2 class="font-semibold text-sm truncate">{{ conversation.script_name }}</h2>
             <p class="text-xs text-base-content/50">
                 {% if conversation_user %}@{{ conversation_user.username }} &middot; {% endif %}
-                {{ conversation.started_at.strftime('%d/%m/%Y %H:%M') }}
-                {% if conversation.ended_at %} &ndash; {{ conversation.ended_at.strftime('%H:%M') }}{% endif %}
+                <time datetime="{{ conversation.started_at.isoformat() }}" data-local="datetime">{{ conversation.started_at.strftime('%d/%m/%Y %H:%M') }}</time>
+                {% if conversation.ended_at %} &ndash; <time datetime="{{ conversation.ended_at.isoformat() }}" data-local="time">{{ conversation.ended_at.strftime('%H:%M') }}</time>{% endif %}
             </p>
         </div>
         <span class="badge {{ 'badge-ghost' if conversation.ended_at else 'badge-success' }} badge-sm shrink-0">
@@ -31,7 +31,7 @@
                 {% if turn.role == 'user' %}
                 <div class="chat chat-end">
                     <div class="chat-header opacity-50 text-xs mb-1">
-                        <time class="text-xs opacity-50">{{ turn.created_at.strftime('%H:%M') }}</time>
+                        <time class="text-xs opacity-50" datetime="{{ turn.created_at.isoformat() }}" data-local="time">{{ turn.created_at.strftime('%H:%M') }}</time>
                         {% if conversation_user %}{{ conversation_user.name }}{% endif %}
                     </div>
                     <div class="chat-bubble chat-bubble-primary">
@@ -47,7 +47,7 @@
                     </div>
                     <div class="chat-header opacity-50 text-xs mb-1">
                         Sistema
-                        <time class="text-xs opacity-50">{{ turn.created_at.strftime('%H:%M') }}</time>
+                        <time class="text-xs opacity-50" datetime="{{ turn.created_at.isoformat() }}" data-local="time">{{ turn.created_at.strftime('%H:%M') }}</time>
                     </div>
                     <div class="chat-bubble">
                         <div class="whitespace-pre-wrap break-words">{{ turn.html | safe }}</div>

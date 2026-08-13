@@ -33,6 +33,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ...core.db.database import async_get_db, local_session
 from ...core.dependencies.paths import RuntimeContext, get_default_context
 from ...crud.projects import crud_projects
+from ...crud.users import crud_users
 from ...models.project import Project, ProjectMember
 from ...models.user import User
 from ...schemas.project import (
@@ -74,13 +75,28 @@ async def get_project_base(
     db: Annotated[AsyncSession, Depends(async_get_db)],
     current_user: dict = Depends(get_current_editor),
 ) -> tuple[Path, dict]:
-    """DRY helper: Fetches project and resolves base path."""
-    project = await crud_projects.get(db, uuid=project_uuid)
+    """DRY helper: Fetches project, verifies owner/member access, and resolves base path."""
+    project = await crud_projects.get(db, uuid=project_uuid, is_deleted=False)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found.")
 
+    if project["owner_id"] != current_user["id"]:
+        member_stmt = select(ProjectMember.id).where(
+            ProjectMember.project_id == project["id"],
+            ProjectMember.user_id == current_user["id"],
+        )
+        if not (await db.execute(member_stmt)).scalar_one_or_none():
+            raise HTTPException(status_code=404, detail="Project not found.")
+
+    # Files always live under the owner's username, regardless of which
+    # authorized user (owner or member) is making the request.
+    owner = await crud_users.get(db, id=project["owner_id"])
+    if not owner:
+        raise HTTPException(status_code=404, detail="Project owner not found.")
+    project["owner_username"] = owner["username"]
+
     base_path = (
-        Path("conversations") / current_user["username"] / project["project_name"]
+        Path("conversations") / owner["username"] / project["project_name"]
     ).resolve()
 
     return base_path, project
@@ -331,18 +347,15 @@ async def list_project_files_htmx(
     ctx: RuntimeContext = Depends(get_default_context),
     current_user: dict = Depends(get_current_editor),
 ):
-    # Kept using utility functions as in original, but removed duplicate DB fetch
-    project = await crud_projects.get(db, uuid=project_uuid)
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found.")
+    base_path, project = await get_project_base(project_uuid, db, current_user)
 
-    if not project_directory_exists(current_user["username"], project["project_name"]):
+    if not base_path.is_dir():
         raise HTTPException(
             status_code=404, detail="Project directory not found on server."
         )
 
     files = list_project_files(
-        current_user["username"],
+        project["owner_username"],
         project["project_name"],
         allowed_extensions=ALLOWED_EXTENSIONS,
     )
@@ -587,6 +600,8 @@ async def import_project_htmx(
         created_project = await crud_projects.get(
             db, uuid=new_project["uuid"], owner_id=current_user["id"], is_deleted=False
         )
+        if created_project:
+            created_project["is_owner"] = True
 
         response = ctx.templates_api.TemplateResponse(
             request=request,
@@ -693,6 +708,18 @@ async def projects_list_htmx(
         "is_active": "is_active",
     }
 
+    # A user can see projects they own AND projects they were added to as a member.
+    accessible_ids_stmt = (
+        select(Project.id)
+        .where(Project.owner_id == current_user["id"])
+        .union(
+            select(ProjectMember.project_id).where(
+                ProjectMember.user_id == current_user["id"]
+            )
+        )
+    )
+    accessible_ids = [row[0] for row in (await db.execute(accessible_ids_stmt)).all()]
+
     projects_result = await crud_projects.get_multi(
         db,
         is_deleted=False,
@@ -700,7 +727,7 @@ async def projects_list_htmx(
         limit=items_per_page,  # FIXED: was (page) * items_per_page
         sort_columns=[sort_columns[sort_by]],
         sort_orders=[sort_order],
-        owner_id=current_user["id"],
+        id__in=accessible_ids,
         _or={
             "name__ilike": f"%{search}%",
             "description__ilike": f"%{search}%",
@@ -710,6 +737,8 @@ async def projects_list_htmx(
     )
 
     projects = projects_result.get("data", [])
+    for p in projects:
+        p["is_owner"] = p["owner_id"] == current_user["id"]
     total_count = projects_result.get("total_count", 0)
     total_pages = math.ceil(total_count / items_per_page) if total_count > 0 else 1
 
@@ -740,11 +769,19 @@ async def get_project_card_htmx(
     current_user: dict = Depends(get_current_editor),
 ):
     """HTMX endpoint: re-renders a single project card (used to poll import status)."""
-    project = await crud_projects.get(
-        db, uuid=project_uuid, owner_id=current_user["id"], is_deleted=False
-    )
+    project = await crud_projects.get(db, uuid=project_uuid, is_deleted=False)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+
+    if project["owner_id"] != current_user["id"]:
+        member_stmt = select(ProjectMember.id).where(
+            ProjectMember.project_id == project["id"],
+            ProjectMember.user_id == current_user["id"],
+        )
+        if not (await db.execute(member_stmt)).scalar_one_or_none():
+            raise HTTPException(status_code=404, detail="Project not found")
+
+    project["is_owner"] = project["owner_id"] == current_user["id"]
 
     return ctx.templates_api.TemplateResponse(
         request=request,
@@ -819,6 +856,8 @@ async def create_project_htmx(
         created_project = await crud_projects.get(
             db, uuid=new_project["uuid"], owner_id=current_user["id"], is_deleted=False
         )
+        if created_project:
+            created_project["is_owner"] = True
 
         response = ctx.templates_api.TemplateResponse(
             request=request,

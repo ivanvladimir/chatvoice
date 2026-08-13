@@ -59,6 +59,7 @@
                             Configuración
                         </a>
                     </li>
+                    {% if project.is_owner %}
                     <li>
                         <a role="button" tabindex="0"
                           hx-patch="{{ url_for('toggle_project_active_htmx', project_uuid=project.uuid) }}">
@@ -96,6 +97,7 @@
                             Eliminar
                         </a>
                     </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
@@ -124,6 +126,7 @@
             </a>
             {% endif %}
 
+            {% if project.is_owner %}
             <button class="btn btn-sm btn-ghost"
                     @click="document.dispatchEvent(new CustomEvent('openMemberModal', {
                         detail: { uuid: '{{ project.uuid }}', name: '{{ project.name }}' }
@@ -133,6 +136,7 @@
                 </svg>
                 Miembros
             </button>
+            {% endif %}
         </div>
 
         {# ─── FOOTER ─── #}
@@ -150,7 +154,7 @@
             
             {# Created Date #}
             <span class="text-xs text-base-content/40">
-                {{ project.created_at.strftime('%d/%m/%Y') }}
+                <time datetime="{{ project.created_at.isoformat() }}" data-local="date">{{ project.created_at.strftime('%d/%m/%Y') }}</time>
             </span>
         </div>
     </div>

@@ -2,7 +2,7 @@
 <div class="space-y-3">
     <div class="flex items-center justify-between gap-2">
         <span class="badge badge-outline">{{ doc.kind }}</span>
-        <span class="text-xs text-base-content/40">{{ doc.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+        <span class="text-xs text-base-content/40"><time datetime="{{ doc.created_at.isoformat() }}" data-local="datetime">{{ doc.created_at.strftime('%d/%m/%Y %H:%M') }}</time></span>
     </div>
     <h3 class="font-bold text-lg">{{ doc.title }}</h3>
     {% if doc.tags %}

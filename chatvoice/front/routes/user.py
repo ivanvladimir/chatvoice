@@ -10,6 +10,7 @@ from ...core.dependencies.paths import (
 )
 from ...utils.markdown import markdown_page
 
+
 router = APIRouter(tags=["main"])
 
 

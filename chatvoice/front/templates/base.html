@@ -37,7 +37,7 @@
                     </svg>
                 </div>
                 <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
-                    <li><a href="/">Home</a></li>
+                  <li><a href="{{ url_for('main') }}">Home</a></li>
                     <template x-if="isAuthenticated">
                         <li><a href="{{ url_for('profile_page') }}">Perfil</a></li>
                         <li><a href="{{ url_for('conversations_page') }}">Mis conversaciones</a></li>
@@ -45,7 +45,7 @@
                     <!-- ─── EDITOR ONLY MENU ITEM ─── -->
                     <template x-if="role === 'editor'">
                         <li>
-                          <a href="{{url_for('projects_page')}}" class="font-medium">
+                          <a href="{{ url_for('projects_page') }}" class="font-medium">
                                 Mis proyectos
                             </a>
                         </li>
@@ -587,6 +587,40 @@
                 }
             }
         }
+    </script>
+
+    <!-- Local timezone date formatting: server renders UTC as a fallback in -->
+    <!-- <time datetime="..." data-local="date|time|datetime">, this rewrites it -->
+    <!-- to the viewer's local timezone, matching the existing d/m/Y H:M style. -->
+    <script>
+        (function () {
+            const dateFmt = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const timeFmt = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+            function localizeOne(el) {
+                const iso = el.getAttribute('datetime') || el.textContent.trim();
+                const d = new Date(iso);
+                if (isNaN(d)) return;
+                const kind = el.dataset.local;
+                if (kind === 'date') {
+                    el.textContent = dateFmt.format(d);
+                } else if (kind === 'time') {
+                    el.textContent = timeFmt.format(d);
+                } else {
+                    el.textContent = `${dateFmt.format(d)} ${timeFmt.format(d)}`;
+                }
+            }
+
+            function localizeDates(root) {
+                if (!root || !root.querySelectorAll) return;
+                if (root.matches && root.matches('[data-local]')) localizeOne(root);
+                root.querySelectorAll('[data-local]').forEach(localizeOne);
+            }
+
+            document.addEventListener('DOMContentLoaded', () => localizeDates(document));
+            document.body.addEventListener('htmx:afterSwap', (e) => localizeDates(e.target));
+            document.body.addEventListener('htmx:afterSettle', (e) => localizeDates(e.target));
+        })();
     </script>
 
     {% block scripts %}{% endblock %}

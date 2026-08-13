@@ -18,6 +18,7 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.websockets import WebSocketState
 
 from ...core.db.database import async_get_db
 from ...core.dependencies.paths import RuntimeContext, get_project_context
@@ -212,6 +213,19 @@ async def websocket_endpoint(
 
     try:
         while True:
+            # session.recv() can block for a long time (e.g. waiting on an LLM
+            # call). If the client vanishes mid-turn without a clean close
+            # handshake, uvicorn's own ping/pong keepalive can time out and
+            # tear down the connection without ever surfacing a
+            # WebSocketDisconnect to us -- we'd only find out by trying (and
+            # failing) to send the next message. Bail out early once we can
+            # tell the connection is already gone.
+            if websocket.application_state != WebSocketState.CONNECTED:
+                log.info(
+                    f"WebSocket no longer connected, stopping: {session.session_id}"
+                )
+                break
+
             m = await asyncio.get_event_loop().run_in_executor(executor, session.recv)
 
             if m is None:
@@ -255,6 +269,14 @@ async def websocket_endpoint(
 
     except WebSocketDisconnect:
         log.info(f"WebSocket disconnected: {session.session_id}")
+    except RuntimeError as e:
+        # Starlette/uvicorn raise a bare RuntimeError (not WebSocketDisconnect)
+        # when we try to send after the connection was already torn down --
+        # see the application_state check above for why that can happen.
+        if "after sending" in str(e) and "close" in str(e):
+            log.info(f"WebSocket already closed by client: {session.session_id}")
+        else:
+            log.exception(f"Unexpected error in WebSocket: {e}")
     except Exception as e:
         log.exception(f"Unexpected error in WebSocket: {e}")
     finally:

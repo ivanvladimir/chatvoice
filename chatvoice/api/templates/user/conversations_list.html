@@ -49,7 +49,7 @@
                     {% endif %}
 
                     <p class="text-xs text-base-content/40 mt-2">
-                        {{ conversation.started_at.strftime('%d/%m/%Y %H:%M') }}
+                        <time datetime="{{ conversation.started_at.isoformat() }}" data-local="datetime">{{ conversation.started_at.strftime('%d/%m/%Y %H:%M') }}</time>
                     </p>
                 </a>
 

@@ -52,7 +52,7 @@
             </div>
             {% if user.created_at %}
             <p class="text-xs text-base-content/40 mt-3">
-                Miembro desde {{ user.created_at.strftime('%d/%m/%Y') }}
+                Miembro desde <time datetime="{{ user.created_at.isoformat() }}" data-local="date">{{ user.created_at.strftime('%d/%m/%Y') }}</time>
             </p>
             {% endif %}
         </div>
