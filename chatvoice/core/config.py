@@ -15,12 +15,13 @@ APP_ROOT = Path(__file__).resolve().parent.parent
 
 class AppSettings:
     APP_NAME: str = "Chatvoice"
+    ROOT_PATH: str | None = None
     APP_DESCRIPTION: str | None = None
     APP_VERSION: str | None = None
     LICENSE_NAME: str | None = None
     CONTACT_NAME: str | None = None
     CONTACT_EMAIL: str | None = None
-
+    FORCE_HTTPS: bool = False
 
 _INSECURE_DEFAULT_SECRET_KEY = "secret-key"
 

@@ -10,7 +10,7 @@ import fastapi
 # import redis.asyncio as redis
 # from arq import create_pool
 # from arq.connections import RedisSettings
-from fastapi import APIRouter, Depends, FastAPI
+from fastapi import APIRouter, Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
@@ -221,6 +221,7 @@ def create_application(
     if isinstance(settings, AppSettings):
         to_update = {
             "title": settings.APP_NAME,
+            "root_path": settings.ROOT_PATH,
             "description": settings.APP_DESCRIPTION,
             "contact": {"name": settings.CONTACT_NAME, "email": settings.CONTACT_EMAIL},
             "license_info": {"name": settings.LICENSE_NAME},
@@ -238,6 +239,15 @@ def create_application(
 
     static_files = StaticFiles(directory=settings.STATIC_DIR_PATH)
     application = FastAPI(lifespan=lifespan, **kwargs)
+    if settings.FORCE_HTTPS:
+        @application.middleware("http")
+        async def force_https_urls(request: Request, call_next):
+            forwarded_proto = request.headers.get("x-forwarded-proto")
+            if forwarded_proto == "https":
+                request.scope["scheme"] = "https"
+            response = await call_next(request)
+            return response
+
     application.include_router(api_router)
     application.include_router(front_router)
     if isinstance(settings, PathSettings):
