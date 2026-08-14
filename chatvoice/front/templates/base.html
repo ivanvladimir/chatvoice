@@ -57,12 +57,12 @@
                 <path d="M 62 82 C 50 70, 42 58, 43 46 C 44 38, 51 32, 59 34 C 66 36, 70 43, 65 48 C 62 51, 57 50, 58 46"
                     fill="none" stroke="#000000" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
             </svg>
-            <a href="/" class="btn btn-ghost text-xl">Chatvoice</a>
+            <a href="{{ url_for('main') }}" class="btn btn-ghost text-xl">Chatvoice</a>
         </div>
 
         <div class="navbar-center hidden lg:flex">
             <ul class="menu menu-horizontal px-1">
-                <li><a href="/">Home</a></li>
+                <li><a href="{{ url_for('main') }}">Home</a></li>
                   <li><a href="{{url_for('page', view="documentation")}}">Documentación</a></li>
                   <template x-if="role === 'editor'">
                       <li>
