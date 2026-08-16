@@ -274,6 +274,10 @@ document.addEventListener('alpine:init', () => {
                 else if (data.type === 'listen') {
                     this.setListening(true);
                 }
+                else if (data.type === 'error') {
+                    this.addSystemMessage(data.message, 'error');
+                    this.setThinking(false);
+                }
             };
 
             this.chatWs.onclose = (event) => {

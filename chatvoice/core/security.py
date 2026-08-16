@@ -107,13 +107,20 @@ def _create_token(
     return jwt.encode(to_encode, SECRET_KEY.get_secret_value(), algorithm=ALGORITHM)
 
 
-# --- CHANGED: Made synchronous, shortened default expire time ---
 def create_ws_session_token(
     data: dict[str, Any],
-    expires_delta: timedelta | None = timedelta(minutes=15),  # Short lifespan!
+    expires_delta: timedelta | None = None,
 ) -> str:
-    """Create a short-lived WebSocket session token. No DB blacklist check needed."""
-    return _create_token(data, TokenType.WS_SESSION, expires_delta)
+    """Create a WebSocket session token. No DB blacklist check needed.
+
+    Lifespan defaults to settings.WS_SESSION_EXPIRE_MINUTES rather than a
+    value baked in here, so it can be tuned without a code change.
+    """
+    return _create_token(
+        data,
+        TokenType.WS_SESSION,
+        expires_delta or timedelta(minutes=WS_SESSION_EXPIRE_MINUTES),
+    )
 
 
 async def create_access_token(

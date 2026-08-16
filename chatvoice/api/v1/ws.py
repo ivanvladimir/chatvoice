@@ -2,7 +2,6 @@ import asyncio
 import json
 import uuid as uuid_pkg
 from concurrent.futures import ThreadPoolExecutor
-from datetime import timedelta
 from typing import Annotated
 
 import markdown
@@ -109,13 +108,16 @@ async def establish_ws_session(
     )
 
     # 3. Generate token & set cookie
+    # Lifespan comes from settings.WS_SESSION_EXPIRE_MINUTES (see
+    # create_ws_session_token) rather than being hardcoded here, so a
+    # reconnect after a brief network drop doesn't fail just because the
+    # conversation ran longer than a fixed value baked into this endpoint.
     ws_token = create_ws_session_token(
         data={
             "sub": session.session_id,
             "username": current_user["username"],
             "type": TokenType.WS_SESSION,
         },
-        expires_delta=timedelta(minutes=15),
     )
 
     response = JSONResponse(
@@ -138,8 +140,18 @@ async def establish_ws_session(
     return response
 
 
-# Create a thread pool outside the endpoint
-executor = ThreadPoolExecutor(max_workers=4)
+# Create a thread pool outside the endpoint.
+#
+# These threads spend virtually all their time blocked on a plain
+# queue.Queue.get() (session.recv()) waiting for the interpreter thread to
+# produce the next message -- no CPU, no I/O, effectively free to hold open.
+# A small pool turns into a hard cap on concurrent WebSocket connections
+# rather than a resource protection: with too few workers, once that many
+# chats are open simultaneously, the next connection's recv() has nowhere
+# to run and just hangs indefinitely, which looks exactly like a dropped
+# connection to the user. Sized generously since idle-blocked threads cost
+# almost nothing.
+executor = ThreadPoolExecutor(max_workers=256)
 
 
 def tuples_to_json(items, sep=":"):
@@ -253,13 +265,27 @@ async def websocket_endpoint(
 
             elif cmd == "listen":
                 await websocket.send_json({"type": "listen"})
-                try:
-                    data = await asyncio.wait_for(
-                        websocket.receive_text(), timeout=60.0
-                    )
-                    session.send(data)
-                except asyncio.TimeoutError:
-                    session.send("")
+                data = None
+                while websocket.application_state == WebSocketState.CONNECTED:
+                    try:
+                        data = await asyncio.wait_for(
+                            websocket.receive_text(), timeout=30.0
+                        )
+                        break
+                    except asyncio.TimeoutError:
+                        # No answer yet -- don't fabricate one and silently
+                        # skip the user's turn. But a truly dead peer whose
+                        # ping/pong timeout fired without ever surfacing a
+                        # WebSocketDisconnect to us (see the comment above)
+                        # would otherwise leave us polling receive_text()
+                        # forever, so probe with a harmless send: on a
+                        # closed connection this raises the same RuntimeError
+                        # already handled below.
+                        await websocket.send_json({"type": "ping"})
+                        continue
+                if websocket.application_state != WebSocketState.CONNECTED:
+                    break
+                session.send(data)
 
             elif cmd == "error":
                 await websocket.send_json(

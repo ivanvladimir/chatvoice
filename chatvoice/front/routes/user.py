@@ -85,6 +85,16 @@ async def conversation_view(
         },
     )
 
+def ws_url(request: Request, name: str, **path_params) -> str:
+    url = str(request.url_for(name, **path_params))
+
+    if url.startswith("https://"):
+        return "wss://" + url[len("https://"):]
+
+    if url.startswith("http://"):
+        return "ws://" + url[len("http://"):]
+
+    return url
 
 @router.get("/chat/{script}", response_class=HTMLResponse)
 @router.get("/chat/{username}/{script}", response_class=HTMLResponse)
@@ -106,14 +116,21 @@ async def chat(
             "active_menu": None,
             "url_start": request.url_for(
                 "establish_ws_session", script=script, username=username
-            )
-            if username
+            ) if username
             else request.url_for("establish_ws_session_", script=script),
-            "url_ws": request.url_for(
-                "websocket_endpoint", script=script, username=username
-            )
-            if username
-            else request.url_for("websocket_endpoint_", script=script),
+
+            "url_ws": ws_url(
+                request,
+                "websocket_endpoint",
+                script=script,
+                username=username,
+            ) if username
+            else ws_url(
+                request,
+                "websocket_endpoint_",
+                script=script,
+            ),
+            
             # Configure these from your database or settings
             "chat_room_name": "Consulta",  # Custom room name
             "show_debug": True,  # Disable debug button

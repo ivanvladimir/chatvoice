@@ -31,7 +31,7 @@ class CryptSettings:
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
-    WS_SESSION_EXPIRE_MINUTES: int = 15
+    WS_SESSION_EXPIRE_MINUTES: int = 120
 
     @model_validator(mode="after")
     def check_secret_key_is_set(self) -> "CryptSettings":
