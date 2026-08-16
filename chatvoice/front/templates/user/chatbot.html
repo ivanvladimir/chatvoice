@@ -23,14 +23,6 @@
     .streaming-cursor::after { content: '▊'; animation: blink 1s infinite; color: oklch(var(--p)); }
     @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
 
-    /* User typing animation cursor */
-    .user-typing-cursor::after {
-        content: '▊';
-        animation: blink 0.8s infinite;
-        color: currentColor;
-        font-weight: normal;
-        margin-left: 1px;
-    }
     .chat-input { resize: none; field-sizing: content; min-height: 44px; max-height: 150px; }
 </style>
 

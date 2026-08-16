@@ -142,8 +142,7 @@
                                 <span x-text="msg.user || 'Sistema'"></span>
                                 <time x-text="msg.timestamp" class="text-xs opacity-50"></time>
                             </div>
-                            {# ─── UPDATED x-html TO USE THE INDEX ─── #}
-                            <div class="chat-bubble" :class="{ 'user-typing-cursor': msg.isAnimating }">
+                            <div class="chat-bubble">
                                 <div class="whitespace-pre-wrap break-words" x-html="msg.isAnimating ? msg.fullContent.split(/(\s+)/).slice(0, msg._typeIndex + 1).join('') : msg.content"></div>
                             </div>
                             <div class="chat-footer opacity-0 group-hover:opacity-100 transition-opacity">
