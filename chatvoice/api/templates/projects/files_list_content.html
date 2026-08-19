@@ -69,7 +69,7 @@
                         <div class="flex justify-between items-center gap-2">
                             
                             {# Main clickable area (file link) #}
-                            <a href="/projects/{{ project.uuid }}/files/{{ file.rel_path }}" class="flex items-center gap-4 flex-1 min-w-0">
+                            <a href="{{ url_for('view_project_files_page', project_uuid=project.uuid, filename=file.rel_path) }}" class="flex items-center gap-4 flex-1 min-w-0">
                                 
                                 {# Icon + Name #}
                                 <div class="flex items-center gap-3 min-w-0 flex-1">
