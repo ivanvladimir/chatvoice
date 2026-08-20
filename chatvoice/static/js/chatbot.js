@@ -18,7 +18,12 @@ document.addEventListener('alpine:init', () => {
         _isConnecting: false,
         _typingAnimationFrames: [], // Tracks active typing timeouts
         _animationQueue: [],
-        _isCurrentlyAnimating: false,        
+        _isCurrentlyAnimating: false,
+        _nextMessageId: 1, // Monotonic counter -- Date.now() collides when several
+                            // messages (e.g. consecutive `say` commands) arrive
+                            // within the same millisecond, and duplicate ids break
+                            // Alpine's keyed x-for reconciliation (messages can
+                            // vanish when a later message re-renders the list).
         debugMode: false,
         isThinking: false,
         isListening: false, 
@@ -34,6 +39,10 @@ document.addEventListener('alpine:init', () => {
             }
 
             this.startChatSession();
+        },
+
+        _genId() {
+            return this._nextMessageId++;
         },
 
         // ─── State Controls ───
@@ -53,7 +62,7 @@ document.addEventListener('alpine:init', () => {
         // ─── Data Registration ───
         addSystemMessage(content, sysType = 'info') {
             this.messages.push({
-                id: Date.now(), 
+                id: this._genId(),
                 type: 'system', 
                 content, 
                 sysType,
@@ -62,7 +71,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         addMessage(user, content, side) {
-            const messageId = Date.now();
+            const messageId = this._genId();
             const timestamp = new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
             
             // Apply typing animation ONLY to 'other' (system/bot)
@@ -169,9 +178,9 @@ document.addEventListener('alpine:init', () => {
                 } catch (e) {
                     console.error("Failed to parse tags JSON string:", e);
                     this.messages.push({
-                        id: Date.now(), 
-                        type: 'tags', 
-                        tags: [{ color: 'error', key: 'json_error', value: payload }], 
+                        id: this._genId(),
+                        type: 'tags',
+                        tags: [{ color: 'error', key: 'json_error', value: payload }],
                         timestamp: new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
                     });
                     return;
@@ -202,16 +211,16 @@ document.addEventListener('alpine:init', () => {
             });
 
             this.messages.push({
-                id: Date.now(), 
-                type: 'tags', 
-                tags: flatTags, 
+                id: this._genId(),
+                type: 'tags',
+                tags: flatTags,
                 timestamp: new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
             });
         },
 
         addDivider(tag = '', message = '') {
             this.messages.push({
-                id: Date.now(), 
+                id: this._genId(),
                 type: 'divider', 
                 tag: tag,
                 message: message,
