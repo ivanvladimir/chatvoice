@@ -113,7 +113,7 @@
     <template x-if="conversationsView === 'list'">
     <div class="flex flex-col border border-base-300 rounded-box overflow-visible">
         {% for conversation in conversations %}
-        <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 transition-colors {{ loop.cycle('bg-base-100', 'bg-base-200/60') }} hover:bg-base-300/60 {{ 'first:rounded-t-box' if loop.first }} {{ 'last:rounded-b-box' if loop.last }}"
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 transition-colors {{ loop.cycle('bg-base-100', 'bg-base-200') }} hover:bg-base-300 {{ 'first:rounded-t-box' if loop.first }} {{ 'last:rounded-b-box' if loop.last }}"
              id="conversation-row-{{ conversation.id }}">
             <div class="flex items-start gap-2 min-w-0 sm:flex-1">
                 <span class="badge {{ 'badge-ghost' if conversation.ended_at else 'badge-success' }} badge-sm shrink-0 mt-0.5">
@@ -131,7 +131,7 @@
 
             {% include "user/_conversation_tags.html" %}
 
-            <div class="flex items-center justify-between sm:justify-end gap-3 sm:shrink-0">
+            <div class="flex items-center justify-end gap-3 sm:shrink-0">
                 <time class="text-xs text-base-content/40 whitespace-nowrap"
                       datetime="{{ conversation.started_at.isoformat() }}" data-local="datetime">
                     {{ conversation.started_at.strftime('%d/%m/%Y %H:%M') }}
