@@ -111,83 +111,89 @@
     </template>
 
     <template x-if="conversationsView === 'list'">
-    <div class="flex flex-col divide-y divide-base-300 border border-base-300 rounded-box overflow-visible">
+    <div class="flex flex-col border border-base-300 rounded-box overflow-visible">
         {% for conversation in conversations %}
-        <div class="flex flex-wrap sm:flex-nowrap items-center gap-3 p-3 hover:bg-base-200/60 transition-colors"
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 transition-colors {{ loop.cycle('bg-base-100', 'bg-base-200/60') }} hover:bg-base-300/60 {{ 'first:rounded-t-box' if loop.first }} {{ 'last:rounded-b-box' if loop.last }}"
              id="conversation-row-{{ conversation.id }}">
-            <span class="badge {{ 'badge-ghost' if conversation.ended_at else 'badge-success' }} badge-sm shrink-0">
-                {{ 'Finalizada' if conversation.ended_at else 'En curso' }}
-            </span>
+            <div class="flex items-start gap-2 min-w-0 sm:flex-1">
+                <span class="badge {{ 'badge-ghost' if conversation.ended_at else 'badge-success' }} badge-sm shrink-0 mt-0.5">
+                    {{ 'Finalizada' if conversation.ended_at else 'En curso' }}
+                </span>
 
-            <a href="{{ url_for('conversation_view', conversation_uuid=conversation.uuid) }}"
-               class="min-w-0 basis-48 grow hover:opacity-80 transition-opacity">
-                <p class="font-medium truncate">{{ conversation.script_name }}</p>
-                {% if show_user %}
-                <p class="text-xs text-base-content/60 truncate">@{{ conversation.user_username }}</p>
-                {% endif %}
-            </a>
+                <a href="{{ url_for('conversation_view', conversation_uuid=conversation.uuid) }}"
+                   class="min-w-0 hover:opacity-80 transition-opacity">
+                    <p class="font-medium truncate">{{ conversation.script_name }}</p>
+                    {% if show_user %}
+                    <p class="text-xs text-base-content/60 truncate">@{{ conversation.user_username }}</p>
+                    {% endif %}
+                </a>
+            </div>
 
             {% include "user/_conversation_tags.html" %}
 
-            <time class="text-xs text-base-content/40 shrink-0 hidden sm:block"
-                  datetime="{{ conversation.started_at.isoformat() }}" data-local="datetime">
-                {{ conversation.started_at.strftime('%d/%m/%Y %H:%M') }}
-            </time>
+            <div class="flex items-center justify-between sm:justify-end gap-3 sm:shrink-0">
+                <time class="text-xs text-base-content/40 whitespace-nowrap"
+                      datetime="{{ conversation.started_at.isoformat() }}" data-local="datetime">
+                    {{ conversation.started_at.strftime('%d/%m/%Y %H:%M') }}
+                </time>
 
-            <div class="dropdown dropdown-end shrink-0">
-                <div tabindex="0" role="button" class="btn btn-ghost btn-xs gap-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div class="flex items-center gap-1 shrink-0">
+                    <div class="dropdown dropdown-end">
+                        <div tabindex="0" role="button" class="btn btn-ghost btn-xs gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            {{ conversation.documents|length }}
+                        </div>
+                        <div tabindex="0" class="dropdown-content z-10 menu p-3 shadow bg-base-100 border border-base-300 rounded-box w-64">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs font-medium text-base-content/50">Documentos</span>
+                                <button type="button"
+                                        class="btn btn-ghost btn-xs"
+                                        @click="document.dispatchEvent(new CustomEvent('openDocumentModal', {
+                                            detail: { uuid: '{{ conversation.uuid }}' }
+                                        }))">
+                                    + Añadir
+                                </button>
+                            </div>
+                            <ul class="space-y-1" id="conversation-documents-list-{{ conversation.id }}">
+                                {% for doc in conversation.documents %}
+                                {% include "user/_conversation_document_item.html" %}
+                                {% else %}
+                                <li class="text-xs text-base-content/30 italic" id="conversation-documents-empty-{{ conversation.id }}">
+                                    Sin documentos
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+
+                    {% if conversation.can_delete %}
+                    <button type="button"
+                            class="btn btn-ghost btn-xs btn-square text-error/40 hover:text-error"
+                            title="Eliminar conversación"
+                            @click="document.dispatchEvent(new CustomEvent('openConfirmModal', {
+                                detail: {
+                                    title: 'Eliminar conversación',
+                                    message: '¿Estás seguro de eliminar esta conversación?',
+                                    confirmLabel: 'Eliminar',
+                                    method: 'DELETE',
+                                    url: '{{ url_for('delete_conversation_htmx', conversation_uuid=conversation.uuid) }}',
+                                    target: '#conversation-row-{{ conversation.id }}',
+                                    swap: 'delete'
+                                }
+                            }))">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                    {% else %}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-base-content/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    {{ conversation.documents|length }}
-                </div>
-                <div tabindex="0" class="dropdown-content z-10 menu p-3 shadow bg-base-100 border border-base-300 rounded-box w-64">
-                    <div class="flex items-center justify-between mb-1">
-                        <span class="text-xs font-medium text-base-content/50">Documentos</span>
-                        <button type="button"
-                                class="btn btn-ghost btn-xs"
-                                @click="document.dispatchEvent(new CustomEvent('openDocumentModal', {
-                                    detail: { uuid: '{{ conversation.uuid }}' }
-                                }))">
-                            + Añadir
-                        </button>
-                    </div>
-                    <ul class="space-y-1" id="conversation-documents-list-{{ conversation.id }}">
-                        {% for doc in conversation.documents %}
-                        {% include "user/_conversation_document_item.html" %}
-                        {% else %}
-                        <li class="text-xs text-base-content/30 italic" id="conversation-documents-empty-{{ conversation.id }}">
-                            Sin documentos
-                        </li>
-                        {% endfor %}
-                    </ul>
+                    {% endif %}
                 </div>
             </div>
-
-            {% if conversation.can_delete %}
-            <button type="button"
-                    class="btn btn-ghost btn-xs btn-square text-error/40 hover:text-error shrink-0"
-                    title="Eliminar conversación"
-                    @click="document.dispatchEvent(new CustomEvent('openConfirmModal', {
-                        detail: {
-                            title: 'Eliminar conversación',
-                            message: '¿Estás seguro de eliminar esta conversación?',
-                            confirmLabel: 'Eliminar',
-                            method: 'DELETE',
-                            url: '{{ url_for('delete_conversation_htmx', conversation_uuid=conversation.uuid) }}',
-                            target: '#conversation-row-{{ conversation.id }}',
-                            swap: 'delete'
-                        }
-                    }))">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-            </button>
-            {% else %}
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-base-content/30 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            {% endif %}
         </div>
         {% endfor %}
     </div>
