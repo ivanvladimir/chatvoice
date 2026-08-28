@@ -13,9 +13,14 @@ from fastapi.templating import Jinja2Templates
 # on a few tags so footnote anchors (footnotes extension) and code-block
 # language hints (fenced_code extension) keep working.
 _ALLOWED_ATTRIBUTES = {tag: set(attrs) for tag, attrs in nh3.ALLOWED_ATTRIBUTES.items()}
-for _tag in ("a", "sup", "div", "code", "pre", "h1", "h2", "h3", "h4", "h5", "h6"):
+for _tag in ("a", "sup", "div", "code", "pre", "i", "h1", "h2", "h3", "h4", "h5", "h6"):
     _ALLOWED_ATTRIBUTES.setdefault(_tag, set())
     _ALLOWED_ATTRIBUTES[_tag] |= {"id", "class"}
+
+# `<a data-url-for="route_name" data-url-for-params='{"key": "value"}'>` lets content
+# authors link to app routes by name without running Jinja/url_for over their (untrusted)
+# markdown text: base.html resolves these client-side. See base.html's chatvoiceUrlFor.
+_ALLOWED_ATTRIBUTES["a"] |= {"data-url-for", "data-url-for-params"}
 
 
 def render_markdown(content_text: str) -> tuple[markdown.Markdown, str]:

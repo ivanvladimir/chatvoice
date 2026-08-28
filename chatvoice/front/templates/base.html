@@ -632,6 +632,54 @@
         })();
     </script>
 
+    <!-- url_for() for markdown content: content/*.md is rendered to HTML without running -->
+    <!-- Jinja over it (it's editor-authored but not fully trusted, so no SSTI surface is -->
+    <!-- allowed). Authors write <a data-url-for="route_name" data-url-for-params='{"key": -->
+    <!-- "value"}'>...</a> instead, and this resolves it client-side against the URL -->
+    <!-- templates below, which base.html renders with a real url_for() since it always has -->
+    <!-- a request. To expose another route, add a line with placeholder param values. -->
+    <script>
+        window.chatvoiceUrlFor = {
+            page: "{{ url_for('page', view='__view__') }}",
+            page_project: "{{ url_for('page_project', username='__username__', script='__script__', view='__view__') }}",
+            show_project_conversations: "{{ url_for('show_project_conversations', project_uuid='__project_uuid__') }}",
+            projects_page: "{{ url_for('projects_page') }}"
+        };
+    </script>
+    <script>
+        (function () {
+            function resolveOne(el) {
+                const template = window.chatvoiceUrlFor && window.chatvoiceUrlFor[el.dataset.urlFor];
+                if (!template) return;
+
+                let params = {};
+                if (el.dataset.urlForParams) {
+                    try {
+                        params = JSON.parse(el.dataset.urlForParams);
+                    } catch (e) {
+                        return;
+                    }
+                }
+
+                let url = template;
+                for (const [key, value] of Object.entries(params)) {
+                    url = url.split(`__${key}__`).join(encodeURIComponent(value));
+                }
+                el.setAttribute('href', url);
+            }
+
+            function resolveUrlFor(root) {
+                if (!root || !root.querySelectorAll) return;
+                if (root.matches && root.matches('[data-url-for]')) resolveOne(root);
+                root.querySelectorAll('[data-url-for]').forEach(resolveOne);
+            }
+
+            document.addEventListener('DOMContentLoaded', () => resolveUrlFor(document));
+            document.body.addEventListener('htmx:afterSwap', (e) => resolveUrlFor(e.target));
+            document.body.addEventListener('htmx:afterSettle', (e) => resolveUrlFor(e.target));
+        })();
+    </script>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>
