@@ -1,4 +1,9 @@
 import asyncio
+import csv
+import re
+import secrets
+import string
+from pathlib import Path
 
 from rich import print
 from rich.prompt import IntPrompt, Prompt
@@ -153,6 +158,115 @@ def create_user():
         userrole = new_user.role.value
 
     return username, userrole
+
+
+_PASSWORD_SPECIALS = "!@#$%^&*()-_=+"
+
+
+def generate_password(length: int = 8) -> str:
+    """Return a random password that satisfies the ``UserCreate`` strength
+    rules (>= 8 chars including a lowercase letter, an uppercase letter, a
+    digit and a special character)."""
+    length = max(length, 8)
+    alphabet = string.ascii_letters + string.digits + _PASSWORD_SPECIALS
+    chars = [
+        secrets.choice(string.ascii_lowercase),
+        secrets.choice(string.ascii_uppercase),
+        secrets.choice(string.digits),
+        secrets.choice(_PASSWORD_SPECIALS),
+    ]
+    chars += [secrets.choice(alphabet) for _ in range(length - 4)]
+    secrets.SystemRandom().shuffle(chars)
+    return "".join(chars)
+
+
+def create_batch_users(prefix: str, count: int, output: Path):
+    """Create ``count`` anonymous users ``<prefix>1`` .. ``<prefix><count>``.
+
+    Every user gets name ``"Anonimo"``, email ``<username>@anonimo.com``, no
+    institution or description, role ``user`` and a random strong password.
+    Existing usernames/emails are left untouched. Each created username and
+    its plaintext password are written to ``output`` as CSV so they can be
+    distributed.
+
+    Returns ``(created_count, skipped_count, output_path)``.
+
+    Raises
+    ------
+    ValueError
+        If the prefix is empty/invalid, the count is < 1, or the resulting
+        usernames would exceed the 20-character limit.
+    """
+    prefix = prefix.strip()
+    if not re.fullmatch(r"[a-z0-9]+", prefix):
+        raise ValueError(
+            "Prefix must be non-empty and contain only lowercase letters and digits."
+        )
+    if count < 1:
+        raise ValueError("Count must be >= 1.")
+
+    longest_username = len(prefix) + len(str(count))
+    if longest_username > 20:
+        raise ValueError(
+            f"Username '{prefix}{count}' would exceed the 20-character limit; "
+            "use a shorter prefix or a smaller count."
+        )
+
+    init_db()
+
+    created: list[tuple[str, str, str]] = []
+    skipped: list[str] = []
+
+    with get_db_ctx() as session:
+        for n in range(1, count + 1):
+            username = f"{prefix}{n}"
+            email = f"{username}@anonimo.com"
+
+            existing = session.execute(
+                select(User).filter((User.username == username) | (User.email == email))
+            ).scalar_one_or_none()
+            if existing is not None:
+                skipped.append(username)
+                continue
+
+            password = generate_password()
+
+            # Validate through the same schema the interactive command uses.
+            user_create = UserCreate(
+                name="Anonimo",
+                username=username,
+                email=email,
+                institution=None,
+                description=None,
+                password=password,
+                role=UserRole.user,
+            )
+            user_internal = UserCreateInternal(
+                name=user_create.name,
+                username=user_create.username,
+                email=user_create.email,
+                institution=None,
+                description=None,
+                hashed_password=get_password_hash(password),
+                role=UserRole.user,
+            )
+            new_user = User(**user_internal.model_dump())
+            new_user.is_verified = True
+
+            session.add(new_user)
+            created.append((username, email, password))
+
+    output = Path(output)
+    if output.parent and not output.parent.exists():
+        output.parent.mkdir(parents=True, exist_ok=True)
+
+    with output.open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(["username", "email", "name", "password"])
+        for username, email, password in created:
+            writer.writerow([username, email, "Anonimo", password])
+
+    return len(created), len(skipped), output
 
 
 def create_tier():

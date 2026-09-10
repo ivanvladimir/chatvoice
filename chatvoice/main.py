@@ -182,6 +182,56 @@ def create_admin(
 
 @cli.command
 @with_logging
+def create_batch_users(
+    prefix: str,
+    count: int,
+    output: Path = Path("batch_users.csv"),
+    *,
+    logging_json: bool = False,
+    logging_level: str = "debug",  # More verbose for admin operations
+    logging_file: str = CHATVOICE_LOG_FILE,
+) -> None:
+    """Create a batch of anonymous users.
+
+    Creates users ``<prefix>1`` .. ``<prefix><count>`` (name "Anonimo",
+    email "<username>@anonimo.com", no institution/description, role "user",
+    random password) and writes every username/password pair to OUTPUT as CSV.
+
+    Parameters
+    ----------
+    prefix : str
+        Lowercase letters/digits prepended to each user's number.
+    count : int
+        How many users to create, numbered 1..count.
+    output : Path
+        CSV file the credentials are written to.
+    """
+    log = get_logger(__name__)
+    from .utils.user import create_batch_users
+
+    print(
+        f"About to create [yellow]{count}[/] users "
+        f"'[cyan]{prefix}1[/]'..'[cyan]{prefix}{count}[/]'."
+    )
+    try:
+        created, skipped, path = create_batch_users(prefix, count, output)
+    except ValueError as e:
+        log.error(f"Batch user creation failed: {e}")
+        print(f"[red]{e}[/]")
+        return
+
+    log.info(
+        f"Batch users: {created} created, {skipped} skipped; credentials in {path}."
+    )
+    message = f"[green]{created} user(s) created[/]"
+    if skipped:
+        message += f", [yellow]{skipped} skipped (already existed)[/]"
+    message += f". Credentials saved to [cyan]{path}[/]."
+    print(message)
+
+
+@cli.command
+@with_logging
 def audit_admin_users(
     logging_json: bool = False,
     logging_level: str = "debug",  # More verbose for admin operations
