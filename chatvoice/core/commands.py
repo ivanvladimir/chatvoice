@@ -194,34 +194,29 @@ def _resolve_prompt_text(
     current slots. Otherwise `text` itself is treated as raw text and
     formatted against the slots directly.
     """
-    if text in prompts:
-        raw_prompt = prompts[text].strip()
-        # Dynamically build an f-string and evaluate it safely using the evaluator
-        fmt_str = f'f"""{raw_prompt}"""' if "\n" in raw_prompt else f'f"{raw_prompt}"'
-        fmt_str = fmt_str.format_map(evaluator.slots)
-
+    if text in prompts or text in evaluator.slots:
+        raw_prompt = (
+            prompts[text] if text in prompts else evaluator.slots[text]
+        ).strip()
         try:
+            # Dynamically build an f-string and evaluate it safely using the
+            # evaluator. Both the format_map pass and the f-string build can
+            # raise (e.g. ValueError on an unbalanced brace in user-supplied
+            # slot text), so they must stay inside the try.
+            fmt_str = (
+                f'f"""{raw_prompt}"""' if "\n" in raw_prompt else f'f"{raw_prompt}"'
+            )
+            fmt_str = fmt_str.format_map(evaluator.slots)
             return evaluator.eval_expression(fmt_str)
         except Exception:
-            # If simpleeval fails, fall back to the raw text
-            return raw_prompt
-    if text in evaluator.slots:
-        raw_prompt = evaluator.slots[text].strip()
-        # Dynamically build an f-string and evaluate it safely using the evaluator
-        fmt_str = f'f"""{raw_prompt}"""' if "\n" in raw_prompt else f'f"{raw_prompt}"'
-        fmt_str = fmt_str.format_map(evaluator.slots)
-
-        try:
-            return evaluator.eval_expression(fmt_str)
-        except Exception:
-            # If simpleeval fails, fall back to the raw text
+            # If formatting/simpleeval fails, fall back to the raw text
             return raw_prompt
 
     # Not a defined prompt: treat it as a raw string and format it
     try:
         return text.format_map(evaluator.slots)
-    except KeyError:
-        return text  # Fallback if a slot is missing
+    except (KeyError, ValueError, IndexError):
+        return text  # Fallback if a slot is missing or braces are unbalanced
 
 
 def cmd_llm(
