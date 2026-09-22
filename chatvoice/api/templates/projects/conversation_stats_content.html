@@ -1,0 +1,288 @@
+{% macro fmt_seconds(value) -%}
+{%- if value is none -%}
+&mdash;
+{%- else -%}
+{%- set total = value | round(1) -%}
+{%- if total >= 3600 -%}
+{{ (total // 3600) | int }}h {{ ((total % 3600) // 60) | int }}m
+{%- elif total >= 60 -%}
+{{ (total // 60) | int }}m {{ (total % 60) | round(0) | int }}s
+{%- else -%}
+{{ total }}s
+{%- endif -%}
+{%- endif -%}
+{%- endmacro %}
+
+{% macro fmt_num(value) -%}
+{%- if value is none -%}
+&mdash;
+{%- else -%}
+{{ value | round(1) }}
+{%- endif -%}
+{%- endmacro %}
+
+<div class="space-y-6">
+
+    {# ─── HEADER ─── #}
+    <div class="flex items-center justify-between gap-2">
+        <div>
+            <h1 class="text-xl font-semibold">Estadísticas de conversaciones</h1>
+            <p class="text-sm text-base-content/50">{{ project.name }}</p>
+        </div>
+        <a href="{{ url_for('show_project_conversations', project_uuid=project.uuid) }}" class="btn btn-ghost btn-sm gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Ver conversaciones
+        </a>
+    </div>
+
+    {# ─── FILTER FORM ─── #}
+    <form id="stats-filter-form"
+          class="card bg-base-200 p-4 gap-3"
+          hx-post="{{ url_for('project_conversation_stats_htmx', project_uuid=project.uuid) }}"
+          hx-target="#protected-content"
+          hx-swap="innerHTML"
+          hx-indicator="#stats-search-spinner">
+
+        <input type="hidden" name="searched" value="1">
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
+            <div class="form-control md:col-span-2">
+                <label class="label pt-0">
+                    <span class="label-text font-medium">Usuario (expresión regular)</span>
+                </label>
+                <input type="text"
+                       name="username_regex"
+                       value="{{ username_regex }}"
+                       placeholder="p. ej. ^admin_ o \.edu$ (vacío = todos)"
+                       class="input input-bordered w-full font-mono text-sm {{ 'input-error' if regex_error else '' }}"
+                       hx-trigger="keyup changed delay:400ms, change" />
+                {% if regex_error %}
+                <label class="label pb-0">
+                    <span class="label-text-alt text-error">Expresión regular inválida: {{ regex_error }}</span>
+                </label>
+                {% endif %}
+            </div>
+
+            <div class="form-control">
+                <label class="label pt-0">
+                    <span class="label-text font-medium">Mínimo de turnos</span>
+                </label>
+                <input type="number"
+                       name="min_turns"
+                       min="0"
+                       value="{{ min_turns }}"
+                       class="input input-bordered w-full"
+                       hx-trigger="keyup changed delay:400ms, change" />
+            </div>
+        </div>
+
+        <div class="flex justify-end">
+            <button type="submit" class="btn btn-primary btn-sm gap-1.5">
+                <span id="stats-search-spinner" class="loading loading-spinner loading-xs hidden"></span>
+                Aplicar filtros
+            </button>
+        </div>
+    </form>
+
+    {% if stats %}
+    {# ─── AGGREGATE STATS ─── #}
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="stats bg-base-200 shadow-sm">
+            <div class="stat">
+                <div class="stat-title">Conversaciones</div>
+                <div class="stat-value text-2xl">{{ stats.num_conversations }}</div>
+            </div>
+        </div>
+        <div class="stats bg-base-200 shadow-sm">
+            <div class="stat">
+                <div class="stat-title">Total de turnos</div>
+                <div class="stat-value text-2xl">{{ stats.total_turns }}</div>
+            </div>
+        </div>
+        <div class="stats bg-base-200 shadow-sm">
+            <div class="stat">
+                <div class="stat-title">Turnos por conversación</div>
+                <div class="stat-value text-2xl">{{ fmt_num(stats.turns.avg) }}</div>
+                <div class="stat-desc">min {{ stats.turns.min | int if stats.turns.min is not none else '—' }} &middot; max {{ stats.turns.max | int if stats.turns.max is not none else '—' }}</div>
+            </div>
+        </div>
+        <div class="stats bg-base-200 shadow-sm">
+            <div class="stat">
+                <div class="stat-title">Duración de conversación</div>
+                <div class="stat-value text-2xl">{{ fmt_seconds(stats.duration_seconds.avg) }}</div>
+                <div class="stat-desc">min {{ fmt_seconds(stats.duration_seconds.min) }} &middot; max {{ fmt_seconds(stats.duration_seconds.max) }}</div>
+            </div>
+        </div>
+        <div class="stats bg-base-200 shadow-sm lg:col-span-2">
+            <div class="stat">
+                <div class="stat-title">Tiempo de respuesta del usuario por turno</div>
+                <div class="stat-value text-2xl">{{ fmt_seconds(stats.user_turn_seconds.avg) }}</div>
+                <div class="stat-desc">min {{ fmt_seconds(stats.user_turn_seconds.min) }} &middot; max {{ fmt_seconds(stats.user_turn_seconds.max) }} &middot; tiempo entre el turno anterior del sistema y la respuesta del usuario</div>
+            </div>
+        </div>
+        <div class="stats bg-base-200 shadow-sm lg:col-span-2">
+            <div class="stat">
+                <div class="stat-title">Tiempo de respuesta del sistema por turno</div>
+                <div class="stat-value text-2xl">{{ fmt_seconds(stats.system_turn_seconds.avg) }}</div>
+                <div class="stat-desc">min {{ fmt_seconds(stats.system_turn_seconds.min) }} &middot; max {{ fmt_seconds(stats.system_turn_seconds.max) }} &middot; tiempo entre el turno anterior del usuario y la respuesta del sistema</div>
+            </div>
+        </div>
+    </div>
+
+    {# ─── USER STATS ─── #}
+    <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="stats bg-base-200 shadow-sm">
+            <div class="stat">
+                <div class="stat-title">Usuarios únicos</div>
+                <div class="stat-value text-2xl">{{ stats.unique_users }}</div>
+            </div>
+        </div>
+        <div class="stats bg-base-200 shadow-sm">
+            <div class="stat">
+                <div class="stat-title">Conversaciones por usuario</div>
+                <div class="stat-value text-2xl">{{ fmt_num(stats.avg_conversations_per_user) }}</div>
+                <div class="stat-desc">promedio</div>
+            </div>
+        </div>
+        <div class="stats bg-base-200 shadow-sm">
+            <div class="stat">
+                <div class="stat-title">Usuario con más conversaciones</div>
+                <div class="stat-value text-2xl">{{ stats.top_user.count if stats.top_user else '—' }}</div>
+                <div class="stat-desc">{{ '@' + stats.top_user.username if stats.top_user else 'sin datos' }}</div>
+            </div>
+        </div>
+    </div>
+
+    {# ─── TEXT STATS (per role) ─── #}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="stats stats-vertical sm:stats-horizontal bg-base-200 shadow-sm">
+            <div class="stat">
+                <div class="stat-title">Textos de usuario</div>
+                <div class="stat-value text-xl">{{ stats.user_text.total }}</div>
+                <div class="stat-desc">total</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value text-xl">{{ stats.user_text.unique }}</div>
+                <div class="stat-desc">únicos</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value text-xl">{{ stats.user_text.words_max if stats.user_text.words_max is not none else '—' }}</div>
+                <div class="stat-desc">máx. palabras/turno</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value text-xl">{{ stats.user_text.words_min if stats.user_text.words_min is not none else '—' }}</div>
+                <div class="stat-desc">mín. palabras/turno</div>
+            </div>
+        </div>
+        <div class="stats stats-vertical sm:stats-horizontal bg-base-200 shadow-sm">
+            <div class="stat">
+                <div class="stat-title">Textos de sistema</div>
+                <div class="stat-value text-xl">{{ stats.system_text.total }}</div>
+                <div class="stat-desc">total</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value text-xl">{{ stats.system_text.unique }}</div>
+                <div class="stat-desc">únicos</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value text-xl">{{ stats.system_text.words_max if stats.system_text.words_max is not none else '—' }}</div>
+                <div class="stat-desc">máx. palabras/turno</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value text-xl">{{ stats.system_text.words_min if stats.system_text.words_min is not none else '—' }}</div>
+                <div class="stat-desc">mín. palabras/turno</div>
+            </div>
+        </div>
+    </div>
+
+    {# ─── TURNS TABLE ─── #}
+    <div class="card bg-base-200 p-4">
+        <div class="flex items-center justify-between gap-2 mb-3">
+            <h2 class="font-medium">Turnos ({{ rows | length }})</h2>
+            <input type="text"
+                   id="stats-turns-search"
+                   placeholder="Buscar en la tabla (texto o expresión regular)..."
+                   class="input input-bordered input-sm w-full max-w-sm"
+                   oninput="filterStatsTurnsTable(this.value)" />
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="table table-sm table-zebra">
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Fecha</th>
+                        <th>#</th>
+                        <th>Rol</th>
+                        <th>Texto</th>
+                        <th>Conversación</th>
+                    </tr>
+                </thead>
+                <tbody id="stats-turns-tbody">
+                    {% for row in rows %}
+                    <tr>
+                        <td class="whitespace-nowrap">
+                            {{ row.name }}
+                            <span class="text-base-content/40">@{{ row.username }}</span>
+                        </td>
+                        <td class="whitespace-nowrap">
+                            <time datetime="{{ row.created_at.isoformat() }}" data-local="datetime">{{ row.created_at.strftime('%d/%m/%Y %H:%M') }}</time>
+                        </td>
+                        <td>{{ row.sequence }}</td>
+                        <td>
+                            <span class="badge badge-sm {{ 'badge-primary' if row.role == 'user' else 'badge-ghost' }}">
+                                {{ 'Usuario' if row.role == 'user' else 'Sistema' }}
+                            </span>
+                        </td>
+                        <td class="max-w-md truncate" title="{{ row.text }}">{{ row.text }}</td>
+                        <td class="whitespace-nowrap">
+                            <a class="link link-hover link-primary inline-flex"
+                               target="_blank" rel="noopener"
+                               title="Ver conversación"
+                               aria-label="Ver conversación"
+                               href="{{ url_for('conversation_view', conversation_uuid=row.conversation_uuid) }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-base-content/40 py-6">
+                            Ninguna conversación cumple los criterios de búsqueda.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function filterStatsTurnsTable(query) {
+            const tbody = document.getElementById('stats-turns-tbody');
+            if (!tbody) return;
+
+            let re = null;
+            if (query) {
+                try { re = new RegExp(query, 'i'); } catch (e) { re = null; }
+            }
+
+            tbody.querySelectorAll('tr').forEach(function (row) {
+                if (!query) { row.hidden = false; return; }
+                const text = row.textContent || '';
+                const match = re ? re.test(text) : text.toLowerCase().includes(query.toLowerCase());
+                row.hidden = !match;
+            });
+        }
+    </script>
+    {% elif not regex_error %}
+    <div class="card bg-base-200 p-10 text-center text-base-content/50">
+        <p>Ajusta los filtros y presiona &laquo;Aplicar filtros&raquo; para calcular las estadísticas.</p>
+        <p class="text-xs mt-1">Por defecto no se cargan turnos: un proyecto puede tener demasiados.</p>
+    </div>
+    {% endif %}
+</div>

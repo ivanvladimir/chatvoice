@@ -55,6 +55,7 @@ class LoginResponse(BaseModel):
     token_type: str = "bearer"
     username: str
     name: str
+    role: UserRole
 
 
 class RegisterRequest(BaseModel):
@@ -156,6 +157,7 @@ async def login_json(
         access_token=access_token,
         username=user["username"],
         name=user["name"],
+        role=user["role"],
     )
 
 

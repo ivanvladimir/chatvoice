@@ -162,6 +162,26 @@ async def get_current_editor_or_observer(
     return current_user
 
 
+async def get_current_editor_or_admin(
+    current_user: Annotated[dict, Depends(get_current_user)],
+) -> dict:
+    """Editor or admin: allowed to create/modify/delete projects and files."""
+    if current_user["role"] not in ("editor", "admin"):
+        raise ForbiddenException("You do not have enough privileges.")
+
+    return current_user
+
+
+async def get_current_project_viewer(
+    current_user: Annotated[dict, Depends(get_current_user)],
+) -> dict:
+    """Editor, admin or observer: allowed to view/list/download projects and files."""
+    if current_user["role"] not in ("editor", "admin", "observer"):
+        raise ForbiddenException("You do not have enough privileges.")
+
+    return current_user
+
+
 async def rate_limiter_dependency(
     request: Request,
     db: Annotated[AsyncSession, Depends(async_get_db)],

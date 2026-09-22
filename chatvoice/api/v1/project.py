@@ -55,7 +55,12 @@ from ...utils.project import (
     project_directory_exists,
     validate_git_url,
 )
-from ..dependencies import get_current_editor, get_current_user
+from ..dependencies import (
+    get_current_editor,
+    get_current_editor_or_admin,
+    get_current_project_viewer,
+    get_current_user,
+)
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 templates = Jinja2Templates(directory="chatvoice/api/templates")
@@ -162,7 +167,7 @@ async def upload_files(
     request: Request,
     project_uuid: UUID,
     db: Annotated[AsyncSession, Depends(async_get_db)],
-    current_user: dict = Depends(get_current_editor),
+    current_user: dict = Depends(get_current_editor_or_admin),
     files: list[UploadFile] = FileForm(...),
     directory: str = Form(""),
 ):
@@ -219,7 +224,7 @@ async def delete_file(
     project_uuid: UUID,
     body: CreateFileRequest,
     db: Annotated[AsyncSession, Depends(async_get_db)],
-    current_user: dict = Depends(get_current_editor),
+    current_user: dict = Depends(get_current_editor_or_admin),
 ):
     base_path, project = await get_project_base(project_uuid, db, current_user)
     target_file = _validate_file_path(base_path, body.path.strip())
@@ -254,7 +259,7 @@ async def download_file(
     project_uuid: UUID,
     file_path: str,
     db: Annotated[AsyncSession, Depends(async_get_db)],
-    current_user: dict = Depends(get_current_editor),
+    current_user: dict = Depends(get_current_project_viewer),
 ):
     base_path, project = await get_project_base(project_uuid, db, current_user)
     target_file = _validate_file_path(base_path, file_path)
@@ -276,7 +281,7 @@ async def download_project(
     request: Request,
     project_uuid: UUID,
     db: Annotated[AsyncSession, Depends(async_get_db)],
-    current_user: dict = Depends(get_current_editor),
+    current_user: dict = Depends(get_current_project_viewer),
 ):
     base_path, project = await get_project_base(project_uuid, db, current_user)
 
@@ -311,7 +316,7 @@ async def create_file(
     project_uuid: UUID,
     body: CreateFileRequest,
     db: Annotated[AsyncSession, Depends(async_get_db)],
-    current_user: dict = Depends(get_current_editor),
+    current_user: dict = Depends(get_current_editor_or_admin),
 ):
     base_path, project = await get_project_base(project_uuid, db, current_user)
     file_path_str = body.path.strip()
@@ -345,7 +350,7 @@ async def list_project_files_htmx(
     project_uuid: UUID,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     ctx: RuntimeContext = Depends(get_default_context),
-    current_user: dict = Depends(get_current_editor),
+    current_user: dict = Depends(get_current_project_viewer),
 ):
     base_path, project = await get_project_base(project_uuid, db, current_user)
 
@@ -373,7 +378,7 @@ async def get_project_readme_htmx(
     project_uuid: UUID,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     ctx: RuntimeContext = Depends(get_default_context),
-    current_user: dict = Depends(get_current_editor),
+    current_user: dict = Depends(get_current_project_viewer),
 ):
     """HTMX endpoint: renders the project's README (if any) as sanitized HTML."""
     base_path, project = await get_project_base(project_uuid, db, current_user)
@@ -411,7 +416,7 @@ async def get_file_editor_htmx(
     filename: str,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     ctx: RuntimeContext = Depends(get_default_context),
-    current_user: dict = Depends(get_current_editor),
+    current_user: dict = Depends(get_current_project_viewer),
 ):
     """HTMX endpoint that reads the file and returns the partial HTML."""
     base_path, project = await get_project_base(project_uuid, db, current_user)
@@ -446,7 +451,7 @@ async def save_file(
     filename: str,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     content: str = Form(...),
-    current_user: dict = Depends(get_current_editor),
+    current_user: dict = Depends(get_current_editor_or_admin),
 ):
     """Saves the file. Called by standard JS fetch."""
     base_path, project = await get_project_base(project_uuid, db, current_user)
@@ -534,7 +539,7 @@ async def import_project_htmx(
     git_url: Annotated[str, Form()],
     db: Annotated[AsyncSession, Depends(async_get_db)],
     ctx: RuntimeContext = Depends(get_default_context),
-    current_user: dict = Depends(get_current_editor),
+    current_user: dict = Depends(get_current_editor_or_admin),
     project_name: Annotated[str | None, Form()] = None,
 ):
     errors: list[str] = []
@@ -695,7 +700,7 @@ async def projects_list_htmx(
     request: Request,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     ctx: RuntimeContext = Depends(get_default_context),
-    current_user: dict = Depends(get_current_editor),
+    current_user: dict = Depends(get_current_project_viewer),
     page: int = Form(1, ge=1),
     items_per_page: int = Form(12, ge=1, le=50),
     search: str | None = Form(None),
@@ -766,7 +771,7 @@ async def get_project_card_htmx(
     project_uuid: UUID,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     ctx: RuntimeContext = Depends(get_default_context),
-    current_user: dict = Depends(get_current_editor),
+    current_user: dict = Depends(get_current_project_viewer),
 ):
     """HTMX endpoint: re-renders a single project card (used to poll import status)."""
     project = await crud_projects.get(db, uuid=project_uuid, is_deleted=False)
@@ -801,7 +806,7 @@ async def create_project_htmx(
     db: Annotated[AsyncSession, Depends(async_get_db)],
     project_name: Annotated[str, Form()],
     ctx: RuntimeContext = Depends(get_default_context),
-    current_user: dict = Depends(get_current_editor),
+    current_user: dict = Depends(get_current_editor_or_admin),
     description: Annotated[str | None, Form()] = None,
 ):
     errors: list[str] = []
@@ -893,7 +898,7 @@ async def delete_project_htmx(
     project_uuid: UUID,
     request: Request,
     db: Annotated[AsyncSession, Depends(async_get_db)],
-    current_user: dict = Depends(get_current_editor),
+    current_user: dict = Depends(get_current_editor_or_admin),
 ):
     project = await crud_projects.get(db, uuid=project_uuid, is_deleted=False)
 
@@ -921,7 +926,7 @@ async def toggle_project_active_htmx(
     project_uuid: UUID,
     request: Request,
     db: Annotated[AsyncSession, Depends(async_get_db)],
-    current_user: dict = Depends(get_current_editor),
+    current_user: dict = Depends(get_current_editor_or_admin),
 ):
     project = await crud_projects.get(db, uuid=project_uuid, is_deleted=False)
 

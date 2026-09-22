@@ -1,4 +1,5 @@
 import math
+import re
 from typing import Annotated
 from uuid import UUID
 
@@ -30,7 +31,7 @@ from ...schemas.conversation import (
 )
 from ...schemas.user import UserBrief
 from ...utils.markdown import render_markdown
-from ..dependencies import get_current_editor_or_observer, get_current_user
+from ..dependencies import get_current_project_viewer, get_current_user
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
 
@@ -46,7 +47,7 @@ async def _check_conversation_access(
     if conversation["user_id"] == current_user["id"]:
         return
 
-    if current_user["role"] not in ("editor", "observer"):
+    if current_user["role"] not in ("editor", "admin", "observer"):
         raise HTTPException(status_code=403, detail="Not your conversation")
 
     if not conversation["project_id"]:
@@ -164,13 +165,13 @@ async def list_project_conversations_htmx(
     project_uuid: UUID,
     db: Annotated[AsyncSession, Depends(async_get_db)],
     ctx: RuntimeContext = Depends(get_default_context),
-    current_user: dict = Depends(get_current_editor_or_observer),
+    current_user: dict = Depends(get_current_project_viewer),
     page: int = Form(1, ge=1),
     items_per_page: int = Form(12, ge=1, le=50),
 ):
     """
     HTMX endpoint: lists ALL conversations for a project (any user who ran
-    one), gated to editor/observer role AND project ownership/membership.
+    one), gated to editor/admin/observer role AND project ownership/membership.
     """
     project = await crud_projects.get(db, uuid=project_uuid, is_deleted=False)
     if not project:
@@ -217,6 +218,177 @@ async def list_project_conversations_htmx(
             "page_title": f"Conversaciones de {project['name']}",
             "empty_message": "Aún no hay conversaciones en este proyecto.",
             "show_user": True,
+        },
+    )
+
+
+def _min_max_avg(values: list[float]) -> dict:
+    if not values:
+        return {"min": None, "max": None, "avg": None}
+    return {"min": min(values), "max": max(values), "avg": sum(values) / len(values)}
+
+
+def _text_stats(texts: list[str]) -> dict:
+    """Total/unique text count plus min/max word count, for one turn role."""
+    if not texts:
+        return {"total": 0, "unique": 0, "words_min": None, "words_max": None}
+    word_counts = [len(t.split()) for t in texts]
+    return {
+        "total": len(texts),
+        "unique": len(set(texts)),
+        "words_min": min(word_counts),
+        "words_max": max(word_counts),
+    }
+
+
+@router.post("/project/{project_uuid}/stats", response_class=HTMLResponse)
+async def project_conversation_stats_htmx(
+    request: Request,
+    project_uuid: UUID,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    ctx: RuntimeContext = Depends(get_default_context),
+    current_user: dict = Depends(get_current_project_viewer),
+    username_regex: str = Form(""),
+    min_turns: int = Form(10, ge=0),
+    searched: bool = Form(False),
+):
+    """
+    HTMX endpoint: aggregate stats + full turn listing for a project's
+    conversations, filtered by a regex on the conversation owner's username
+    and a minimum turn count. Gated the same way as the project's conversation
+    list (editor/admin/observer AND project ownership/membership).
+
+    Nothing is computed until `searched` is set (the filter form only sends it
+    once rendered) -- a project can have far too many turns to dump by default.
+    """
+    project = await crud_projects.get(db, uuid=project_uuid, is_deleted=False)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    await _check_project_access(db, project, current_user)
+
+    username_regex = username_regex.strip()
+    regex_error: str | None = None
+    pattern: re.Pattern | None = None
+    if username_regex:
+        try:
+            pattern = re.compile(username_regex)
+        except re.error as e:
+            regex_error = str(e)
+
+    stats = None
+    rows: list[dict] = []
+
+    if regex_error is None and searched:
+        result = await db.execute(
+            select(ConversationLog, User.username, User.name)
+            .join(User, User.id == ConversationLog.user_id)
+            .where(ConversationLog.project_id == project["id"])
+            .order_by(ConversationLog.started_at.desc())
+        )
+        matched = [
+            (log, username, name)
+            for log, username, name in result.all()
+            if pattern is None or pattern.search(username)
+        ]
+
+        turns_by_log: dict[int, list[ConversationTurn]] = {}
+        log_ids = [log.id for log, _, _ in matched]
+        if log_ids:
+            turns_result = await db.execute(
+                select(ConversationTurn)
+                .where(ConversationTurn.conversation_log_id.in_(log_ids))
+                .order_by(
+                    ConversationTurn.conversation_log_id, ConversationTurn.sequence
+                )
+            )
+            for turn in turns_result.scalars().all():
+                turns_by_log.setdefault(turn.conversation_log_id, []).append(turn)
+
+        turn_counts: list[int] = []
+        durations: list[float] = []
+        user_response_seconds: list[float] = []
+        system_response_seconds: list[float] = []
+        conversations_by_user: dict[str, int] = {}
+        role_texts: dict[str, list[str]] = {"user": [], "assistant": []}
+
+        for log, username, name in matched:
+            turns = turns_by_log.get(log.id, [])
+            if len(turns) < min_turns:
+                continue
+
+            turn_counts.append(len(turns))
+            conversations_by_user[username] = conversations_by_user.get(username, 0) + 1
+
+            if turns:
+                end_time = log.ended_at or turns[-1].created_at
+                duration = (end_time - log.started_at).total_seconds()
+                if duration >= 0:
+                    durations.append(duration)
+
+            prev_turn: ConversationTurn | None = None
+            for turn in turns:
+                if prev_turn is not None:
+                    delta = (turn.created_at - prev_turn.created_at).total_seconds()
+                    if delta >= 0:
+                        if turn.role == "user":
+                            user_response_seconds.append(delta)
+                        elif turn.role == "assistant":
+                            system_response_seconds.append(delta)
+                prev_turn = turn
+
+                if turn.role in role_texts:
+                    role_texts[turn.role].append(turn.text)
+
+                rows.append(
+                    {
+                        "conversation_uuid": log.uuid,
+                        "username": username,
+                        "name": name,
+                        "started_at": log.started_at,
+                        "sequence": turn.sequence,
+                        "role": turn.role,
+                        "text": turn.text,
+                        "created_at": turn.created_at,
+                    }
+                )
+
+        unique_users = len(conversations_by_user)
+        top_user = None
+        if conversations_by_user:
+            top_username, top_count = max(
+                conversations_by_user.items(), key=lambda kv: kv[1]
+            )
+            top_user = {"username": top_username, "count": top_count}
+
+        stats = {
+            "num_conversations": len(turn_counts),
+            "total_turns": sum(turn_counts),
+            "turns": _min_max_avg([float(c) for c in turn_counts]),
+            "duration_seconds": _min_max_avg(durations),
+            "user_turn_seconds": _min_max_avg(user_response_seconds),
+            "system_turn_seconds": _min_max_avg(system_response_seconds),
+            "unique_users": unique_users,
+            "avg_conversations_per_user": (
+                len(turn_counts) / unique_users if unique_users else None
+            ),
+            "top_user": top_user,
+            "user_text": _text_stats(role_texts["user"]),
+            "system_text": _text_stats(role_texts["assistant"]),
+        }
+
+    return ctx.templates_api.TemplateResponse(
+        request=request,
+        name="projects/conversation_stats_content.html",
+        context={
+            "request": request,
+            "project": project,
+            "username_regex": username_regex,
+            "min_turns": min_turns,
+            "regex_error": regex_error,
+            "searched": searched,
+            "stats": stats,
+            "rows": rows,
         },
     )
 
