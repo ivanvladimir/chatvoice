@@ -84,7 +84,7 @@
         {% if histogram.labels %}
         <figure class="bg-white rounded-sm p-4">
             <div class="relative h-96 w-full">
-                <canvas id="histogram-chart"
+                <canvas id="{{ chart_id }}"
                         role="img"
                         aria-label="Histograma: {{ view.x_label }}"></canvas>
             </div>
@@ -112,7 +112,7 @@
         </div>
         <script>
             (() => {
-                const canvas = document.getElementById('histogram-chart');
+                const canvas = document.getElementById({{ chart_id | tojson }});
                 if (!canvas || typeof Chart === 'undefined') return;
 
                 const existing = Chart.getChart(canvas);

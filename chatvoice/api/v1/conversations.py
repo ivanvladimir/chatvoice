@@ -1,7 +1,7 @@
 import math
 import re
 from typing import Annotated, Literal
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
@@ -787,6 +787,10 @@ async def project_conversation_histogram_htmx(
             "regex_error": regex_error,
             "histogram": histogram,
             "cards": cards,
+            # Unique per render: htmx "settles" elements whose id survives a swap
+            # by re-applying their attributes, which resets a canvas and blanks
+            # the freshly drawn chart.
+            "chart_id": f"histogram-chart-{uuid4().hex}",
         },
     )
 
