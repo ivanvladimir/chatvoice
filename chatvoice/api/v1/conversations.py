@@ -1,11 +1,11 @@
 import math
 import re
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
-from sqlalchemy import and_, delete, select
+from sqlalchemy import and_, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.db.database import async_get_db
@@ -389,6 +389,404 @@ async def project_conversation_stats_htmx(
             "searched": searched,
             "stats": stats,
             "rows": rows,
+        },
+    )
+
+
+def _compile_username_regex(
+    username_regex: str,
+) -> tuple[re.Pattern | None, str | None]:
+    """Returns (pattern, error); pattern is None when the regex is empty or invalid."""
+    if not username_regex:
+        return None, None
+    try:
+        return re.compile(username_regex), None
+    except re.error as e:
+        return None, str(e)
+
+
+async def _project_conversation_metrics(
+    db: AsyncSession, project_id: int, pattern: re.Pattern | None, min_turns: int
+) -> list[dict]:
+    """
+    Per-conversation turn count and duration for a project, filtered like the
+    stats view: username regex and minimum turn count. Duration runs from
+    `started_at` to `ended_at` (or the last turn), and is None for
+    conversations without turns or with inconsistent timestamps.
+    """
+    result = await db.execute(
+        select(
+            User.username,
+            ConversationLog.id,
+            ConversationLog.started_at,
+            ConversationLog.ended_at,
+            func.count(ConversationTurn.id),
+            func.max(ConversationTurn.created_at),
+        )
+        .select_from(ConversationLog)
+        .join(User, User.id == ConversationLog.user_id)
+        .outerjoin(
+            ConversationTurn,
+            ConversationTurn.conversation_log_id == ConversationLog.id,
+        )
+        .where(ConversationLog.project_id == project_id)
+        .group_by(ConversationLog.id, User.username)
+    )
+
+    metrics = []
+    for username, log_id, started_at, ended_at, turns, last_turn_at in result.all():
+        if turns < min_turns or (pattern is not None and not pattern.search(username)):
+            continue
+        duration = None
+        if turns:
+            seconds = ((ended_at or last_turn_at) - started_at).total_seconds()
+            if seconds >= 0:
+                duration = seconds
+        metrics.append({"log_id": log_id, "turns": turns, "duration_seconds": duration})
+    return metrics
+
+
+async def _response_seconds(
+    db: AsyncSession, log_ids: list[int], role: str
+) -> list[float]:
+    """
+    Per-turn response times for `role` ("user" or "assistant"): seconds
+    between each of its turns and the turn right before it, as in the stats view.
+    """
+    if not log_ids:
+        return []
+    result = await db.execute(
+        select(
+            ConversationTurn.conversation_log_id,
+            ConversationTurn.role,
+            ConversationTurn.created_at,
+        )
+        .where(ConversationTurn.conversation_log_id.in_(log_ids))
+        .order_by(ConversationTurn.conversation_log_id, ConversationTurn.sequence)
+    )
+
+    seconds: list[float] = []
+    prev_log_id = prev_created_at = None
+    for log_id, turn_role, created_at in result.all():
+        if log_id == prev_log_id and turn_role == role:
+            delta = (created_at - prev_created_at).total_seconds()
+            if delta >= 0:
+                seconds.append(delta)
+        prev_log_id, prev_created_at = log_id, created_at
+    return seconds
+
+
+async def _turn_texts(db: AsyncSession, log_ids: list[int], role: str) -> list[str]:
+    """Texts of every `role` turn ("user" or "assistant") in the given conversations."""
+    if not log_ids:
+        return []
+    result = await db.execute(
+        select(ConversationTurn.text).where(
+            ConversationTurn.conversation_log_id.in_(log_ids),
+            ConversationTurn.role == role,
+        )
+    )
+    return list(result.scalars().all())
+
+
+def _nice_bin_width(span: float, max_bins: int) -> float:
+    """Smallest 1/2/2.5/5 x 10^k width that covers `span` in at most `max_bins` bins."""
+    rough = max(span, 1e-9) / max_bins
+    magnitude = 10 ** math.floor(math.log10(rough))
+    for factor in (1, 2, 2.5, 5, 10):
+        if factor * magnitude >= rough:
+            return factor * magnitude
+    return 10 * magnitude
+
+
+def _fmt_bin_edge(value: float) -> str:
+    return f"{value:g}"
+
+
+def _histogram_series(series: list[dict], integer: bool, max_bins: int = 30) -> dict:
+    """
+    Buckets one or more series (`{"name", "values", "mean"}`) into the same
+    at most `max_bins` equal-width bins. Returns shared `labels`, plus
+    `first_center` and `bin_width` so the front-end can place each mean on the
+    binned axis, and per-series `counts`.
+
+    Integer bins cover whole values (label "3" or "9–17"); continuous bins are
+    half-open intervals [a, b) labelled "a–b".
+    """
+    all_values = [v for item in series for v in item["values"]]
+    if not all_values:
+        return {"labels": [], "bin_width": 1, "first_center": 0, "series": []}
+
+    lo, hi = min(all_values), max(all_values)
+    if integer:
+        width: float = max(1, math.ceil((hi - lo + 1) / max_bins))
+        low = lo
+    else:
+        width = _nice_bin_width(hi - lo, max_bins)
+        low = math.floor(lo / width) * width
+    num_bins = int((hi - low) // width) + 1
+
+    binned = []
+    for item in series:
+        counts = [0] * num_bins
+        for v in item["values"]:
+            counts[min(int((v - low) // width), num_bins - 1)] += 1
+        binned.append({"name": item["name"], "counts": counts, "mean": item["mean"]})
+
+    labels = []
+    for i in range(num_bins):
+        start = low + i * width
+        if integer:
+            end = start + width - 1
+            labels.append(
+                str(int(start)) if start == end else f"{int(start)}–{int(end)}"
+            )
+        else:
+            labels.append(f"{_fmt_bin_edge(start)}–{_fmt_bin_edge(start + width)}")
+
+    return {
+        "labels": labels,
+        "bin_width": width,
+        # Value at the center of the first bin (integer bins span whole values)
+        "first_center": low + ((width - 1) / 2 if integer else width / 2),
+        "series": binned,
+    }
+
+
+def _histogram(values: list[float], mean: float | None, integer: bool) -> dict:
+    """Single-series histogram (see `_histogram_series`)."""
+    return _histogram_series(
+        [{"name": None, "values": values, "mean": mean}], integer=integer
+    )
+
+
+def _fmt_seconds(value: float | None) -> str:
+    """Python twin of the stats template's `fmt_seconds` macro."""
+    if value is None:
+        return "—"
+    total = round(value, 1)
+    if total >= 3600:
+        return f"{int(total // 3600)}h {int((total % 3600) // 60)}m"
+    if total >= 60:
+        return f"{int(total // 60)}m {round(total % 60)}s"
+    return f"{total}s"
+
+
+def _fmt_num(value: float | None) -> str:
+    return "—" if value is None else f"{round(value, 1)}"
+
+
+def _fmt_int(value: float | None) -> str:
+    return "—" if value is None else str(int(value))
+
+
+def _duration_unit(max_seconds: float) -> tuple[str, str, float]:
+    """(abbreviation, label, divisor) giving readable bin edges for the duration axis."""
+    if max_seconds < 180:
+        return "s", "segundos", 1
+    if max_seconds < 3 * 3600:
+        return "min", "minutos", 60
+    return "h", "horas", 3600
+
+
+# Per-conversation (or per-turn) histograms linked from the stats page.
+# `x_label` for time metrics gets the chosen unit appended, e.g. "(minutos)";
+# `count_noun` names what each bar counts (y axis: "Frecuencia (<count_noun>)").
+HISTOGRAM_VIEWS = {
+    "turns": {
+        "title": "Turnos por conversación",
+        "x_label": "Número de turnos por conversación",
+        "file_base": "turnos_por_conversacion",
+        "count_noun": "conversaciones",
+    },
+    "duration": {
+        "title": "Duración de conversación",
+        "x_label": "Duración de la conversación",
+        "file_base": "duracion_de_conversacion",
+        "count_noun": "conversaciones",
+    },
+    "user_response": {
+        "title": "Tiempo de respuesta del usuario",
+        "x_label": "Tiempo de respuesta del usuario",
+        "file_base": "tiempo_de_respuesta_usuario",
+        "count_noun": "respuestas",
+        "role": "user",
+    },
+    "system_response": {
+        "title": "Tiempo de respuesta del sistema",
+        "x_label": "Tiempo de respuesta del sistema",
+        "file_base": "tiempo_de_respuesta_sistema",
+        "count_noun": "respuestas",
+        "role": "assistant",
+    },
+    "user_text": {
+        "title": "Textos de usuario",
+        "x_label": "Palabras por turno del usuario",
+        "file_base": "palabras_por_turno_usuario",
+        "count_noun": "textos",
+        "role": "user",
+    },
+    "system_text": {
+        "title": "Textos de sistema",
+        "x_label": "Palabras por turno del sistema",
+        "file_base": "palabras_por_turno_sistema",
+        "count_noun": "textos",
+        "role": "assistant",
+    },
+    "text_compare": {
+        "title": "Textos de usuario y sistema",
+        "x_label": "Palabras por turno",
+        "file_base": "palabras_por_turno_usuario_y_sistema",
+        "count_noun": "textos",
+    },
+}
+
+HistogramMetric = Literal[
+    "turns",
+    "duration",
+    "user_response",
+    "system_response",
+    "user_text",
+    "system_text",
+    "text_compare",
+]
+
+
+def _seconds_histogram(seconds: list[float]) -> tuple[dict, str]:
+    """Histogram of durations in a readable unit; returns it with the unit label."""
+    agg = _min_max_avg(seconds)
+    _, unit_label, divisor = _duration_unit(agg["max"] or 0)
+    histogram = _histogram(
+        [s / divisor for s in seconds],
+        agg["avg"] / divisor if agg["avg"] is not None else None,
+        integer=False,
+    )
+    return histogram, unit_label
+
+
+def _seconds_card(title: str, seconds: list[float]) -> dict:
+    agg = _min_max_avg(seconds)
+    return {
+        "title": title,
+        "value": _fmt_seconds(agg["avg"]),
+        "desc": f"min {_fmt_seconds(agg['min'])} · max {_fmt_seconds(agg['max'])}",
+    }
+
+
+@router.post("/project/{project_uuid}/stats/{metric}", response_class=HTMLResponse)
+async def project_conversation_histogram_htmx(
+    request: Request,
+    project_uuid: UUID,
+    metric: HistogramMetric,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    ctx: RuntimeContext = Depends(get_default_context),
+    current_user: dict = Depends(get_current_project_viewer),
+    username_regex: str = Form(""),
+    min_turns: int = Form(1, ge=0),
+):
+    """
+    HTMX endpoint: histogram of one metric over a project's conversations --
+    turns per conversation, conversation duration, user/system response time
+    per turn, or user/system words per turn (separately or side by side) -- filtered by a regex on the conversation owner's username
+    and a minimum turn count. Metrics are computed as in the stats view, and
+    access is gated the same way.
+    """
+    project = await crud_projects.get(db, uuid=project_uuid, is_deleted=False)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    await _check_project_access(db, project, current_user)
+
+    username_regex = username_regex.strip()
+    pattern, regex_error = _compile_username_regex(username_regex)
+
+    view = {**HISTOGRAM_VIEWS[metric], "metric": metric}
+    histogram = None
+    cards: list[dict] = []
+    if regex_error is None:
+        metrics = await _project_conversation_metrics(
+            db, project["id"], pattern, min_turns
+        )
+        cards.append({"title": "Conversaciones", "value": str(len(metrics))})
+
+        if metric == "turns":
+            turns = [float(m["turns"]) for m in metrics]
+            agg = _min_max_avg(turns)
+            histogram = _histogram(turns, agg["avg"], integer=True)
+            cards += [
+                {"title": "Turnos totales", "value": str(int(sum(turns)))},
+                {
+                    "title": "Turnos por conversación",
+                    "value": _fmt_num(agg["avg"]),
+                    "desc": f"min {_fmt_int(agg['min'])} · max {_fmt_int(agg['max'])}",
+                },
+            ]
+        elif metric in ("user_text", "system_text"):
+            texts = await _turn_texts(db, [m["log_id"] for m in metrics], view["role"])
+            # Same word count as the stats view's min/max palabras/turno
+            words = [float(len(t.split())) for t in texts]
+            agg = _min_max_avg(words)
+            histogram = _histogram(words, agg["avg"], integer=True)
+            cards += [
+                {
+                    "title": "Textos",
+                    "value": str(len(texts)),
+                    "desc": f"{len(set(texts))} únicos",
+                },
+                {
+                    "title": "Palabras por turno",
+                    "value": _fmt_num(agg["avg"]),
+                    "desc": f"min {_fmt_int(agg['min'])} · max {_fmt_int(agg['max'])}",
+                },
+            ]
+        elif metric == "text_compare":
+            log_ids = [m["log_id"] for m in metrics]
+            series = []
+            for name, role in (("Usuario", "user"), ("Sistema", "assistant")):
+                texts = await _turn_texts(db, log_ids, role)
+                words = [float(len(t.split())) for t in texts]
+                agg = _min_max_avg(words)
+                series.append({"name": name, "values": words, "mean": agg["avg"]})
+                cards.append(
+                    {
+                        "title": f"Palabras por turno ({name.lower()})",
+                        "value": _fmt_num(agg["avg"]),
+                        "desc": f"{len(texts)} textos · min {_fmt_int(agg['min'])} · max {_fmt_int(agg['max'])}",
+                    }
+                )
+            histogram = _histogram_series(series, integer=True)
+        else:
+            if metric == "duration":
+                seconds = [
+                    m["duration_seconds"]
+                    for m in metrics
+                    if m["duration_seconds"] is not None
+                ]
+                count_title = "Con duración válida"
+            else:
+                seconds = await _response_seconds(
+                    db, [m["log_id"] for m in metrics], view["role"]
+                )
+                count_title = "Turnos medidos"
+            histogram, unit_label = _seconds_histogram(seconds)
+            view["x_label"] = f"{view['x_label']} ({unit_label})"
+            cards += [
+                {"title": count_title, "value": str(len(seconds))},
+                _seconds_card(view["title"], seconds),
+            ]
+
+    return ctx.templates_api.TemplateResponse(
+        request=request,
+        name="projects/conversation_histogram_content.html",
+        context={
+            "request": request,
+            "project": project,
+            "view": view,
+            "username_regex": username_regex,
+            "min_turns": min_turns,
+            "regex_error": regex_error,
+            "histogram": histogram,
+            "cards": cards,
         },
     )
 

@@ -1,12 +1,19 @@
 {% extends 'base.html' %}
 
-{% block title %}Estadísticas - {{ project.name }}{% endblock %}
+{% block title %}{{ title }} - {{ project.name }}{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{# Vector PDF export of the histogram figure #}
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/svg2pdf.js@2.2.3/dist/svg2pdf.umd.min.js"></script>
+{% endblock %}
 
 {# ─── HTMX CONFIGURATION ─── #}
 {% block protected_htmx_config %}
-hx-post="{{ url_for('project_conversation_stats_htmx', project_uuid=project.uuid) }}"
+hx-post="{{ url_for('project_conversation_histogram_htmx', project_uuid=project.uuid, metric=metric) }}"
 hx-trigger="load-protected"
-hx-include="#stats-filter-form"
+hx-include="#histogram-filter-form"
 hx-swap="innerHTML"
 hx-target="this"
 hx-indicator="#protected-loading"
@@ -16,8 +23,7 @@ hx-indicator="#protected-loading"
 {% block protected_content %}
 {# Carried-over filters, picked up by hx-include on first load; replaced by the real form afterwards #}
 {% if filters %}
-<form id="stats-filter-form" class="hidden">
-    <input type="hidden" name="searched" value="1">
+<form id="histogram-filter-form" class="hidden">
     {% for name, value in filters.items() %}
     <input type="hidden" name="{{ name }}" value="{{ value }}">
     {% endfor %}
@@ -25,12 +31,6 @@ hx-indicator="#protected-loading"
 {% endif %}
 <div class="space-y-4">
     <div class="skeleton h-24 w-full rounded-box"></div>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="skeleton h-20 w-full rounded-box"></div>
-        <div class="skeleton h-20 w-full rounded-box"></div>
-        <div class="skeleton h-20 w-full rounded-box"></div>
-        <div class="skeleton h-20 w-full rounded-box"></div>
-    </div>
-    <div class="skeleton h-64 w-full rounded-box"></div>
+    <div class="skeleton h-80 w-full rounded-box"></div>
 </div>
 {% endblock %}

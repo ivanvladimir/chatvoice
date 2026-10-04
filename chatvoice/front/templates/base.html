@@ -391,9 +391,16 @@
                         // Only trigger if hx-post attribute exists
                         if (protectedEl && this.isAuthenticated && protectedEl.hasAttribute('hx-post')) {
                             this.protectedLoaded = false;
+                            // htmx.ajax() ignores hx-include, so send the included form's values explicitly
+                            const includeSelector = protectedEl.getAttribute('hx-include');
+                            const includeEl = includeSelector ? document.querySelector(includeSelector) : null;
+                            const values = includeEl instanceof HTMLFormElement
+                                ? Object.fromEntries(new FormData(includeEl))
+                                : {};
                             htmx.ajax('POST', protectedEl.getAttribute('hx-post'), {
                                 target: protectedEl,
-                                swap: protectedEl.getAttribute('hx-swap') || 'innerHTML'
+                                swap: protectedEl.getAttribute('hx-swap') || 'innerHTML',
+                                values: values
                             });
                         }
                     });

@@ -1,0 +1,499 @@
+<div class="space-y-6">
+
+    {# ─── HEADER ─── #}
+    <div class="flex items-center justify-between gap-2">
+        <div>
+            <h1 class="text-xl font-semibold">{{ view.title }}</h1>
+            <p class="text-sm text-base-content/50">{{ project.name }}</p>
+        </div>
+        <a id="histogram-back-link" href="{{ url_for('show_project_stats', project_uuid=project.uuid) }}?{{ {'username_regex': username_regex, 'min_turns': min_turns} | urlencode }}" class="btn btn-ghost btn-sm gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Ver estadísticas
+        </a>
+    </div>
+
+    {# ─── FILTER FORM ─── #}
+    <form id="histogram-filter-form"
+          class="card bg-base-200 p-4 gap-3"
+          hx-post="{{ url_for('project_conversation_histogram_htmx', project_uuid=project.uuid, metric=view.metric) }}"
+          hx-trigger="submit, input delay:400ms"
+          hx-target="#histogram-results"
+          hx-select="#histogram-results"
+          hx-swap="outerHTML"
+          hx-select-oob="#histogram-back-link,#histogram-regex-error"
+          hx-indicator="#histogram-spinner">
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
+            <div class="form-control md:col-span-2">
+                <label class="label pt-0">
+                    <span class="label-text font-medium">Usuario (expresión regular)</span>
+                </label>
+                <input type="text"
+                       name="username_regex"
+                       value="{{ username_regex }}"
+                       placeholder="p. ej. ^admin_ o \.edu$ (vacío = todos)"
+                       class="input input-bordered w-full font-mono text-sm {{ 'input-error' if regex_error else '' }}" />
+                <div id="histogram-regex-error">
+                    {% if regex_error %}
+                    <label class="label pb-0">
+                        <span class="label-text-alt text-error">Expresión regular inválida: {{ regex_error }}</span>
+                    </label>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-control">
+                <label class="label pt-0">
+                    <span class="label-text font-medium">Mínimo de turnos</span>
+                </label>
+                <input type="number"
+                       name="min_turns"
+                       min="0"
+                       value="{{ min_turns }}"
+                       class="input input-bordered w-full" />
+            </div>
+        </div>
+
+        <div class="flex justify-end">
+            <button type="submit" class="btn btn-primary btn-sm gap-1.5">
+                <span id="histogram-spinner" class="loading loading-spinner loading-xs hidden"></span>
+                Aplicar filtros
+            </button>
+        </div>
+    </form>
+
+    <div id="histogram-results" class="space-y-6">
+    {% if histogram is not none %}
+    {# ─── SUMMARY ─── #}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {% for card in cards %}
+        <div class="stats bg-base-200 shadow-sm">
+            <div class="stat">
+                <div class="stat-title">{{ card.title }}</div>
+                <div class="stat-value text-2xl">{{ card.value }}</div>
+                {% if card.desc %}<div class="stat-desc">{{ card.desc }}</div>{% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {# ─── HISTOGRAM ─── #}
+    <div class="card bg-base-200 p-4 gap-3">
+        {% if histogram.labels %}
+        <figure class="bg-white rounded-sm p-4">
+            <div class="relative h-96 w-full">
+                <canvas id="histogram-chart"
+                        role="img"
+                        aria-label="Histograma: {{ view.x_label }}"></canvas>
+            </div>
+        </figure>
+        <div class="flex justify-end items-center gap-1">
+            <span class="text-sm text-base-content/50 mr-1">Descargar figura:</span>
+            <button type="button" class="btn btn-ghost btn-sm gap-1.5" data-export="svg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                SVG
+            </button>
+            <button type="button" class="btn btn-ghost btn-sm gap-1.5" data-export="pdf">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                PDF
+            </button>
+            <button type="button" class="btn btn-ghost btn-sm gap-1.5" data-export="png">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                PNG
+            </button>
+        </div>
+        <script>
+            (() => {
+                const canvas = document.getElementById('histogram-chart');
+                if (!canvas || typeof Chart === 'undefined') return;
+
+                const existing = Chart.getChart(canvas);
+                if (existing) existing.destroy();
+
+                const ink = '#000000';
+                const font = { family: "'Times New Roman', Times, serif", size: 14 };
+                const firstCenter = {{ histogram.first_center | tojson }};
+                const binWidth = {{ histogram.bin_width | tojson }};
+                // One or more series over shared bins; several are drawn as grouped bars
+                const series = {{ histogram.series | tojson }};
+                const multi = series.length > 1;
+                // Publication-style greys; each series' mean gets its own dash pattern
+                const STYLES = [
+                    { fill: '#bdbdbd', hover: '#9e9e9e', dash: [6, 4] },
+                    { fill: '#525252', hover: '#3d3d3d', dash: [2, 3] },
+                    { fill: '#ffffff', hover: '#eeeeee', dash: [8, 3, 2, 3] },
+                ];
+                const styleOf = (i) => STYLES[i % STYLES.length];
+                const xLabel = {{ view.x_label | tojson }};
+                const countNoun = {{ view.count_noun | tojson }};
+                const yLabel = `Frecuencia (${countNoun})`;
+
+                // White figure background (also baked into the exported PNG)
+                const whiteBackground = {
+                    id: 'whiteBackground',
+                    beforeDraw(chart) {
+                        const { ctx } = chart;
+                        ctx.save();
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, chart.width, chart.height);
+                        ctx.restore();
+                    },
+                };
+
+                // Closed box around the plot area
+                const frame = {
+                    id: 'frame',
+                    afterDraw(chart) {
+                        const { ctx, chartArea: a } = chart;
+                        ctx.save();
+                        ctx.strokeStyle = ink;
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(a.left, a.top, a.right - a.left, a.bottom - a.top);
+                        ctx.restore();
+                    },
+                };
+
+                // Vertical line at each series' mean, mapped onto the binned category axis
+                const meanLine = {
+                    id: 'meanLine',
+                    afterDatasetsDraw(chart) {
+                        const x = chart.scales.x;
+                        const binPx = x.width / x.ticks.length;
+                        const { ctx, chartArea: a } = chart;
+                        series.forEach((s, i) => {
+                            if (s.mean === null) return;
+                            const px = x.getPixelForValue(0) + ((s.mean - firstCenter) / binWidth) * binPx;
+                            ctx.save();
+                            ctx.strokeStyle = ink;
+                            ctx.lineWidth = 1.5;
+                            ctx.setLineDash(styleOf(i).dash);
+                            ctx.beginPath();
+                            ctx.moveTo(px, a.top);
+                            ctx.lineTo(px, a.bottom);
+                            ctx.stroke();
+                            ctx.restore();
+                        });
+                    },
+                };
+
+                const axis = (title) => ({
+                    title: { display: true, text: title, color: ink, font: { ...font, size: 15 } },
+                    ticks: { color: ink, font },
+                    border: { display: true, color: ink, width: 1 },
+                    grid: {
+                        display: true,
+                        drawOnChartArea: false,
+                        drawTicks: true,
+                        tickLength: 5,
+                        color: ink,
+                    },
+                });
+
+                new Chart(canvas, {
+                    type: 'bar',
+                    data: {
+                        labels: {{ histogram.labels | tojson }},
+                        datasets: series.map((s, i) => ({
+                            label: s.name || countNoun,
+                            data: s.counts,
+                            backgroundColor: styleOf(i).fill,
+                            hoverBackgroundColor: styleOf(i).hover,
+                            borderColor: ink,
+                            borderWidth: 1,
+                            borderSkipped: false,
+                            borderRadius: 0,
+                            categoryPercentage: 1.0,
+                            barPercentage: 1.0,
+                        })),
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        devicePixelRatio: Math.max(window.devicePixelRatio || 1, 2),
+                        animation: false,
+                        layout: { padding: { top: 8, right: 12 } },
+                        plugins: {
+                            legend: {
+                                display: multi,
+                                position: 'top',
+                                align: 'end',
+                                labels: {
+                                    color: ink,
+                                    font,
+                                    usePointStyle: true,
+                                    // Bars, then one entry per mean line
+                                    generateLabels: () => [
+                                        ...series.map((s, i) => ({
+                                            text: s.name, fillStyle: styleOf(i).fill, strokeStyle: ink,
+                                            lineWidth: 1, pointStyle: 'rect', datasetIndex: i,
+                                        })),
+                                        ...series.filter((s) => s.mean !== null).map((s) => ({
+                                            text: `Media (${s.name.toLowerCase()})`, strokeStyle: ink,
+                                            lineWidth: 1.5, lineDash: styleOf(series.indexOf(s)).dash,
+                                            pointStyle: 'line',
+                                        })),
+                                    ],
+                                },
+                                onClick: () => {},
+                            },
+                            tooltip: {
+                                titleFont: font,
+                                bodyFont: font,
+                                callbacks: {
+                                    title: (items) => `${items[0].label}`,
+                                    label: (item) => multi
+                                        ? `${item.dataset.label}: ${item.parsed.y} ${countNoun}`
+                                        : `${item.parsed.y} ${countNoun}`,
+                                },
+                            },
+                        },
+                        scales: {
+                            x: { ...axis(xLabel), offset: true },
+                            y: {
+                                ...axis(yLabel),
+                                beginAtZero: true,
+                                grace: '5%',
+                                ticks: { color: ink, font, precision: 0 },
+                            },
+                        },
+                    },
+                    plugins: [whiteBackground, frame, meanLine],
+                });
+
+                // ─── Export: a vector SVG built from the same data and style ───
+                // The SVG is the source for all three formats so they match exactly.
+                const exportFigure = {
+                    labels: {{ histogram.labels | tojson }},
+                    series,
+                    firstCenter,
+                    binWidth,
+                };
+                const fileBase = {{ view.file_base | tojson }};
+                const FIG_W = 480, FIG_H = 300;  // points (≈ 16.9 × 10.6 cm)
+                const PNG_DPI = 300;
+
+                function niceStep(maxValue, targetTicks = 5) {
+                    const rough = Math.max(maxValue, 1) / targetTicks;
+                    const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+                    const norm = rough / mag;
+                    const step = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10;
+                    return Math.max(1, step * mag);
+                }
+
+                function buildSvg({ labels, series, firstCenter, binWidth }) {
+                    const NS = 'http://www.w3.org/2000/svg';
+                    const family = "'Times New Roman', Times, serif";
+                    const m = { top: 14, right: 14, bottom: 52, left: 58 };
+                    const pw = FIG_W - m.left - m.right;
+                    const ph = FIG_H - m.top - m.bottom;
+
+                    const maxCount = Math.max(...series.flatMap((s) => s.counts));
+                    // Extra headroom for the legend when several series share the plot
+                    const headroom = series.length > 1 ? 1.25 : 1.05;
+                    const step = niceStep(maxCount * headroom);
+                    const yMax = Math.ceil((maxCount * headroom) / step) * step;
+                    const yPx = (v) => m.top + ph - (v / yMax) * ph;
+                    const binPx = pw / labels.length;
+                    const barPx = binPx / series.length;
+
+                    const svg = document.createElementNS(NS, 'svg');
+                    svg.setAttribute('xmlns', NS);
+                    svg.setAttribute('width', `${FIG_W}pt`);
+                    svg.setAttribute('height', `${FIG_H}pt`);
+                    svg.setAttribute('viewBox', `0 0 ${FIG_W} ${FIG_H}`);
+
+                    const el = (name, attrs, text) => {
+                        const node = document.createElementNS(NS, name);
+                        for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+                        if (text !== undefined) node.textContent = text;
+                        svg.appendChild(node);
+                        return node;
+                    };
+                    const textAttrs = (size, anchor) => ({
+                        'font-family': family, 'font-size': size, 'fill': '#000', 'text-anchor': anchor,
+                    });
+
+                    el('rect', { x: 0, y: 0, width: FIG_W, height: FIG_H, fill: '#fff' });
+
+                    // Bars (grouped side by side within each bin when several series)
+                    series.forEach((s, j) => {
+                        s.counts.forEach((c, i) => {
+                            if (!c) return;
+                            el('rect', {
+                                x: m.left + i * binPx + j * barPx, y: yPx(c), width: barPx, height: yPx(0) - yPx(c),
+                                fill: styleOf(j).fill, stroke: '#000', 'stroke-width': 0.75,
+                            });
+                        });
+                    });
+
+                    // Mean lines
+                    const svgDash = (j) => styleOf(j).dash.map((d) => d * 0.8).join(' ');
+                    series.forEach((s, j) => {
+                        if (s.mean === null) return;
+                        const x = m.left + binPx / 2 + ((s.mean - firstCenter) / binWidth) * binPx;
+                        el('line', {
+                            x1: x, y1: m.top, x2: x, y2: m.top + ph,
+                            stroke: '#000', 'stroke-width': 1, 'stroke-dasharray': svgDash(j),
+                        });
+                    });
+
+                    // Legend (top right, inside the plot)
+                    if (series.length > 1) {
+                        const entries = [
+                            ...series.map((s, j) => ({ kind: 'bar', j, text: s.name })),
+                            ...series.map((s, j) => ({ kind: 'line', j, text: `Media (${s.name.toLowerCase()})` }))
+                                .filter((e) => series[e.j].mean !== null),
+                        ];
+                        const rowH = 13, boxW = 112;
+                        const x0 = m.left + pw - boxW - 6, y0 = m.top + 6;
+                        el('rect', {
+                            x: x0, y: y0, width: boxW, height: entries.length * rowH + 6,
+                            fill: '#fff', stroke: '#000', 'stroke-width': 0.5,
+                        });
+                        entries.forEach((e, k) => {
+                            const cy = y0 + 3 + k * rowH + rowH / 2;
+                            if (e.kind === 'bar') {
+                                el('rect', {
+                                    x: x0 + 6, y: cy - 4, width: 14, height: 8,
+                                    fill: styleOf(e.j).fill, stroke: '#000', 'stroke-width': 0.75,
+                                });
+                            } else {
+                                el('line', {
+                                    x1: x0 + 6, y1: cy, x2: x0 + 20, y2: cy,
+                                    stroke: '#000', 'stroke-width': 1, 'stroke-dasharray': svgDash(e.j),
+                                });
+                            }
+                            el('text', { x: x0 + 26, y: cy + 3.5, ...textAttrs(10, 'start') }, e.text);
+                        });
+                    }
+
+                    // Frame
+                    el('rect', {
+                        x: m.left, y: m.top, width: pw, height: ph,
+                        fill: 'none', stroke: '#000', 'stroke-width': 0.75,
+                    });
+
+                    // Y ticks
+                    for (let v = 0; v <= yMax + 1e-9; v += step) {
+                        const y = yPx(v);
+                        el('line', { x1: m.left - 4, y1: y, x2: m.left, y2: y, stroke: '#000', 'stroke-width': 0.75 });
+                        el('text', { x: m.left - 7, y: y + 3.5, ...textAttrs(10, 'end') }, String(v));
+                    }
+
+                    // X ticks (thinned so labels don't collide)
+                    const every = Math.ceil(labels.length / 12);
+                    labels.forEach((label, i) => {
+                        const x = m.left + (i + 0.5) * binPx;
+                        el('line', { x1: x, y1: m.top + ph, x2: x, y2: m.top + ph + 4, stroke: '#000', 'stroke-width': 0.75 });
+                        if (i % every === 0) {
+                            el('text', { x, y: m.top + ph + 16, ...textAttrs(10, 'middle') }, label);
+                        }
+                    });
+
+                    // Axis titles
+                    el('text', { x: m.left + pw / 2, y: FIG_H - 12, ...textAttrs(11, 'middle') },
+                        xLabel);
+                    el('text', {
+                        x: 0, y: 0, transform: `translate(16 ${m.top + ph / 2}) rotate(-90)`,
+                        ...textAttrs(11, 'middle'),
+                    }, yLabel);
+
+                    return svg;
+                }
+
+                function download(blob, filename) {
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.download = filename;
+                    link.href = url;
+                    link.click();
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                }
+
+                const svgString = (svg) =>
+                    '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(svg);
+
+                const exporters = {
+                    svg() {
+                        const blob = new Blob([svgString(buildSvg(exportFigure))], { type: 'image/svg+xml' });
+                        download(blob, `${fileBase}.svg`);
+                    },
+
+                    async png() {
+                        const scale = PNG_DPI / 72;
+                        const url = URL.createObjectURL(
+                            new Blob([svgString(buildSvg(exportFigure))], { type: 'image/svg+xml' })
+                        );
+                        try {
+                            const img = new Image();
+                            await new Promise((resolve, reject) => {
+                                img.onload = resolve;
+                                img.onerror = reject;
+                                img.src = url;
+                            });
+                            const out = document.createElement('canvas');
+                            out.width = Math.round(FIG_W * scale);
+                            out.height = Math.round(FIG_H * scale);
+                            out.getContext('2d').drawImage(img, 0, 0, out.width, out.height);
+                            out.toBlob((blob) => download(blob, `${fileBase}.png`), 'image/png');
+                        } finally {
+                            URL.revokeObjectURL(url);
+                        }
+                    },
+
+                    async pdf() {
+                        if (!window.jspdf?.jsPDF) {
+                            alert('No se pudo cargar la librería de PDF. Intenta de nuevo en unos segundos.');
+                            return;
+                        }
+                        const svg = buildSvg(exportFigure);
+                        // svg2pdf measures text, so the SVG has to be in the DOM while converting
+                        svg.style.position = 'absolute';
+                        svg.style.left = '-10000px';
+                        document.body.appendChild(svg);
+                        try {
+                            const doc = new window.jspdf.jsPDF({
+                                orientation: FIG_W > FIG_H ? 'landscape' : 'portrait',
+                                unit: 'pt',
+                                format: [FIG_W, FIG_H],
+                            });
+                            await doc.svg(svg, { x: 0, y: 0, width: FIG_W, height: FIG_H });
+                            doc.save(`${fileBase}.pdf`);
+                        } finally {
+                            svg.remove();
+                        }
+                    },
+                };
+
+                document.querySelectorAll('[data-export]').forEach((button) => {
+                    button.addEventListener('click', async () => {
+                        button.disabled = true;
+                        try {
+                            await exporters[button.dataset.export]();
+                        } catch (e) {
+                            console.error('Export failed:', e);
+                        } finally {
+                            button.disabled = false;
+                        }
+                    });
+                });
+            })();
+        </script>
+        {% else %}
+        <p class="text-center text-base-content/40 py-6">
+            Ninguna conversación cumple los criterios de búsqueda.
+        </p>
+        {% endif %}
+    </div>
+    {% endif %}
+    </div>
+
+</div>
