@@ -132,6 +132,8 @@
                     { fill: '#ffffff', hover: '#eeeeee', dash: [8, 3, 2, 3] },
                 ];
                 const styleOf = (i) => STYLES[i % STYLES.length];
+                // Single-series views have no series name; fall back to what the bars count
+                const nameOf = (s) => s.name || countNoun;
                 const xLabel = {{ view.x_label | tojson }};
                 const countNoun = {{ view.count_noun | tojson }};
                 const yLabel = `Frecuencia (${countNoun})`;
@@ -202,7 +204,7 @@
                     data: {
                         labels: {{ histogram.labels | tojson }},
                         datasets: series.map((s, i) => ({
-                            label: s.name || countNoun,
+                            label: nameOf(s),
                             data: s.counts,
                             backgroundColor: styleOf(i).fill,
                             hoverBackgroundColor: styleOf(i).hover,
@@ -230,13 +232,13 @@
                                     font,
                                     usePointStyle: true,
                                     // Bars, then one entry per mean line
-                                    generateLabels: () => [
+                                    generateLabels: () => !multi ? [] : [
                                         ...series.map((s, i) => ({
-                                            text: s.name, fillStyle: styleOf(i).fill, strokeStyle: ink,
+                                            text: nameOf(s), fillStyle: styleOf(i).fill, strokeStyle: ink,
                                             lineWidth: 1, pointStyle: 'rect', datasetIndex: i,
                                         })),
                                         ...series.filter((s) => s.mean !== null).map((s) => ({
-                                            text: `Media (${s.name.toLowerCase()})`, strokeStyle: ink,
+                                            text: `Media (${nameOf(s).toLowerCase()})`, strokeStyle: ink,
                                             lineWidth: 1.5, lineDash: styleOf(series.indexOf(s)).dash,
                                             pointStyle: 'line',
                                         })),
@@ -348,8 +350,8 @@
                     // Legend (top right, inside the plot)
                     if (series.length > 1) {
                         const entries = [
-                            ...series.map((s, j) => ({ kind: 'bar', j, text: s.name })),
-                            ...series.map((s, j) => ({ kind: 'line', j, text: `Media (${s.name.toLowerCase()})` }))
+                            ...series.map((s, j) => ({ kind: 'bar', j, text: nameOf(s) })),
+                            ...series.map((s, j) => ({ kind: 'line', j, text: `Media (${nameOf(s).toLowerCase()})` }))
                                 .filter((e) => series[e.j].mean !== null),
                         ];
                         const rowH = 13, boxW = 112;
