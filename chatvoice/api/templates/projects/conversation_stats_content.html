@@ -109,7 +109,7 @@
             <div class="stat">
                 <div class="stat-title">Turnos por conversación</div>
                 <div class="stat-value text-2xl">{{ fmt_num(stats.turns.avg) }}</div>
-                <div class="stat-desc">min {{ stats.turns.min | int if stats.turns.min is not none else '—' }} &middot; max {{ stats.turns.max | int if stats.turns.max is not none else '—' }}</div>
+                <div class="stat-desc">min {{ stats.turns.min | int if stats.turns.min is not none else '—' }} &middot; max {{ stats.turns.max | int if stats.turns.max is not none else '—' }} &middot; σ {{ fmt_num(stats.turns.std) }}</div>
                 <div class="stat-actions mt-2">
                     <a href="{{ url_for('show_project_histogram', project_uuid=project.uuid, metric='turns') }}?{{ {'username_regex': username_regex, 'min_turns': min_turns} | urlencode }}" class="btn btn-ghost btn-xs gap-1">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -124,7 +124,7 @@
             <div class="stat">
                 <div class="stat-title">Duración de conversación</div>
                 <div class="stat-value text-2xl">{{ fmt_seconds(stats.duration_seconds.avg) }}</div>
-                <div class="stat-desc">min {{ fmt_seconds(stats.duration_seconds.min) }} &middot; max {{ fmt_seconds(stats.duration_seconds.max) }}</div>
+                <div class="stat-desc">min {{ fmt_seconds(stats.duration_seconds.min) }} &middot; max {{ fmt_seconds(stats.duration_seconds.max) }} &middot; σ {{ fmt_seconds(stats.duration_seconds.std) }}</div>
                 <div class="stat-actions mt-2">
                     <a href="{{ url_for('show_project_histogram', project_uuid=project.uuid, metric='duration') }}?{{ {'username_regex': username_regex, 'min_turns': min_turns} | urlencode }}" class="btn btn-ghost btn-xs gap-1">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -139,7 +139,7 @@
             <div class="stat">
                 <div class="stat-title">Tiempo de respuesta del usuario por turno</div>
                 <div class="stat-value text-2xl">{{ fmt_seconds(stats.user_turn_seconds.avg) }}</div>
-                <div class="stat-desc">min {{ fmt_seconds(stats.user_turn_seconds.min) }} &middot; max {{ fmt_seconds(stats.user_turn_seconds.max) }} &middot; tiempo entre el turno anterior del sistema y la respuesta del usuario</div>
+                <div class="stat-desc">min {{ fmt_seconds(stats.user_turn_seconds.min) }} &middot; max {{ fmt_seconds(stats.user_turn_seconds.max) }} &middot; σ {{ fmt_seconds(stats.user_turn_seconds.std) }} &middot; tiempo entre el turno anterior del sistema y la respuesta del usuario</div>
                 <div class="stat-actions mt-2">
                     <a href="{{ url_for('show_project_histogram', project_uuid=project.uuid, metric='user_response') }}?{{ {'username_regex': username_regex, 'min_turns': min_turns} | urlencode }}" class="btn btn-ghost btn-xs gap-1">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -154,7 +154,7 @@
             <div class="stat">
                 <div class="stat-title">Tiempo de respuesta del sistema por turno</div>
                 <div class="stat-value text-2xl">{{ fmt_seconds(stats.system_turn_seconds.avg) }}</div>
-                <div class="stat-desc">min {{ fmt_seconds(stats.system_turn_seconds.min) }} &middot; max {{ fmt_seconds(stats.system_turn_seconds.max) }} &middot; tiempo entre el turno anterior del usuario y la respuesta del sistema</div>
+                <div class="stat-desc">min {{ fmt_seconds(stats.system_turn_seconds.min) }} &middot; max {{ fmt_seconds(stats.system_turn_seconds.max) }} &middot; σ {{ fmt_seconds(stats.system_turn_seconds.std) }} &middot; tiempo entre el turno anterior del usuario y la respuesta del sistema</div>
                 <div class="stat-actions mt-2">
                     <a href="{{ url_for('show_project_histogram', project_uuid=project.uuid, metric='system_response') }}?{{ {'username_regex': username_regex, 'min_turns': min_turns} | urlencode }}" class="btn btn-ghost btn-xs gap-1">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -219,6 +219,10 @@
                 <div class="stat-value text-xl">{{ stats.user_text.words_min if stats.user_text.words_min is not none else '—' }}</div>
                 <div class="stat-desc">mín. palabras/turno</div>
             </div>
+            <div class="stat">
+                <div class="stat-value text-xl">{{ fmt_num(stats.user_text.words_std) }}</div>
+                <div class="stat-desc">desv. est. palabras/turno</div>
+            </div>
         </div>
         <div class="stats stats-vertical sm:stats-horizontal bg-base-200 shadow-sm">
             <div class="stat">
@@ -245,6 +249,10 @@
             <div class="stat">
                 <div class="stat-value text-xl">{{ stats.system_text.words_min if stats.system_text.words_min is not none else '—' }}</div>
                 <div class="stat-desc">mín. palabras/turno</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value text-xl">{{ fmt_num(stats.system_text.words_std) }}</div>
+                <div class="stat-desc">desv. est. palabras/turno</div>
             </div>
         </div>
     </div>

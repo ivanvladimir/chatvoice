@@ -1,5 +1,6 @@
 import math
 import re
+import statistics
 from typing import Annotated, Literal
 from uuid import UUID, uuid4
 
@@ -223,21 +224,34 @@ async def list_project_conversations_htmx(
 
 
 def _min_max_avg(values: list[float]) -> dict:
+    """Min, max, mean and sample standard deviation (None with fewer than 2 values)."""
     if not values:
-        return {"min": None, "max": None, "avg": None}
-    return {"min": min(values), "max": max(values), "avg": sum(values) / len(values)}
+        return {"min": None, "max": None, "avg": None, "std": None}
+    return {
+        "min": min(values),
+        "max": max(values),
+        "avg": sum(values) / len(values),
+        "std": statistics.stdev(values) if len(values) > 1 else None,
+    }
 
 
 def _text_stats(texts: list[str]) -> dict:
-    """Total/unique text count plus min/max word count, for one turn role."""
+    """Total/unique text count plus min/max/std word count, for one turn role."""
     if not texts:
-        return {"total": 0, "unique": 0, "words_min": None, "words_max": None}
+        return {
+            "total": 0,
+            "unique": 0,
+            "words_min": None,
+            "words_max": None,
+            "words_std": None,
+        }
     word_counts = [len(t.split()) for t in texts]
     return {
         "total": len(texts),
         "unique": len(set(texts)),
         "words_min": min(word_counts),
         "words_max": max(word_counts),
+        "words_std": statistics.stdev(word_counts) if len(word_counts) > 1 else None,
     }
 
 
@@ -669,7 +683,7 @@ def _seconds_card(title: str, seconds: list[float]) -> dict:
     return {
         "title": title,
         "value": _fmt_seconds(agg["avg"]),
-        "desc": f"min {_fmt_seconds(agg['min'])} · max {_fmt_seconds(agg['max'])}",
+        "desc": f"min {_fmt_seconds(agg['min'])} · max {_fmt_seconds(agg['max'])} · σ {_fmt_seconds(agg['std'])}",
     }
 
 
@@ -718,7 +732,7 @@ async def project_conversation_histogram_htmx(
                 {
                     "title": "Turnos por conversación",
                     "value": _fmt_num(agg["avg"]),
-                    "desc": f"min {_fmt_int(agg['min'])} · max {_fmt_int(agg['max'])}",
+                    "desc": f"min {_fmt_int(agg['min'])} · max {_fmt_int(agg['max'])} · σ {_fmt_num(agg['std'])}",
                 },
             ]
         elif metric in ("user_text", "system_text"):
@@ -736,7 +750,7 @@ async def project_conversation_histogram_htmx(
                 {
                     "title": "Palabras por turno",
                     "value": _fmt_num(agg["avg"]),
-                    "desc": f"min {_fmt_int(agg['min'])} · max {_fmt_int(agg['max'])}",
+                    "desc": f"min {_fmt_int(agg['min'])} · max {_fmt_int(agg['max'])} · σ {_fmt_num(agg['std'])}",
                 },
             ]
         elif metric == "text_compare":
@@ -751,7 +765,7 @@ async def project_conversation_histogram_htmx(
                     {
                         "title": f"Palabras por turno ({name.lower()})",
                         "value": _fmt_num(agg["avg"]),
-                        "desc": f"{len(texts)} textos · min {_fmt_int(agg['min'])} · max {_fmt_int(agg['max'])}",
+                        "desc": f"{len(texts)} textos · min {_fmt_int(agg['min'])} · max {_fmt_int(agg['max'])} · σ {_fmt_num(agg['std'])}",
                     }
                 )
             histogram = _histogram_series(series, integer=True)
