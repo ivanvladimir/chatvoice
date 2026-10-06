@@ -1,12 +1,15 @@
+import csv
+import io
 import math
 import re
 import statistics
+from datetime import datetime
 from typing import Annotated, Literal
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
-from sqlalchemy import and_, delete, func, select
+from sqlalchemy import and_, case, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...core.db.database import async_get_db
@@ -407,14 +410,12 @@ async def project_conversation_stats_htmx(
     )
 
 
-def _compile_username_regex(
-    username_regex: str,
-) -> tuple[re.Pattern | None, str | None]:
+def _compile_regex(regex: str, flags: int = 0) -> tuple[re.Pattern | None, str | None]:
     """Returns (pattern, error); pattern is None when the regex is empty or invalid."""
-    if not username_regex:
+    if not regex:
         return None, None
     try:
-        return re.compile(username_regex), None
+        return re.compile(regex, flags), None
     except re.error as e:
         return None, str(e)
 
@@ -712,7 +713,7 @@ async def project_conversation_histogram_htmx(
     await _check_project_access(db, project, current_user)
 
     username_regex = username_regex.strip()
-    pattern, regex_error = _compile_username_regex(username_regex)
+    pattern, regex_error = _compile_regex(username_regex)
 
     view = {**HISTOGRAM_VIEWS[metric], "metric": metric}
     histogram = None
@@ -806,6 +807,307 @@ async def project_conversation_histogram_htmx(
             # the freshly drawn chart.
             "chart_id": f"histogram-chart-{uuid4().hex}",
         },
+    )
+
+
+# Number right after "Puntaje" or "Calificación" (e.g. "**Puntaje: 7/10**" -> 7),
+# skipping prose like "una calificación numérica" with no number next to it.
+DEFAULT_DOC_VALUE_REGEX = r"(?:Puntaje|Calificaci[oó]n)\W{0,5}(-?\d+(?:[.,]\d+)?)"
+
+
+def _parse_number(value: str) -> float | None:
+    try:
+        return float(value.replace(",", "."))
+    except ValueError:
+        return None
+
+
+async def _filtered_conversations(
+    db: AsyncSession,
+    project: dict,
+    current_user: dict,
+    username_regex: str,
+    min_turns: int,
+    doc_title_regex: str,
+    value_regex: str,
+) -> dict:
+    """
+    One row per conversation of a project, filtered like the stats view (regex
+    on the conversation owner's username and a minimum turn count), with
+    per-conversation turn counts, duration and documents.
+
+    Each row also gets an `extracted` value from its documents: the most recent
+    document whose title matches `doc_title_regex` (empty = any) and whose
+    content matches `value_regex` (first capture group, or the whole match if
+    it has none). Both are case-insensitive.
+
+    Returns the cleaned-up filters, any regex errors, the rows and a numeric
+    summary of the extracted values -- shared by the table view and its export.
+    """
+    username_regex = username_regex.strip()
+    pattern, regex_error = _compile_regex(username_regex)
+    doc_title_regex = doc_title_regex.strip()
+    title_pattern, title_regex_error = _compile_regex(doc_title_regex, re.IGNORECASE)
+    value_regex = value_regex.strip()
+    value_pattern, value_regex_error = _compile_regex(value_regex, re.IGNORECASE)
+
+    rows: list[dict] = []
+    value_summary = None
+    is_project_owner = project["owner_id"] == current_user["id"]
+    if regex_error is None:
+        result = await db.execute(
+            select(
+                ConversationLog,
+                User.username,
+                User.name,
+                func.count(ConversationTurn.id),
+                func.coalesce(
+                    func.sum(case((ConversationTurn.role == "user", 1), else_=0)), 0
+                ),
+                func.max(ConversationTurn.created_at),
+            )
+            .select_from(ConversationLog)
+            .join(User, User.id == ConversationLog.user_id)
+            .outerjoin(
+                ConversationTurn,
+                ConversationTurn.conversation_log_id == ConversationLog.id,
+            )
+            .where(ConversationLog.project_id == project["id"])
+            .group_by(ConversationLog.id, User.username, User.name)
+            .order_by(ConversationLog.started_at.desc())
+        )
+        for log, username, name, turns, user_turns, last_turn_at in result.all():
+            if turns < min_turns or (
+                pattern is not None and not pattern.search(username)
+            ):
+                continue
+            duration = None
+            if turns:
+                seconds = (
+                    (log.ended_at or last_turn_at) - log.started_at
+                ).total_seconds()
+                if seconds >= 0:
+                    duration = seconds
+            rows.append(
+                {
+                    "id": log.id,
+                    "uuid": log.uuid,
+                    "username": username,
+                    "name": name,
+                    "started_at": log.started_at,
+                    "turns": turns,
+                    "user_turns": user_turns,
+                    "system_turns": turns - user_turns,
+                    "duration_seconds": duration,
+                    "tags": log.tags or [],
+                    # Same rule as delete_conversation_htmx: the project owner
+                    # or whoever had the conversation.
+                    "can_delete": is_project_owner or log.user_id == current_user["id"],
+                }
+            )
+        await _attach_documents(db, rows)
+
+        numeric_values: list[float] = []
+        for row in rows:
+            row["extracted"] = None
+            if value_pattern is None or title_regex_error is not None:
+                continue
+            for doc in reversed(row["documents"]):
+                if title_pattern is not None and not title_pattern.search(doc["title"]):
+                    continue
+                match = value_pattern.search(doc["content"])
+                if match:
+                    value = (
+                        match.group(1) if match.groups() else match.group(0)
+                    ).strip()
+                    row["extracted"] = {"value": value, "doc": doc}
+                    number = _parse_number(value)
+                    if number is not None:
+                        numeric_values.append(number)
+                    break
+        if numeric_values:
+            value_summary = {"n": len(numeric_values), **_min_max_avg(numeric_values)}
+
+    return {
+        "username_regex": username_regex,
+        "min_turns": min_turns,
+        "regex_error": regex_error,
+        "doc_title_regex": doc_title_regex,
+        "title_regex_error": title_regex_error,
+        "value_regex": value_regex,
+        "value_regex_error": value_regex_error,
+        "value_summary": value_summary,
+        "rows": rows,
+    }
+
+
+@router.post("/project/{project_uuid}/filtered", response_class=HTMLResponse)
+async def project_filtered_conversations_htmx(
+    request: Request,
+    project_uuid: UUID,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    ctx: RuntimeContext = Depends(get_default_context),
+    current_user: dict = Depends(get_current_project_viewer),
+    username_regex: str = Form(""),
+    min_turns: int = Form(10, ge=0),
+    doc_title_regex: str = Form(""),
+    value_regex: str = Form(DEFAULT_DOC_VALUE_REGEX),
+):
+    """
+    HTMX endpoint: table of a project's conversations, filtered like the stats
+    view, with a value extracted from their documents (see
+    `_filtered_conversations`). Gated the same way as the stats view.
+    """
+    project = await crud_projects.get(db, uuid=project_uuid, is_deleted=False)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    await _check_project_access(db, project, current_user)
+
+    table = await _filtered_conversations(
+        db,
+        project,
+        current_user,
+        username_regex,
+        min_turns,
+        doc_title_regex,
+        value_regex,
+    )
+
+    return ctx.templates_api.TemplateResponse(
+        request=request,
+        name="projects/conversation_filtered_content.html",
+        context={"request": request, "project": project, **table},
+    )
+
+
+ExportFormat = Literal["csv", "txt"]
+
+EXPORT_HEADERS = [
+    "Usuario",
+    "Nombre",
+    "Inicio (UTC)",
+    "Turnos",
+    "Turnos usuario",
+    "Turnos sistema",
+    "Duración (s)",
+    "Etiquetas",
+    "Documentos",
+    "Valor",
+    "Documento del valor",
+    "Conversación",
+]
+
+
+def _export_rows(rows: list[dict], conversation_url) -> list[list]:
+    """Table rows as plain cell values (formatted to text by `_cell_text`)."""
+    out = []
+    for row in rows:
+        extracted = row["extracted"]
+        value: str | float | None = None
+        if extracted:
+            number = _parse_number(extracted["value"])
+            value = number if number is not None else extracted["value"]
+        duration = row["duration_seconds"]
+        out.append(
+            [
+                row["username"],
+                row["name"],
+                row["started_at"].replace(tzinfo=None),
+                row["turns"],
+                row["user_turns"],
+                row["system_turns"],
+                round(duration, 1) if duration is not None else None,
+                ", ".join(row["tags"]),
+                "; ".join(f"{d['kind']}: {d['title']}" for d in row["documents"]),
+                value,
+                extracted["doc"]["title"] if extracted else None,
+                conversation_url(row["uuid"]),
+            ]
+        )
+    return out
+
+
+def _cell_text(value) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, datetime):
+        return value.strftime("%Y-%m-%d %H:%M:%S")
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    return str(value)
+
+
+def _export_csv(rows: list[list]) -> bytes:
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(EXPORT_HEADERS)
+    writer.writerows([_cell_text(v) for v in row] for row in rows)
+    # BOM so Excel opens accented characters correctly
+    return buffer.getvalue().encode("utf-8-sig")
+
+
+def _export_txt(rows: list[list]) -> bytes:
+    """Fixed-width columns, readable in any text editor."""
+    table = [EXPORT_HEADERS] + [[_cell_text(v) for v in row] for row in rows]
+    widths = [max(len(r[i]) for r in table) for i in range(len(EXPORT_HEADERS))]
+    lines = ["  ".join(c.ljust(w) for c, w in zip(r, widths)).rstrip() for r in table]
+    lines.insert(1, "  ".join("-" * w for w in widths))
+    return ("\n".join(lines) + "\n").encode("utf-8")
+
+
+EXPORTERS = {
+    "csv": (_export_csv, "text/csv; charset=utf-8"),
+    "txt": (_export_txt, "text/plain; charset=utf-8"),
+}
+
+
+@router.post("/project/{project_uuid}/filtered/export/{fmt}", response_class=Response)
+async def export_project_filtered_conversations(
+    request: Request,
+    project_uuid: UUID,
+    fmt: ExportFormat,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    current_user: dict = Depends(get_current_project_viewer),
+    username_regex: str = Form(""),
+    min_turns: int = Form(10, ge=0),
+    doc_title_regex: str = Form(""),
+    value_regex: str = Form(DEFAULT_DOC_VALUE_REGEX),
+):
+    """Download the filtered conversations table as CSV or plain text."""
+    project = await crud_projects.get(db, uuid=project_uuid, is_deleted=False)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    await _check_project_access(db, project, current_user)
+
+    table = await _filtered_conversations(
+        db,
+        project,
+        current_user,
+        username_regex,
+        min_turns,
+        doc_title_regex,
+        value_regex,
+    )
+    for key in ("regex_error", "title_regex_error", "value_regex_error"):
+        if table[key]:
+            raise HTTPException(
+                status_code=400, detail=f"Expresión regular inválida: {table[key]}"
+            )
+
+    rows = _export_rows(
+        table["rows"],
+        lambda uuid: str(request.url_for("conversation_view", conversation_uuid=uuid)),
+    )
+    exporter, media_type = EXPORTERS[fmt]
+    filename = (
+        f"conversaciones_{project['project_name']}_{datetime.now():%Y%m%d_%H%M}.{fmt}"
+    )
+    return Response(
+        content=exporter(rows),
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 

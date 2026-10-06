@@ -1,0 +1,342 @@
+{% macro fmt_seconds(value) -%}
+{%- if value is none -%}
+&mdash;
+{%- else -%}
+{%- set total = value | round(1) -%}
+{%- if total >= 3600 -%}
+{{ (total // 3600) | int }}h {{ ((total % 3600) // 60) | int }}m
+{%- elif total >= 60 -%}
+{{ (total // 60) | int }}m {{ (total % 60) | round(0) | int }}s
+{%- else -%}
+{{ total }}s
+{%- endif -%}
+{%- endif -%}
+{%- endmacro %}
+
+{% set filter_query = {'username_regex': username_regex, 'min_turns': min_turns} | urlencode %}
+
+<div class="space-y-6">
+
+    {# ─── HEADER ─── #}
+    <div class="flex items-center justify-between gap-2">
+        <div>
+            <h1 class="text-xl font-semibold">Conversaciones filtradas</h1>
+            <p class="text-sm text-base-content/50">{{ project.name }}</p>
+        </div>
+        <a id="filtered-stats-link" href="{{ url_for('show_project_stats', project_uuid=project.uuid) }}?{{ filter_query }}" class="btn btn-ghost btn-sm gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Ver estadísticas
+        </a>
+    </div>
+
+    {# ─── FILTER FORM ─── #}
+    <form id="filtered-filter-form"
+          class="card bg-base-200 p-4 gap-3"
+          hx-post="{{ url_for('project_filtered_conversations_htmx', project_uuid=project.uuid) }}"
+          hx-trigger="submit, input delay:400ms"
+          hx-target="#filtered-results"
+          hx-select="#filtered-results"
+          hx-swap="outerHTML"
+          hx-select-oob="#filtered-regex-error,#filtered-title-regex-error,#filtered-value-regex-error,#filtered-stats-link"
+          hx-indicator="#filtered-search-spinner">
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
+            <div class="form-control md:col-span-2">
+                <label class="label pt-0">
+                    <span class="label-text font-medium">Usuario (expresión regular)</span>
+                </label>
+                <input type="text"
+                       name="username_regex"
+                       value="{{ username_regex }}"
+                       placeholder="p. ej. ^admin_ o \.edu$ (vacío = todos)"
+                       class="input input-bordered w-full font-mono text-sm {{ 'input-error' if regex_error else '' }}" />
+                <div id="filtered-regex-error">
+                    {% if regex_error %}
+                    <label class="label pb-0">
+                        <span class="label-text-alt text-error">Expresión regular inválida: {{ regex_error }}</span>
+                    </label>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-control">
+                <label class="label pt-0">
+                    <span class="label-text font-medium">Mínimo de turnos</span>
+                </label>
+                <input type="number"
+                       name="min_turns"
+                       min="0"
+                       value="{{ min_turns }}"
+                       class="input input-bordered w-full" />
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
+            <div class="form-control">
+                <label class="label pt-0">
+                    <span class="label-text font-medium">Título del documento (expresión regular)</span>
+                </label>
+                <input type="text"
+                       name="doc_title_regex"
+                       value="{{ doc_title_regex }}"
+                       placeholder="p. ej. Evaluación (vacío = cualquiera)"
+                       class="input input-bordered w-full font-mono text-sm {{ 'input-error' if title_regex_error else '' }}" />
+                <div id="filtered-title-regex-error">
+                    {% if title_regex_error %}
+                    <label class="label pb-0">
+                        <span class="label-text-alt text-error">Expresión regular inválida: {{ title_regex_error }}</span>
+                    </label>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-control md:col-span-2">
+                <label class="label pt-0">
+                    <span class="label-text font-medium">Valor a extraer (expresión regular)</span>
+                </label>
+                <input type="text"
+                       name="value_regex"
+                       value="{{ value_regex }}"
+                       placeholder="vacío = sin columna de valor"
+                       class="input input-bordered w-full font-mono text-sm {{ 'input-error' if value_regex_error else '' }}" />
+                <div id="filtered-value-regex-error">
+                    {% if value_regex_error %}
+                    <label class="label pb-0">
+                        <span class="label-text-alt text-error">Expresión regular inválida: {{ value_regex_error }}</span>
+                    </label>
+                    {% else %}
+                    <label class="label pb-0">
+                        <span class="label-text-alt text-base-content/50">Se usa el primer grupo de captura <code>( )</code> o, si no hay, toda la coincidencia; del documento más reciente que coincida. No distingue mayúsculas.</span>
+                    </label>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-2">
+            <div class="dropdown dropdown-end">
+                <div tabindex="0" role="button" class="btn btn-ghost btn-sm gap-1.5">
+                    <span id="filtered-download-spinner" class="loading loading-spinner loading-xs hidden"></span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Descargar tabla
+                </div>
+                <ul tabindex="0" class="dropdown-content menu z-10 p-2 shadow bg-base-100 border border-base-300 rounded-box w-44">
+                    <li><button type="button" onclick="downloadFilteredTable('csv')">CSV (.csv)</button></li>
+                    <li><button type="button" onclick="downloadFilteredTable('txt')">Texto plano (.txt)</button></li>
+                </ul>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm gap-1.5">
+                <span id="filtered-search-spinner" class="loading loading-spinner loading-xs hidden"></span>
+                Aplicar filtros
+            </button>
+        </div>
+    </form>
+
+    <script>
+        // Downloads the table with the form's current filters. fetch + blob (not a
+        // plain link) so the request carries the bearer token, like other downloads.
+        async function downloadFilteredTable(format) {
+            const form = document.getElementById('filtered-filter-form');
+            const spinner = document.getElementById('filtered-download-spinner');
+            const url = "{{ url_for('export_project_filtered_conversations', project_uuid=project.uuid, fmt='FORMAT') }}".replace('FORMAT', format);
+            document.activeElement?.blur();  // close the dropdown
+            spinner?.classList.remove('hidden');
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` },
+                    body: new FormData(form),
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Error al descargar la tabla');
+                }
+                const disposition = res.headers.get('Content-Disposition') || '';
+                const match = disposition.match(/filename="?([^";]+)"?/);
+                const blobUrl = URL.createObjectURL(await res.blob());
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = match ? match[1] : `conversaciones.${format}`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(blobUrl);
+            } catch (e) {
+                alert(e.message);
+            } finally {
+                spinner?.classList.add('hidden');
+            }
+        }
+    </script>
+
+    {# ─── CONVERSATIONS TABLE ─── #}
+    <div id="filtered-results">
+    {% if not regex_error %}
+    <div class="card bg-base-200 p-4">
+        <div class="flex items-center justify-between gap-2 mb-3">
+            <div>
+                <h2 class="font-medium">Conversaciones (<span id="filtered-conversations-count">{{ rows | length }}</span>)</h2>
+                {% if value_summary %}
+                <p class="text-xs text-base-content/50">
+                    Valor: promedio {{ value_summary.avg | round(2) }}
+                    &middot; σ {{ value_summary.std | round(2) if value_summary.std is not none else '—' }}
+                    &middot; min {{ value_summary.min | round(2) }}
+                    &middot; max {{ value_summary.max | round(2) }}
+                    &middot; {{ value_summary.n }} con valor numérico
+                </p>
+                {% endif %}
+            </div>
+            <input type="text"
+                   id="filtered-table-search"
+                   placeholder="Buscar en la tabla (texto o expresión regular)..."
+                   class="input input-bordered input-sm w-full max-w-sm"
+                   oninput="filterConversationsTable(this.value)" />
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="table table-sm table-zebra">
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Inicio</th>
+                        <th class="text-right">Turnos</th>
+                        <th class="text-right">Usuario</th>
+                        <th class="text-right">Sistema</th>
+                        <th class="text-right">Duración</th>
+                        <th>Etiquetas</th>
+                        <th>Documentos</th>
+                        <th class="text-right">Valor</th>
+                        <th>Conversación</th>
+                    </tr>
+                </thead>
+                <tbody id="filtered-conversations-tbody">
+                    {% for row in rows %}
+                    <tr id="filtered-conversation-row-{{ row.id }}">
+                        <td class="whitespace-nowrap">
+                            {{ row.name }}
+                            <span class="text-base-content/40">@{{ row.username }}</span>
+                        </td>
+                        <td class="whitespace-nowrap">
+                            <time datetime="{{ row.started_at.isoformat() }}" data-local="datetime">{{ row.started_at.strftime('%d/%m/%Y %H:%M') }}</time>
+                        </td>
+                        <td class="text-right">{{ row.turns }}</td>
+                        <td class="text-right">{{ row.user_turns }}</td>
+                        <td class="text-right">{{ row.system_turns }}</td>
+                        <td class="text-right whitespace-nowrap">{{ fmt_seconds(row.duration_seconds) }}</td>
+                        <td>
+                            {% for tag in row.tags %}
+                            <span class="badge badge-sm badge-outline">{{ tag }}</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            <div class="flex flex-wrap gap-1">
+                                {% for doc in row.documents %}
+                                <button type="button"
+                                        class="badge badge-sm badge-ghost gap-1 hover:badge-primary max-w-[12rem]"
+                                        title="{{ doc.kind }}: {{ doc.title }}"
+                                        @click="document.dispatchEvent(new CustomEvent('openDocumentViewModal', {
+                                            detail: { url: '{{ url_for('get_conversation_document_htmx', conversation_uuid=row.uuid, document_id=doc.id) }}' }
+                                        }))">
+                                    <span class="font-medium">{{ doc.kind }}</span>
+                                    <span class="truncate">{{ doc.title }}</span>
+                                </button>
+                                {% else %}
+                                <span class="text-base-content/30">&mdash;</span>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td class="text-right whitespace-nowrap">
+                            {% if row.extracted %}
+                            <button type="button"
+                                    class="link link-hover font-medium"
+                                    title="De «{{ row.extracted.doc.title }}» — ver documento"
+                                    @click="document.dispatchEvent(new CustomEvent('openDocumentViewModal', {
+                                        detail: { url: '{{ url_for('get_conversation_document_htmx', conversation_uuid=row.uuid, document_id=row.extracted.doc.id) }}' }
+                                    }))">{{ row.extracted.value }}</button>
+                            {% else %}
+                            <span class="text-base-content/30">&mdash;</span>
+                            {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap">
+                            <a class="link link-hover link-primary inline-flex align-middle"
+                               target="_blank" rel="noopener"
+                               title="Ver conversación"
+                               aria-label="Ver conversación"
+                               href="{{ url_for('conversation_view', conversation_uuid=row.uuid) }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                            </a>
+                            {% if row.can_delete %}
+                            <button type="button"
+                                    class="inline-flex ml-2 text-error/40 hover:text-error align-middle"
+                                    title="Eliminar conversación"
+                                    aria-label="Eliminar conversación"
+                                    @click="document.dispatchEvent(new CustomEvent('openConfirmModal', {
+                                        detail: {
+                                            title: 'Eliminar conversación',
+                                            message: '¿Estás seguro de eliminar esta conversación?',
+                                            confirmLabel: 'Eliminar',
+                                            method: 'DELETE',
+                                            url: '{{ url_for('delete_conversation_htmx', conversation_uuid=row.uuid) }}',
+                                            target: '#filtered-conversation-row-{{ row.id }}',
+                                            swap: 'delete'
+                                        }
+                                    }))">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    <tr id="filtered-conversations-empty" {{ 'hidden' if rows else '' }}>
+                        <td colspan="10" class="text-center text-base-content/40 py-6">
+                            Ninguna conversación cumple los criterios de búsqueda.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function filterConversationsTable(query) {
+            const tbody = document.getElementById('filtered-conversations-tbody');
+            if (!tbody) return;
+
+            let re = null;
+            if (query) {
+                try { re = new RegExp(query, 'i'); } catch (e) { re = null; }
+            }
+
+            tbody.querySelectorAll('tr[id^="filtered-conversation-row-"]').forEach(function (row) {
+                if (!query) { row.hidden = false; return; }
+                const text = row.textContent || '';
+                const match = re ? re.test(text) : text.toLowerCase().includes(query.toLowerCase());
+                row.hidden = !match;
+            });
+        }
+
+        // Keep the header count (and the empty-state row) in sync when a row is
+        // deleted via the confirm modal, which removes it with swap:'delete'.
+        (function () {
+            const tbody = document.getElementById('filtered-conversations-tbody');
+            if (!tbody) return;
+            new MutationObserver(function () {
+                const remaining = tbody.querySelectorAll('tr[id^="filtered-conversation-row-"]').length;
+                const count = document.getElementById('filtered-conversations-count');
+                if (count) count.textContent = remaining;
+                const empty = document.getElementById('filtered-conversations-empty');
+                if (empty) empty.hidden = remaining > 0;
+            }).observe(tbody, { childList: true });
+        })();
+    </script>
+    {% endif %}
+    </div>
+</div>

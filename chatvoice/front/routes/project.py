@@ -79,6 +79,32 @@ async def show_project_conversations(
     )
 
 
+@router.get("/{project_uuid}/conversations/filtered", response_class=HTMLResponse)
+async def show_project_filtered_conversations(
+    request: Request,
+    project_uuid: UUID,
+    db: Annotated[AsyncSession, Depends(async_get_db)],
+    ctx: RuntimeContext = Depends(get_default_context),  # Single injection
+    username_regex: str | None = Query(None),
+    min_turns: int | None = Query(None, ge=0),
+):
+    """Per-conversation table filtered like the stats view; content loads via HTMX."""
+    project = await crud_projects.get(db, uuid=project_uuid)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found.")
+
+    return ctx.templates_front.TemplateResponse(
+        request=request,
+        name="projects/stats_conversations.html",
+        context={
+            "request": request,
+            "project": project,
+            # Filters carried over from the sibling stats view, if any
+            "filters": _carried_filters(username_regex, min_turns),
+        },
+    )
+
+
 @router.get("/{project_uuid}/stats", response_class=HTMLResponse)
 async def show_project_stats(
     request: Request,

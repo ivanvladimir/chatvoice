@@ -29,12 +29,20 @@
             <h1 class="text-xl font-semibold">Estadísticas de conversaciones</h1>
             <p class="text-sm text-base-content/50">{{ project.name }}</p>
         </div>
-        <a href="{{ url_for('show_project_conversations', project_uuid=project.uuid) }}" class="btn btn-ghost btn-sm gap-1.5">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Ver conversaciones
-        </a>
+        <div class="flex flex-wrap justify-end gap-1">
+            <a href="{{ url_for('show_project_conversations', project_uuid=project.uuid) }}" class="btn btn-ghost btn-sm gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Ver conversaciones
+            </a>
+            <a id="stats-table-link" href="{{ url_for('show_project_filtered_conversations', project_uuid=project.uuid) }}?{{ {'username_regex': username_regex, 'min_turns': min_turns} | urlencode }}" class="btn btn-ghost btn-sm gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M10 3v18M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                Ver tabla de conversaciones
+            </a>
+        </div>
     </div>
 
     {# ─── FILTER FORM ─── #}
@@ -45,7 +53,7 @@
           hx-target="#stats-results"
           hx-select="#stats-results"
           hx-swap="outerHTML"
-          hx-select-oob="#stats-regex-error"
+          hx-select-oob="#stats-regex-error,#stats-table-link"
           hx-indicator="#stats-search-spinner">
 
         <input type="hidden" name="searched" value="1">
