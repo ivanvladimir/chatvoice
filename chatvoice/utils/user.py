@@ -1,4 +1,3 @@
-import asyncio
 import csv
 import re
 import secrets
@@ -6,7 +5,7 @@ import string
 from pathlib import Path
 
 from rich import print
-from rich.prompt import IntPrompt, Prompt
+from rich.prompt import Confirm, IntPrompt, Prompt
 from sqlalchemy import select
 
 from ..core.db.database_sync import get_db_ctx, init_db
@@ -15,70 +14,93 @@ from ..models import Tier, User
 from ..schemas.user import UserCreate, UserCreateInternal, UserRole
 
 
-async def _audit_admin_users_async():
-    from crudadmin.admin_user.schemas import AdminUserRead
-
-    from ..admin.initialize import create_admin_interface
-
-    admin = create_admin_interface()
-
-    async for admin_session in admin.db_config.get_admin_db():
-        result = await admin.db_config.crud_users.get_multi(admin_session)
-
-        # Access the actual list of users
-        users = result["data"]
-
+def audit_admin_users():
+    """List the app users allowed into the admin interface (role=admin)."""
+    init_db()
+    with get_db_ctx() as session:
+        admins = (
+            session.execute(
+                select(User).where(User.role == UserRole.admin).order_by(User.id)
+            )
+            .scalars()
+            .all()
+        )
         print("Admin Users Audit:")
         print("-" * 50)
-        for user in users:
-            user = AdminUserRead(**user)
+        if not admins:
+            print("[yellow]No users with role 'admin'. Use create-admin.[/]")
+        for user in admins:
+            # Login also requires the account to be verified and not deleted
+            can_login = user.is_verified and not user.is_deleted
             print(f"Username: {user.username}")
-            print(f"Superuser: {user.is_superuser}")
+            print(f"Email: {user.email}")
+            print(f"Can log in: {'yes' if can_login else 'no'}")
             print("-" * 30)
 
 
-def audit_admin_users():
-    return asyncio.run(_audit_admin_users_async())
-
-
 def create_admin_user():
-    """Create admin with a selectable role via CLI."""
-    username = Prompt.ask("Enter your username", default="admin")
-    passwd = Prompt.ask("Enter your password", password=True)
-    passwd_ = Prompt.ask("Confirm your password", password=True)
+    """
+    Give a user admin access (role=admin): promotes an existing app user, or
+    creates a new one. Admins log into the admin interface with their app
+    username/email and password.
+    """
+    username = Prompt.ask("Enter the username", default="admin")
+    init_db()
+
+    with get_db_ctx() as session:
+        user = session.execute(
+            select(User).where(User.username == username)
+        ).scalar_one_or_none()
+        if user is not None:
+            if not Confirm.ask(
+                f"User '{username}' exists with role '{user.role.value}'. "
+                "Promote to admin?"
+            ):
+                return username, None
+            user.role = UserRole.admin
+            user.is_verified = True
+            return username, True
+
+    name = Prompt.ask("Enter the name", default=username)
+    email = Prompt.ask("Enter the email")
+    passwd = Prompt.ask("Enter the password", password=True)
+    passwd_ = Prompt.ask("Confirm the password", password=True)
 
     if passwd != passwd_:
         print("[red]Passwords do not match. Please try again.[/]")
         return (username, None)
 
-    return asyncio.run(_create_admin_user_async(username, passwd))
+    try:
+        user_create = UserCreate(
+            name=name,
+            username=username,
+            email=email,
+            password=passwd,
+            role=UserRole.admin,
+        )
+    except Exception as e:
+        print(f"[red]Validation error: {e}[/]")
+        return (username, None)
 
+    with get_db_ctx() as session:
+        if session.execute(
+            select(User).where(User.email == email)
+        ).scalar_one_or_none():
+            print(f"[red]User with email '{email}' already exists.[/]")
+            return (username, None)
 
-async def _create_admin_user_async(username: str, password: str):
-    """Internal async function to handle database operations."""
-    from crudadmin.admin_user.schemas import AdminUserCreateInternal
+        user_internal = UserCreateInternal(
+            name=user_create.name,
+            username=user_create.username,
+            email=user_create.email,
+            hashed_password=get_password_hash(passwd),
+            role=UserRole.admin,
+        )
+        new_user = User(**user_internal.model_dump())
+        new_user.is_verified = True
+        session.add(new_user)
 
-    from ..admin.initialize import create_admin_interface
-
-    admin = create_admin_interface()
-
-    async for admin_session in admin.db_config.get_admin_db():
-        try:
-            hashed_password = admin.admin_user_service.get_password_hash(password)
-            internal_data = AdminUserCreateInternal(
-                username=username,
-                hashed_password=hashed_password,
-            )
-
-            await admin.initialize()
-            await admin.db_config.crud_users.create(admin_session, object=internal_data)
-            await admin_session.commit()
-            return username, True
-
-        except Exception as e:
-            print(f"[red]Error creating admin {username}: {e}.[/]")
-            await admin_session.rollback()
-        return username, False
+    return username, True
 
 
 def create_user():

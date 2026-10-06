@@ -166,7 +166,7 @@ def create_admin(
     logging_level: str = "debug",  # More verbose for admin operations
     logging_file: str = CHATVOICE_LOG_FILE,
 ) -> None:
-    """Create an admin user."""
+    """Give a user admin access: promote an existing user or create a new one."""
     log = get_logger(__name__)
     from .utils.user import create_admin_user
 
@@ -237,7 +237,7 @@ def audit_admin_users(
     logging_level: str = "debug",  # More verbose for admin operations
     logging_file: str = CHATVOICE_LOG_FILE,
 ) -> None:
-    """Create an admin user."""
+    """List the users with admin access (role=admin)."""
     from .utils.user import audit_admin_users
 
     audit_admin_users()

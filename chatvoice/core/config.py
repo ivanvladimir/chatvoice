@@ -23,6 +23,7 @@ class AppSettings:
     CONTACT_EMAIL: str | None = None
     FORCE_HTTPS: bool = False
 
+
 _INSECURE_DEFAULT_SECRET_KEY = "secret-key"
 
 
@@ -106,25 +107,12 @@ class PostgresSettings(DatabaseSettings):
         return f"{credentials}@{location}"
 
 
-class CRUDAdminSettings:
-    CRUD_ADMIN_ENABLED: bool = True
-    CRUD_ADMIN_MOUNT_PATH: str = "/admin"
-
-    CRUD_ADMIN_ALLOWED_IPS_LIST: list[str] | None = None
-    CRUD_ADMIN_ALLOWED_NETWORKS_LIST: list[str] | None = None
-    CRUD_ADMIN_MAX_SESSIONS: int = 10
-    CRUD_ADMIN_SESSION_TIMEOUT: int = 1440
+class AdminSettings:
+    ADMIN_ENABLED: bool = True
+    ADMIN_MOUNT_PATH: str = "/admin"
+    # Admin login session lifetime, in minutes
+    ADMIN_SESSION_TIMEOUT: int = 1440
     SESSION_SECURE_COOKIES: bool = True
-
-    CRUD_ADMIN_TRACK_EVENTS: bool = True
-    CRUD_ADMIN_TRACK_SESSIONS: bool = True
-
-    CRUD_ADMIN_REDIS_ENABLED: bool = False
-    CRUD_ADMIN_REDIS_HOST: str = "localhost"
-    CRUD_ADMIN_REDIS_PORT: int = 6379
-    CRUD_ADMIN_REDIS_DB: int = 0
-    CRUD_ADMIN_REDIS_PASSWORD: str | None = "None"
-    CRUD_ADMIN_REDIS_SSL: bool = False
 
 
 class EnvironmentOption(str, Enum):
@@ -224,7 +212,7 @@ class Settings(
     MySQLSettings,
     PostgresSettings,
     PathSettings,
-    CRUDAdminSettings,
+    AdminSettings,
     EnvironmentSettings,
     CORSSettings,
     DefaultRateLimitSettings,

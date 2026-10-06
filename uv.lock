@@ -276,7 +276,6 @@ source = { virtual = "." }
 dependencies = [
     { name = "aiosqlite" },
     { name = "bcrypt" },
-    { name = "crudadmin" },
     { name = "cyclopts" },
     { name = "fastapi" },
     { name = "fastapi-tailwind" },
@@ -295,6 +294,7 @@ dependencies = [
     { name = "redis" },
     { name = "simpleeval" },
     { name = "sqlalchemy" },
+    { name = "starlette-admin" },
     { name = "structlog" },
     { name = "uuid6" },
     { name = "uvicorn" },
@@ -312,7 +312,6 @@ dev = [
 requires-dist = [
     { name = "aiosqlite", specifier = ">=0.22.1" },
     { name = "bcrypt", specifier = ">=5.0.0" },
-    { name = "crudadmin", specifier = ">=0.5.0" },
     { name = "cyclopts", specifier = ">=4.10.1" },
     { name = "fastapi", specifier = ">=0.135.2" },
     { name = "fastapi-tailwind", specifier = ">=2.0.4a1" },
@@ -331,6 +330,7 @@ requires-dist = [
     { name = "redis", specifier = ">=7.4.0" },
     { name = "simpleeval", specifier = ">=1.0.7" },
     { name = "sqlalchemy", specifier = ">=2.0.48" },
+    { name = "starlette-admin", specifier = ">=1.0.2" },
     { name = "structlog", specifier = ">=25.5.0" },
     { name = "uuid6", specifier = ">=2025.0.1" },
     { name = "uvicorn", specifier = ">=0.50.2" },
@@ -363,28 +363,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d8/53/6f443c9a4a8358a93a6792e2acffb9d9d5cb0a5cfd8802644b7b1c9a02e4/colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44", size = 27697 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d1/d6/3965ed04c63042e047cb6a3e6ed1a63a35087b6a609aa3a15ed8ac56c221/colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6", size = 25335 },
-]
-
-[[package]]
-name = "crudadmin"
-version = "0.5.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "aiosqlite" },
-    { name = "bcrypt" },
-    { name = "fastapi" },
-    { name = "fastcrud" },
-    { name = "greenlet" },
-    { name = "jinja2" },
-    { name = "pydantic", extra = ["email"] },
-    { name = "pydantic-settings" },
-    { name = "python-multipart" },
-    { name = "sqlalchemy" },
-    { name = "user-agents" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/d3/0b/262d5c483a30db1b24ef4b285c7f10ddaa8adb758e5a7a63ac3c363a8a3f/crudadmin-0.5.0.tar.gz", hash = "sha256:7a081b286e7164f1aeb60c5ff9d7f817b07c7e83df6de77b77fa44d180dcd611", size = 199053 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b2/e2/91f0d904abcb43e96cadc5f1d50c633111be55410ba2b3f7a536fcbef03d/crudadmin-0.5.0-py3-none-any.whl", hash = "sha256:5ad5003e067e7518d0b94e09b1b4844457ae03947b7086cde172e4f6f1299f12", size = 229503 },
 ]
 
 [[package]]
@@ -695,6 +673,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/72/34/14ca021ce8e5dfedc35312d08ba8bf51fdd999c576889fc2c24cb97f4f10/iniconfig-2.3.0.tar.gz", hash = "sha256:c76315c77db068650d49c5b56314774a7804df16fee4402c1f19d6d15d8c4730", size = 20503 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/cb/b1/3846dd7f199d53cb17f49cba7e651e9ce294d8497c8c150530ed11865bb8/iniconfig-2.3.0-py3-none-any.whl", hash = "sha256:f631c04d2c48c52b84d0d0549c99ff3859c98df65b3101406327ecc7d53fbf12", size = 7484 },
+]
+
+[[package]]
+name = "itsdangerous"
+version = "2.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/9c/cb/8ac0172223afbccb63986cc25049b154ecfb5e85932587206f42317be31d/itsdangerous-2.2.0.tar.gz", hash = "sha256:e0050c0b7da1eea53ffaf149c0cfbb5c6e2e2b69c4bef22c81fa6eb73e5f6173", size = 54410 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/04/96/92447566d16df59b2a776c0fb82dbc4d9e07cd95062562af01e408583fc4/itsdangerous-2.2.0-py3-none-any.whl", hash = "sha256:c6242fc49e35958c8b15141343aa660db5fc54d4f13a1db01a3f5891b98700ef", size = 16234 },
 ]
 
 [[package]]
@@ -1424,6 +1411,21 @@ wheels = [
 ]
 
 [[package]]
+name = "starlette-admin"
+version = "1.0.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "itsdangerous" },
+    { name = "jinja2" },
+    { name = "python-multipart" },
+    { name = "starlette" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/02/57/68feb746dcc39cac161f636700a736078697679052804370c075d6b80671/starlette_admin-1.0.2.tar.gz", hash = "sha256:4aa47fba5500c711e59ca44c2d137f871b2e09b386826f0e6c9d662e74e9ba5e", size = 1260638 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ca/b7/f0ec3387485d59be3bfab2d9ead649c63cb867bf2a08e0106998c62629b8/starlette_admin-1.0.2-py3-none-any.whl", hash = "sha256:024b7aa3b5fad447e45a5b41d339a9a318c278faffe0e0edff07c109f6be577f", size = 1388009 },
+]
+
+[[package]]
 name = "structlog"
 version = "25.5.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1463,44 +1465,12 @@ wheels = [
 ]
 
 [[package]]
-name = "ua-parser"
-version = "1.0.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "ua-parser-builtins" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/90/98/5e4b52d772a048af122a6fc5ce365c311efb9f5e79c55fd4fdd7c9f59e83/ua_parser-1.0.2.tar.gz", hash = "sha256:bab404ad42fb37f943107da2f6003ffc79724d11cc95076a7a539513371779da", size = 33239 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a9/7c/6367995ff57aaa2d9e1055adbaec2519cf5a979780a83a93fdf8c6ec37be/ua_parser-1.0.2-py3-none-any.whl", hash = "sha256:0f8e6d0484af2a9ff804bba5a4fe696e87c028eaba98ad9a7dfae873fef7788a", size = 31219 },
-]
-
-[[package]]
-name = "ua-parser-builtins"
-version = "202606"
-source = { registry = "https://pypi.org/simple" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/51/a3/f26edd95a2ce2ffbf559da432e5ff544e8dcda3673d1c775f71afffb18b7/ua_parser_builtins-202606-py3-none-any.whl", hash = "sha256:13b483eb12a5419c1094ce02b7df705fefc6b5d869764b3ffbf6c940c6d014cb", size = 90676 },
-]
-
-[[package]]
 name = "urllib3"
 version = "2.7.0"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/53/0c/06f8b233b8fd13b9e5ee11424ef85419ba0d8ba0b3138bf360be2ff56953/urllib3-2.7.0.tar.gz", hash = "sha256:231e0ec3b63ceb14667c67be60f2f2c40a518cb38b03af60abc813da26505f4c", size = 433602 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7f/3e/5db95bcf282c52709639744ca2a8b149baccf648e39c8cc87553df9eae0c/urllib3-2.7.0-py3-none-any.whl", hash = "sha256:9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897", size = 131087 },
-]
-
-[[package]]
-name = "user-agents"
-version = "2.2.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "ua-parser" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/e3/e1/63c5bfb485a945010c8cbc7a52f85573561737648d36b30394248730a7bc/user-agents-2.2.0.tar.gz", hash = "sha256:d36d25178db65308d1458c5fa4ab39c9b2619377010130329f3955e7626ead26", size = 9525 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/8f/1c/20bb3d7b2bad56d881e3704131ddedbb16eb787101306887dff349064662/user_agents-2.2.0-py3-none-any.whl", hash = "sha256:a98c4dc72ecbc64812c4534108806fb0a0b3a11ec3fd1eafe807cee5b0a942e7", size = 9614 },
 ]
 
 [[package]]
